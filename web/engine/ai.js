@@ -5,7 +5,7 @@
      except that json() makes exactly ONE repair call when the reply cannot be parsed or fails the schema.
    - The 256 KiB input cap is enforced here with a byte counter; over-long prompts are shortened in a
      deterministic way and the result says what was cut (see fit()).
-   - Errors are plain objects {code, message, text?}; message(err, lang) gives the German/English UI copy.
+   - Errors are plain objects {code, message, text?}; message(err, lang) gives the UI copy (English by default, German with lang "de").
    API: docs/ARCHITECTURE.md (LnpAI). */
 (function (g) {
   'use strict';
@@ -299,7 +299,7 @@
       capability_removed: 'The AI feature is not supported by this app version and was switched off.',
       rate_limited: 'The usage limit is reached or too many requests are running. Please wait a while and continue by hand; nothing is retried automatically. Finished steps stay saved.',
       session_expired: 'The session has expired. Please sign in again and continue.',
-      cancelled: 'Stopped. Finished steps stay saved.',
+      cancelled: 'Cancelled. Finished steps stay saved.',
       refused: 'Claude declined this request. Sending it again unchanged gives the same result.',
       empty_completion: 'Claude returned no text. Please try again with less material.',
       invalid_json: 'The reply could not be read as data, even after the one repair round. The step was not counted.',
@@ -323,7 +323,7 @@
     return 'retry';
   }
   function message(err, lang) {
-    var m = MSG[lang === 'en' ? 'en' : 'de'], c = err && err.code;
+    var m = MSG[lang === 'de' ? 'de' : 'en'], c = err && err.code;
     if (c === 'transform_error' || c === 'queue_overflow') c = 'invalid_request';
     return m[c] || m.other;
   }
@@ -599,11 +599,11 @@
   }
 
   // ------------------------------------------------------------------------------------------------ claim explanation
-  /* explainClaim(pn | p, claimNo, {lang = "de", signal, onText}) -> {text, truncated, pn, claimNo, claimLang, cuts}
+  /* explainClaim(pn | p, claimNo, {lang = "en" | "de", signal, onText}) -> {text, truncated, pn, claimNo, claimLang, cuts}
      plain-language explanation of one claim, with the claims it refers to and the definitions excerpt of the patent */
   function explainClaim(pn, claimNo, o) {
     o = o || {};
-    var search = eng('search'), data = eng('data'), lang = o.lang === 'en' ? 'en' : 'de';
+    var search = eng('search'), data = eng('data'), lang = o.lang === 'de' ? 'de' : 'en';
     if (!search) return Promise.reject(mkErr('no_search', 'LnpSearch is not loaded'));
     return Promise.resolve(typeof pn === 'number' ? pn : (data ? data.byPn(pn) : -1)).then(function (p) {
       if (!(p >= 0)) throw mkErr('not_found', 'unknown publication ' + pn);

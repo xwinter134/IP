@@ -33,7 +33,7 @@
   g.addEventListener('unhandledrejection', function (ev) { logError('promise', ev && ev.reason); });
 
   /* ------------------------------------------------------------ theme (auto / light / dark) */
-  var THEMES = ['auto', 'light', 'dark'], THEME_DE = { auto: 'automatisch', light: 'hell', dark: 'dunkel' }, THEME_ICO = { auto: 'auto', light: 'sun', dark: 'moon' };
+  var THEMES = ['auto', 'light', 'dark'], THEME_LABEL = { auto: 'automatic', light: 'light', dark: 'dark' }, THEME_ICO = { auto: 'auto', light: 'sun', dark: 'moon' };
   function lsGet(k) { try { return g.localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { g.localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
   var hostTheme = document.documentElement.getAttribute('data-theme');       // what the viewer chose, if anything
@@ -46,8 +46,8 @@
     else root.setAttribute('data-theme', t);
     lsSet('lnp.theme', t);
     var b = document.getElementById('theme-btn');
-    if (b) { U.set(b, U.icon(THEME_ICO[t])); b.title = 'Darstellung: ' + THEME_DE[t]; b.setAttribute('aria-label', 'Darstellung wechseln, jetzt ' + THEME_DE[t]); }
-    if (!quiet) U.toast('Darstellung: ' + THEME_DE[t]);
+    if (b) { U.set(b, U.icon(THEME_ICO[t])); b.title = 'Appearance: ' + THEME_LABEL[t]; b.setAttribute('aria-label', 'Change appearance, currently ' + THEME_LABEL[t]); }
+    if (!quiet) U.toast('Appearance: ' + THEME_LABEL[t]);
     App.emit('theme', t);
   };
   App.isDark = function () {
@@ -78,13 +78,13 @@
   };
 
   /* ------------------------------------------------------------ boot screen */
-  var STEPS = [['data', 'Manifest und Stammdaten'], ['meta', 'Patenttabelle'], ['index', 'Suchindex'], ['store', 'Speicher'], ['views', 'Ansichten']];
+  var STEPS = [['data', 'Manifest and master data'], ['meta', 'Patent table'], ['index', 'Search index'], ['store', 'Storage'], ['views', 'Views']];
   var stepEl = {}, stepState = {};
   function bootDraw() {
     var ol = document.getElementById('boot-steps'); if (!ol) return;
     U.clear(ol);
     STEPS.forEach(function (s) {
-      var li = h('li', { data: { s: 'wait' } }, h('span.st', { text: 'wartet' }), h('span', { text: s[1] }), h('span.info'));
+      var li = h('li', { data: { s: 'wait' } }, h('span.st', { text: 'waiting' }), h('span', { text: s[1] }), h('span.info'));
       stepEl[s[0]] = li; stepState[s[0]] = 'wait'; ol.appendChild(li);
     });
   }
@@ -92,7 +92,7 @@
     var li = stepEl[id]; stepState[id] = state;
     if (li) {
       li.dataset.s = state;
-      li.children[0].textContent = state === 'run' ? 'lädt' : state === 'ok' ? 'bereit' : state === 'err' ? 'Fehler' : 'wartet';
+      li.children[0].textContent = state === 'run' ? 'loading' : state === 'ok' ? 'ready' : state === 'err' ? 'error' : 'waiting';
       if (info != null) li.children[2].textContent = info;
     }
     var done = 0; STEPS.forEach(function (s) { if (stepState[s[0]] === 'ok') done++; else if (stepState[s[0]] === 'run') done += .4; });
@@ -103,47 +103,47 @@
   function bootNow(text) { var el = document.getElementById('boot-now'); if (el) el.textContent = text; }
   function onLoadProgress(ev) {
     if (App.booted || App.timings.failed || !ev || !ev.name) return;
-    if (ev.type === 'progress' || ev.type === 'start') bootNow(ev.name + (ev.loaded ? '  ' + U.bytes(ev.loaded) + (ev.total ? ' von ' + U.bytes(ev.total) : '') : ''));
-    else if (ev.type === 'done') bootNow(ev.name + '  geladen');
+    if (ev.type === 'progress' || ev.type === 'start') bootNow(ev.name + (ev.loaded ? '  ' + U.bytes(ev.loaded) + (ev.total ? ' of ' + U.bytes(ev.total) : '') : ''));
+    else if (ev.type === 'done') bootNow(ev.name + '  loaded');
   }
   var HINTS = {
-    http: 'Der Server hat die Datei nicht geliefert. Sie fehlt neben der Seite (nicht veröffentlicht, falscher Name) oder der Abruf wurde abgelehnt.',
-    network: 'Der Abruf kam nicht zustande: Verbindung unterbrochen oder durch die Seitenrichtlinie blockiert.',
-    gzip: 'Die Datei kam an, ließ sich aber nicht entpacken. Sie ist beschädigt oder wurde unterwegs verändert.',
-    no_gzip: 'Dieser Browser hat keinen eingebauten gzip-Entpacker, und vendor/fflate.js war nicht ladbar.',
-    b64: 'Die Base64-Variante der Datei ist beschädigt.',
-    parse: 'Die Datei wurde geladen, ihr Inhalt ist aber kein gültiges JSON.',
-    script: 'Ein Skript der Seite konnte nicht geladen werden.',
-    no_worker: 'Kein Worker verfügbar; der Hauptthread ist ebenfalls gescheitert.'
+    http: 'The server did not deliver the file. It is missing next to the page (not published, wrong name) or the request was refused.',
+    network: 'The request failed: connection interrupted or blocked by the page policy.',
+    gzip: 'The file arrived but could not be decompressed. It is corrupt or was altered in transit.',
+    no_gzip: 'This browser has no built-in gzip decompressor, and vendor/fflate.js could not be loaded.',
+    b64: 'The Base64 variant of the file is corrupt.',
+    parse: 'The file was loaded, but its content is not valid JSON.',
+    script: 'A script of the page could not be loaded.',
+    no_worker: 'No worker available; the main thread failed as well.'
   };
   function bootFail(step, e) {
     e = e || {};
     App.timings.failed = now();
     logError('boot ' + step, e);
-    bootStep(step, 'err', e.code || 'Fehler');
+    bootStep(step, 'err', e.code || 'Error');
     var boot = document.getElementById('boot'); if (!boot) return;
-    var title = boot.querySelector('.boot-title'); if (title) title.textContent = 'Daten konnten nicht geladen werden';
+    var title = boot.querySelector('.boot-title'); if (title) title.textContent = 'Could not load the data';
     bootNow('');
     var old = document.getElementById('boot-diag'); if (old) old.parentNode.removeChild(old);
     var tried = Array.isArray(e.tried) ? e.tried : [];
-    STEPS.forEach(function (s) { if (s[0] !== step && stepState[s[0]] === 'run') bootStep(s[0], 'wait', 'abgebrochen'); });
+    STEPS.forEach(function (s) { if (s[0] !== step && stepState[s[0]] === 'run') bootStep(s[0], 'wait', 'aborted'); });
     var dl = h('dl');
     function row(k, v) { if (v == null || v === '') return; dl.appendChild(h('dt', { text: k })); dl.appendChild(h('dd', { text: String(v) })); }
-    row('Schritt', (STEPS.filter(function (s) { return s[0] === step; })[0] || [0, step])[1]);
-    row('Datei', e.name || (step === 'data' ? 'data/manifest.json' : null));
-    row('Adresse', e.url);
-    row('Fehlerart', e.code);
-    row('HTTP-Status', e.status);
-    row('Meldung', e.message || String(e));
-    tried.forEach(function (t) { row('Modus ' + t.mode, t.ok ? 'ok' : (t.code ? t.code + ': ' : '') + (t.error || 'gescheitert')); });
-    row('Seite', location.protocol + '//' + location.host + location.pathname);
-    row('Entpacker', typeof DecompressionStream !== 'undefined' ? 'DecompressionStream' : 'fflate (Ersatz)');
+    row('Step', (STEPS.filter(function (s) { return s[0] === step; })[0] || [0, step])[1]);
+    row('File', e.name || (step === 'data' ? 'data/manifest.json' : null));
+    row('Address', e.url);
+    row('Error type', e.code);
+    row('HTTP status', e.status);
+    row('Message', e.message || String(e));
+    tried.forEach(function (t) { row('Mode ' + t.mode, t.ok ? 'ok' : (t.code ? t.code + ': ' : '') + (t.error || 'failed')); });
+    row('Page', location.protocol + '//' + location.host + location.pathname);
+    row('Decompressor', typeof DecompressionStream !== 'undefined' ? 'DecompressionStream' : 'fflate (fallback)');
     var box = h('div', { id: 'boot-diag', style: { display: 'flex', 'flex-direction': 'column', gap: '12px' } },
-      h('p.notice.err', { text: HINTS[e.code] || 'Der Datenbestand liegt als Dateien neben der Seite. Mindestens eine davon war nicht lesbar.' }),
+      h('p.notice.err', { text: HINTS[e.code] || 'The dataset is stored as files next to the page. At least one of them could not be read.' }),
       h('div.diag', null, dl),
       h('div', { style: { display: 'flex', gap: '8px', 'flex-wrap': 'wrap' } },
-        h('button.btn.primary', { type: 'button', onclick: function () { retryBoot(); } }, 'Erneut versuchen'),
-        h('button.btn', { type: 'button', onclick: function () { U.copy(JSON.stringify(diagDoc(), null, 1), 'Diagnose kopiert'); } }, U.icon('copy'), 'Diagnose kopieren')));
+        h('button.btn.primary', { type: 'button', onclick: function () { retryBoot(); } }, 'Try again'),
+        h('button.btn', { type: 'button', onclick: function () { U.copy(JSON.stringify(diagDoc(), null, 1), 'Diagnostics copied'); } }, U.icon('copy'), 'Copy diagnostics')));
     boot.appendChild(box);
     writeDiagSoon();
   }
@@ -151,7 +151,7 @@
     try { if (g.LnpData && g.LnpData.reset) g.LnpData.reset(); } catch (e) { /* ignore */ }
     try { if (g.LnpSearch && g.LnpSearch.reset) g.LnpSearch.reset(); } catch (e2) { /* ignore */ }
     var old = document.getElementById('boot-diag'); if (old) old.parentNode.removeChild(old);
-    var title = document.querySelector('#boot .boot-title'); if (title) title.textContent = 'Datenbestand wird geladen';
+    var title = document.querySelector('#boot .boot-title'); if (title) title.textContent = 'Loading dataset';
     boot();
   }
 
@@ -200,7 +200,7 @@
     return new Promise(function (res) {
       var s = document.createElement('script'); s.src = url; s.async = false;
       s.onload = function () { res(true); };
-      s.onerror = function () { logError('script', { code: 'script', message: 'nicht ladbar: ' + url }); res(false); };
+      s.onerror = function () { logError('script', { code: 'script', message: 'could not be loaded: ' + url }); res(false); };
       document.head.appendChild(s);
     });
   }
@@ -237,7 +237,7 @@
       rail.appendChild(a);
     });
     var M = App.manifest;
-    if (M) rail.appendChild(h('div.rail-foot', null, 'Stand ' + U.date((M.built || '').slice(0, 10)), h('br'), 'Speicher: ' + ({ db: 'Artefakt', local: 'Browser', memory: 'nur Sitzung' }[App.store.backend] || '–')));
+    if (M) rail.appendChild(h('div.rail-foot', null, 'As of ' + U.date((M.built || '').slice(0, 10)), h('br'), 'Storage: ' + ({ db: 'Artifact', local: 'Browser', memory: 'session only' }[App.store.backend] || '–')));
   }
   function destroyCurrent() {
     var c = App.current; App.current = null;
@@ -259,15 +259,15 @@
     U.clear(host); host.scrollTop = 0;
     drawRail();
     if (!v) {
-      host.appendChild(h('div.page', null, h('div.empty', null, h('p.overline', { text: 'Nicht gefunden' }), h('h3', { text: 'Diese Ansicht gibt es nicht' }),
-        h('p', { text: 'Die Adresse verweist auf „' + route.view + '“. Die Bereiche stehen in der Leiste links.' }), h('p', null, h('a.btn', { href: '#suche' }, 'Zur Suche')))));
+      host.appendChild(h('div.page', null, h('div.empty', null, h('p.overline', { text: 'Not found' }), h('h3', { text: 'This view does not exist' }),
+        h('p', { text: 'The address points to "' + route.view + '". The sections are listed in the bar on the left.' }), h('p', null, h('a.btn', { href: '#suche' }, 'Go to Search')))));
       return;
     }
     var inst = null;
     try { inst = v.mount(host, route, App); }
     catch (e) {
       logError('mount ' + v.id, e);
-      U.set(host, h('div.page', null, h('p.notice.err', { text: 'Die Ansicht „' + v.title + '“ konnte nicht aufgebaut werden: ' + U.errText(e) })));
+      U.set(host, h('div.page', null, h('p.notice.err', { text: 'The view "' + v.title + '" could not be built: ' + U.errText(e) })));
     }
     App.current = { id: v.id, inst: inst };
   }
@@ -303,11 +303,11 @@
       App.emit('marks', { pn: pn, mark: empty ? null : m });
       drawRail();
       var p = empty ? g.LnpStore.remove('marks', pn) : g.LnpStore.put('marks', pn, m);
-      return p.catch(function (e) { logError('marks', e); U.toast('Merkliste konnte nicht gespeichert werden: ' + U.errText(e), { error: true }); });
+      return p.catch(function (e) { logError('marks', e); U.toast('Could not save the watchlist: ' + U.errText(e), { error: true }); });
     },
     toggle: function (pn, meta) {
       var on = !App.marks.isStar(pn);
-      U.toast(on ? U.pnPretty(pn) + ' gemerkt' : U.pnPretty(pn) + ' von der Merkliste genommen');
+      U.toast(on ? U.pnPretty(pn) + ' added to watchlist' : U.pnPretty(pn) + ' removed from watchlist');
       return App.marks.save(pn, Object.assign({ star: on }, meta || {}));
     }
   };
@@ -317,14 +317,14 @@
   // the selection handed to the FTO view: settings/fto-selection = {pns[], q, from, ts}
   App.handToFto = function (pns, meta) {
     var doc = Object.assign({ pns: pns.slice(0, 200), from: 'suche', ts: new Date().toISOString() }, meta || {});
-    return g.LnpStore.put('settings', 'fto-selection', doc).then(function () { R.go('#fto'); }, function (e) { U.toast('Übergabe gescheitert: ' + U.errText(e), { error: true }); });
+    return g.LnpStore.put('settings', 'fto-selection', doc).then(function () { R.go('#fto'); }, function (e) { U.toast('Hand-over failed: ' + U.errText(e), { error: true }); });
   };
 
   /* ------------------------------------------------------------ band */
   function drawBand() {
     var M = App.manifest, c = (M && M.counts) || {}, box = document.getElementById('band-counts'); if (!box) return;
     U.clear(box);
-    [['Patente', c.patents], ['Familien', c.families], ['Volltexte', c.fulltext], ['Claims', c.claims], ['Verbindungen', c.compounds]].forEach(function (x) {
+    [['Patents', c.patents], ['Families', c.families], ['Full texts', c.fulltext], ['Claims', c.claims], ['Compounds', c.compounds]].forEach(function (x) {
       if (x[1] == null) return;
       box.appendChild(h('div', null, h('dt', { text: x[0] }), h('dd', { text: U.num(x[1]) })));
     });
@@ -334,30 +334,30 @@
   var pal = null;
   App.palette = function (preset) {
     if (pal) { pal.close(); return; }
-    var input = h('input.pal-input', { id: 'pal-input', type: 'text', placeholder: 'Patentnummer, Suchbegriffe, Ansicht …', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Befehl oder Suche', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-list' });
+    var input = h('input.pal-input', { id: 'pal-input', type: 'text', placeholder: 'Patent number, search terms, view …', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Command or search', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-list' });
     var list = h('div.pal-list', { id: 'pal-list', role: 'listbox' });
-    var foot = h('div.pal-foot', null, h('span', { text: '↑↓ wählen' }), h('span', { text: '↵ öffnen' }), h('span', { text: 'Esc schließen' }));
+    var foot = h('div.pal-foot', null, h('span', { text: '↑↓ select' }), h('span', { text: '↵ open' }), h('span', { text: 'Esc close' }));
     var items = [], sel = 0, seq = 0, saved = null;
-    var dlg = U.dialog('Befehle', h('div', { style: { display: 'flex', 'flex-direction': 'column', 'min-height': '0', flex: '1' } }, input, list, foot), { bare: true, onClose: function () { pal = null; } });
+    var dlg = U.dialog('Commands', h('div', { style: { display: 'flex', 'flex-direction': 'column', 'min-height': '0', flex: '1' } }, input, list, foot), { bare: true, onClose: function () { pal = null; } });
     pal = dlg;
     g.LnpStore.entries('searches').then(function (rows) { saved = rows; build(); }, function () { saved = []; });
     function item(group, title, sub, icon, run) { return { group: group, title: title, sub: sub, icon: icon, run: run }; }
     function build() {
       var q = input.value.trim(), ql = q.toLowerCase(), my = ++seq, out = [];
       if (q) {
-        out.push(item('Suche', 'Suchen nach „' + q + '“', 'Volltext, Titel, Abstract', 'search', function () { R.go({ view: 'suche', arg: q }); }));
-        if (/^(schembl\s*\d+|smarts:|[A-Za-z0-9@+\-\[\]()=#\\\/]{6,})$/i.test(q) && !/\s/.test(q)) out.push(item('Suche', 'Struktur suchen: ' + q, 'Name, SMILES oder SCHEMBL-Nummer', 'structure', function () { R.go({ view: 'struktur', arg: q }); }));
+        out.push(item('Search', 'Search for "' + q + '"', 'Full text, title, abstract', 'search', function () { R.go({ view: 'suche', arg: q }); }));
+        if (/^(schembl\s*\d+|smarts:|[A-Za-z0-9@+\-\[\]()=#\\\/]{6,})$/i.test(q) && !/\s/.test(q)) out.push(item('Search', 'Search structure: ' + q, 'Name, SMILES or SCHEMBL number', 'structure', function () { R.go({ view: 'struktur', arg: q }); }));
       }
       railIds().forEach(function (id) {
         var v = App.views[id];
-        if (!ql || v.title.toLowerCase().indexOf(ql) >= 0 || id.indexOf(ql) >= 0) out.push(item('Ansichten', v.title, '', v.icon, function () { R.go('#' + id); }));
+        if (!ql || v.title.toLowerCase().indexOf(ql) >= 0 || id.indexOf(ql) >= 0) out.push(item('Views', v.title, '', v.icon, function () { R.go('#' + id); }));
       });
       (saved || []).forEach(function (r) {
         var v = r.value || {}, name = v.name || v.q || r.id;
-        if (!ql || String(name).toLowerCase().indexOf(ql) >= 0) out.push(item('Gespeicherte Suchen', name, v.q || '', 'save', function () { R.go(v.hash || { view: 'suche', arg: v.q || '' }); }));
+        if (!ql || String(name).toLowerCase().indexOf(ql) >= 0) out.push(item('Saved searches', name, v.q || '', 'save', function () { R.go(v.hash || { view: 'suche', arg: v.q || '' }); }));
       });
-      THEMES.forEach(function (t) { if (!ql || ('darstellung ' + THEME_DE[t] + ' theme ' + t).indexOf(ql) >= 0) out.push(item('Darstellung', 'Darstellung ' + THEME_DE[t], App.theme === t ? 'aktiv' : '', THEME_ICO[t], function () { App.setTheme(t); })); });
-      if (!ql || 'tastatur kurzbefehle hilfe'.indexOf(ql) >= 0) out.push(item('Hilfe', 'Tastaturkürzel', '?', 'help', function () { setTimeout(App.shortcuts, 0); }));
+      THEMES.forEach(function (t) { if (!ql || ('appearance ' + THEME_LABEL[t] + ' theme ' + t).indexOf(ql) >= 0) out.push(item('Appearance', 'Appearance: ' + THEME_LABEL[t], App.theme === t ? 'active' : '', THEME_ICO[t], function () { App.setTheme(t); })); });
+      if (!ql || 'keyboard shortcuts help'.indexOf(ql) >= 0) out.push(item('Help', 'Keyboard shortcuts', '?', 'help', function () { setTimeout(App.shortcuts, 0); }));
       items = out; sel = 0; draw();
       if (q && g.LnpData && q.replace(/\D/g, '').length >= 5) {
         g.LnpData.byPn(q).then(function (p) { return p >= 0 ? g.LnpData.patent(p) : null; }).then(function (pt) {
@@ -376,7 +376,7 @@
           U.icon(it.icon || 'dot'), h('span.t', { text: it.title }), it.sub ? h('span.s', { text: it.sub }) : null);
         list.appendChild(el);
       });
-      if (!items.length) list.appendChild(h('div.pal-group.faint', { text: 'Nichts gefunden' }));
+      if (!items.length) list.appendChild(h('div.pal-group.faint', { text: 'Nothing found' }));
       input.setAttribute('aria-activedescendant', items.length ? 'pal-i' + sel : '');
     }
     function mark() {
@@ -397,10 +397,10 @@
     input.focus();
   };
   App.shortcuts = function () {
-    var rows = [['Strg / ⌘ + K', 'Befehle: Patentnummer, Suche, Ansicht'], ['/', 'Suchfeld'], ['j  k', 'nächster / voriger Treffer'], ['↵', 'Treffer öffnen'], ['x', 'Treffer auswählen'], ['s', 'Treffer merken'], ['Esc', 'Dialog schließen'], ['?', 'diese Übersicht']];
+    var rows = [['Ctrl / ⌘ + K', 'Commands: patent number, search, view'], ['/', 'Search box'], ['j  k', 'next / previous result'], ['↵', 'Open result'], ['x', 'Select result'], ['s', 'Add result to watchlist'], ['Esc', 'Close dialog'], ['?', 'This overview']];
     var t = h('table.data');
     rows.forEach(function (r) { t.appendChild(h('tr', null, h('td.mono', { text: r[0] }), h('td', { text: r[1] }))); });
-    U.dialog('Tastaturkürzel', h('div.table-wrap', null, t));
+    U.dialog('Keyboard shortcuts', h('div.table-wrap', null, t));
   };
   function typing(ev) {
     var t = ev.target, n = t && t.nodeName;
@@ -421,22 +421,22 @@
   function boot() {
     bootDraw(); delete App.timings.failed;
     var D = g.LnpData, S = g.LnpSearch, St = g.LnpStore;
-    if (!D || !S || !St) { bootFail('data', { code: 'script', message: 'Die Skripte unter engine/ wurden nicht geladen (LnpData, LnpSearch oder LnpStore fehlt).' }); return; }
+    if (!D || !S || !St) { bootFail('data', { code: 'script', message: 'The scripts under engine/ were not loaded (LnpData, LnpSearch or LnpStore is missing).' }); return; }
     try { D.onProgress(onLoadProgress); S.onProgress(onLoadProgress); } catch (e) { /* progress is optional */ }
     bootStep('data', 'run'); bootStep('store', 'run');
     // the store does not depend on the data files: it starts at once, so a failed boot can still leave its diagnosis
-    var storeP = St.init().then(function (r) { App.store = r; App.timings.store = now(); bootStep('store', 'ok', { db: 'Artefakt-Datenbank', local: 'Browser-Speicher', memory: 'nur diese Sitzung' }[r.backend]); return loadMarks(); },
-      function (e) { App.store = { backend: 'memory' }; bootStep('store', 'ok', 'nur diese Sitzung'); logError('store', e); });
+    var storeP = St.init().then(function (r) { App.store = r; App.timings.store = now(); bootStep('store', 'ok', { db: 'Artifact database', local: 'Browser storage', memory: 'this session only' }[r.backend]); return loadMarks(); },
+      function (e) { App.store = { backend: 'memory' }; bootStep('store', 'ok', 'this session only'); logError('store', e); });
     D.init('data/').then(function (M) {
       App.manifest = M; App.seed = D.seed; App.timings.data = now();
-      bootStep('data', 'ok', U.num(M.counts.patents) + ' Patente, Stand ' + U.date((M.built || '').slice(0, 10)));
+      bootStep('data', 'ok', U.num(M.counts.patents) + ' patents, as of ' + U.date((M.built || '').slice(0, 10)));
       drawBand();
       bootStep('meta', 'run'); bootStep('index', 'run');
-      var metaP = D.meta().then(function (m) { App.timings.meta = now(); bootStep('meta', 'ok', U.num(m.P) + ' Zeilen'); }, function (e) { e = e || {}; e.step = 'meta'; throw e; });
+      var metaP = D.meta().then(function (m) { App.timings.meta = now(); bootStep('meta', 'ok', U.num(m.P) + ' rows'); }, function (e) { e = e || {}; e.step = 'meta'; throw e; });
       var idxP = S.init().then(function (info) {
         App.timings.index = now();
         engineDiag.search = { mode: info.mode, gzip: info.gzip, enc: info.enc, ms: info.ms, D: info.D, P: info.P, tried: info.tried };
-        bootStep('index', 'ok', U.num(info.claims || info.D) + ' Claims, ' + (info.mode === 'main' ? 'Hauptthread' : info.mode === 'blob' ? 'Blob-Worker' : 'Worker'));
+        bootStep('index', 'ok', U.num(info.claims || info.D) + ' claims, ' + (info.mode === 'main' ? 'main thread' : info.mode === 'blob' ? 'blob worker' : 'worker'));
       }, function (e) { e = e || {}; e.step = 'index'; throw e; });
       return Promise.all([metaP, idxP, storeP]);
     }).then(function () {
@@ -447,7 +447,7 @@
       // engine/ai.js resolves the sample capability itself; the views hear about it through the "caps" event
       try { if (g.LnpAI && typeof g.LnpAI.init === 'function') Promise.resolve(g.LnpAI.init()).then(function () { App.emit('caps', 'ai'); writeDiagSoon(); }, function () { }); } catch (e) { logError('ai init', e); }
       App.timings.views = now();
-      bootStep('views', 'ok', Object.keys(App.views).length + ' Ansichten');
+      bootStep('views', 'ok', Object.keys(App.views).length + ' views');
       App.booted = true; App.timings.ready = now();
       document.getElementById('app').dataset.state = 'ready';
       R.onChange(function (r) { show(r); });

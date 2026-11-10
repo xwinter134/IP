@@ -53,8 +53,8 @@
       if (e && e.code === 'http') { e.data = true; throw e; }
       var phys = enc === 'b64' ? name.replace(/\.bin$/, '.b64.txt') : name, x;
       if (e && typeof e.code === 'string') x = e;
-      else if (e && e.name === 'InvalidCharacterError') x = err('b64', phys + ': die Datei ist besch\u00e4digt oder unvollst\u00e4ndig (kein g\u00fcltiges Base64)');
-      else x = err('gzip', phys + ': die Datei ist besch\u00e4digt oder unvollst\u00e4ndig (gzip-Daten nicht lesbar)');
+      else if (e && e.name === 'InvalidCharacterError') x = err('b64', phys + ': the file is damaged or incomplete (not valid Base64)');
+      else x = err('gzip', phys + ': the file is damaged or incomplete (gzip data not readable)');
       x.data = true; x.file = phys; throw x;
     });
   }
@@ -149,7 +149,7 @@
     var U = urls(o);
     // a build without the chemistry set (build_dist.py --no-chem) says so in its manifest: no request, a clear error
     if (!o.manifest && !o.loader && !o.base && g.LnpData && g.LnpData.manifest && g.LnpData.manifest.chem === null) {
-      var ne = err('no_chem', 'Dieser Datenstand enth\u00e4lt keine Strukturdaten.'); ne.data = true; return Promise.reject(ne);
+      var ne = err('no_chem', 'This snapshot contains no structure data.'); ne.data = true; return Promise.reject(ne);
     }
     var manifestP = o.manifest ? Promise.resolve(o.manifest) :
       fetch(base + 'chem.json').then(function (r) { if (!r.ok) throw err('http', 'chem.json: HTTP ' + r.status); return r.json(); });

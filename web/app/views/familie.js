@@ -8,13 +8,13 @@
     var st = { pn: route.arg, a: typeof route.params.a === 'string' ? route.params.a : '', b: typeof route.params.b === 'string' ? route.params.b : '' };
     var page = h('div.page'), members = [], cmpBox = null, selA = null, selB = null;
     host.appendChild(page);
-    page.appendChild(h('div.empty', null, h('p.overline', { text: 'Familie' }), h('h3', { text: U.pnPretty(st.pn) }), h('p', null, h('span.spin'), ' Familie wird geladen')));
+    page.appendChild(h('div.empty', null, h('p.overline', { text: 'Family' }), h('h3', { text: U.pnPretty(st.pn) }), h('p', null, h('span.spin'), ' Loading family')));
 
     D.byPn(st.pn).then(function (p) {
       if (destroyed) return;
-      if (!(p >= 0)) { U.set(page, h('div.empty', null, h('p.overline', { text: 'Nicht im Bestand' }), h('h3', { text: U.pnPretty(st.pn) || 'Unbekannte Nummer' }), h('p', { text: 'Zu dieser Nummer gibt es im Bestand keine Familie.' }), h('p', null, h('a.btn', { href: '#suche' }, 'Zur Suche')))); return; }
+      if (!(p >= 0)) { U.set(page, h('div.empty', null, h('p.overline', { text: 'Not in dataset' }), h('h3', { text: U.pnPretty(st.pn) || 'Unknown number' }), h('p', { text: 'There is no family for this number in the dataset.' }), h('p', null, h('a.btn', { href: '#suche' }, 'Go to Search')))); return; }
       return D.family(p).then(function (ps) { return D.patents(ps && ps.length ? ps : [p]); }).then(function (ms) { if (destroyed) return; members = ms; build(p); });
-    }).catch(function (e) { if (!destroyed) { App.logError('familie', e); U.set(page, h('p.notice.err', { text: 'Die Familie konnte nicht geladen werden: ' + U.errText(e) })); } });
+    }).catch(function (e) { if (!destroyed) { App.logError('familie', e); U.set(page, h('p.notice.err', { text: 'The family could not be loaded: ' + U.errText(e) })); } });
 
     function rank(m, auth) { return (m.auth === auth ? 8 : 0) + (m.text ? 4 : 0) + (/^B/.test(m.kind) ? 2 : 0) + (m.status === 'granted' ? 1 : 0) + m.pub / 1e9; }
     function build(p) {
@@ -26,15 +26,15 @@
       if (!has(st.a)) st.a = (me.text && me.auth === 'EP') ? me.pn : best('EP') || (withText[0] || {}).pn || '';
       if (!has(st.b) || st.b === st.a) st.b = (me.text && me.auth === 'US' && me.pn !== st.a) ? me.pn : best('US', st.a) || (withText.filter(function (m) { return m.pn !== st.a; })[0] || {}).pn || '';
 
-      var tbl = h('table.data', null, h('thead', null, h('tr', null, ['Nummer', 'Titel', 'Rechtsstand', 'Veröffentlicht', 'Ablauf (Schätzung)', 'Volltext'].map(function (t) { return h('th', { text: t }); }))));
+      var tbl = h('table.data', null, h('thead', null, h('tr', null, ['Number', 'Title', 'Legal status', 'Published', 'Expiry (estimate)', 'Full text'].map(function (t) { return h('th', { text: t }); }))));
       var tb = h('tbody'); tbl.appendChild(tb);
       members.forEach(function (m) {
         tb.appendChild(h('tr', null,
           h('td', null, h('a.mono', { href: App.patentHref(m.pn), text: m.pn })),
           h('td.t', { text: m.title || '' }),
           h('td', null, U.statusPill(m.status), ' ', U.dePill(m.deIn)),
-          h('td.mono', { text: U.date(m.pub) }), h('td.mono', { text: m.exp ? U.date(m.exp) : '–' }),
-          h('td', { text: m.text ? 'ja' : m.textCut ? 'nicht aufgenommen' : 'nein' })));
+          h('td.mono', { style: { 'white-space': 'nowrap' }, text: U.date(m.pub) }), h('td.mono', { text: m.exp ? U.date(m.exp) : '–' }),
+          h('td', { text: m.text ? 'yes' : m.textCut ? 'not included' : 'no' })));
       });
 
       function picker(id, label, val) {
@@ -43,16 +43,16 @@
         s.addEventListener('change', function () { st.a = selA.value; st.b = selB.value; R.go({ view: 'familie', arg: st.pn, params: { a: st.a, b: st.b } }, { replace: true, silent: true }); compare(); });
         return s;
       }
-      selA = picker('cmp-a', 'Linke Schrift', st.a); selB = picker('cmp-b', 'Rechte Schrift', st.b);
+      selA = picker('cmp-a', 'Left publication', st.a); selB = picker('cmp-b', 'Right publication', st.b);
       cmpBox = h('div', { style: { display: 'flex', 'flex-direction': 'column', gap: '12px' } });
       U.set(page,
         h('p', { style: { 'margin-bottom': '14px' } }, h('a.btn.quiet.sm', { href: App.patentHref(me.pn) }, U.icon('back'), U.pnPretty(me.pn))),
-        h('header.page-head', null, h('p.overline', { text: 'Familie' + (me.seedFam ? ' · ' + me.seedFam : '') }), h('h1.page-title', null, (me.title || U.pnPretty(me.pn)) + ' ', h('span.light', { text: members.length + (members.length === 1 ? ' Mitglied' : ' Mitglieder') })),
-          h('p.lead', { text: (me.player ? me.player + ' · ' : '') + 'Priorität ' + U.date(me.prio) + ' · Familie ' + me.fam })),
-        h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Mitglieder' }), h('h2.sec-title', { text: 'Schriften im Bestand' }))), h('div.table-wrap', null, tbl)),
-        h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Vergleich' }), h('h2.sec-title', { text: 'Unabhängige Claims nebeneinander' }))),
-          withText.length >= 2 ? h('div.cmp-pick', null, h('label', null, 'Links', selA), h('label', null, 'Rechts', selB)) : null, cmpBox));
-      if (withText.length < 2) cmpBox.appendChild(h('p.notice', { text: withText.length ? 'Nur ' + withText[0].pn + ' hat Volltext im Bestand. Für einen Vergleich braucht es zwei Schriften mit Claims.' : 'Kein Mitglied dieser Familie hat Volltext im Bestand.' }));
+        h('header.page-head', null, h('p.overline', { text: 'Family' + (me.seedFam ? ' · ' + me.seedFam : '') }), h('h1.page-title', null, (me.title || U.pnPretty(me.pn)) + ' ', h('span.light', { text: members.length + (members.length === 1 ? ' member' : ' members') })),
+          h('p.lead', { text: (me.player ? me.player + ' · ' : '') + 'Priority ' + U.date(me.prio) + ' · Family ' + me.fam })),
+        h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Members' }), h('h2.sec-title', { text: 'Publications in the dataset' }))), h('div.table-wrap', null, tbl)),
+        h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Comparison' }), h('h2.sec-title', { text: 'Independent claims side by side' }))),
+          withText.length >= 2 ? h('div.cmp-pick', null, h('label', null, 'Left', selA), h('label', null, 'Right', selB)) : null, cmpBox));
+      if (withText.length < 2) cmpBox.appendChild(h('p.notice', { text: withText.length ? 'Only ' + withText[0].pn + ' has full text in the dataset. A comparison needs two publications with claims.' : 'No member of this family has full text in the dataset.' }));
       else compare();
     }
 
@@ -61,15 +61,15 @@
     function compare() {
       var my = ++seq, A = members.filter(function (m) { return m.pn === st.a; })[0], B = members.filter(function (m) { return m.pn === st.b; })[0];
       if (!A || !B) return;
-      U.set(cmpBox, h('p.faint', null, h('span.spin'), ' Claims werden geladen'));
+      U.set(cmpBox, h('p.faint', null, h('span.spin'), ' Loading claims'));
       Promise.all([S.claims(A.p), S.claims(B.p)]).then(function (r) {
         if (destroyed || my !== seq) return;
         function pick(list) { var en = list.filter(function (c) { return c.lang === 'en'; }); return (en.length ? en : list.filter(function (c) { return c.lang === 'de'; })); }
         var ca = pick(r[0] || []), cb = pick(r[1] || []), ia = ca.filter(function (c) { return c.indep; }), ib = cb.filter(function (c) { return c.indep; });
         U.clear(cmpBox);
-        if (!ia.length || !ib.length) { cmpBox.appendChild(h('p.notice', { text: 'Mindestens eine der beiden Schriften hat keine unabhängigen Claims in Englisch oder Deutsch im Bestand.' })); return; }
-        if (ca[0].lang !== cb[0].lang) cmpBox.appendChild(h('p.notice', { text: 'Die Claims liegen in verschiedenen Sprachen vor (' + ca[0].lang.toUpperCase() + ' und ' + cb[0].lang.toUpperCase() + '); der Wortvergleich ist dann wenig aussagekräftig.' }));
-        cmpBox.appendChild(h('p.faint', { style: { 'font-size': '13px' } }, 'Jedem unabhängigen Claim links ist der ähnlichste unabhängige Claim rechts zugeordnet. ', h('del', { style: { background: 'var(--del-bg)', 'text-decoration': 'none', padding: '0 3px', 'border-radius': '2px' }, text: 'nur links' }), ' ', h('ins', { style: { background: 'var(--ins-bg)', 'text-decoration': 'none', padding: '0 3px', 'border-radius': '2px' }, text: 'nur rechts' })));
+        if (!ia.length || !ib.length) { cmpBox.appendChild(h('p.notice', { text: 'At least one of the two publications has no independent claims in English or German in the dataset.' })); return; }
+        if (ca[0].lang !== cb[0].lang) cmpBox.appendChild(h('p.notice', { text: 'The claims are in different languages (' + ca[0].lang.toUpperCase() + ' and ' + cb[0].lang.toUpperCase() + '); a word comparison is of limited value then.' }));
+        cmpBox.appendChild(h('p.faint', { style: { 'font-size': '13px' } }, 'Each independent claim on the left is paired with the most similar independent claim on the right. ', h('del', { style: { background: 'var(--del-bg)', 'text-decoration': 'none', padding: '0 3px', 'border-radius': '2px' }, text: 'left only' }), ' ', h('ins', { style: { background: 'var(--ins-bg)', 'text-decoration': 'none', padding: '0 3px', 'border-radius': '2px' }, text: 'right only' })));
         var sb = ib.map(function (c) { return wordSet(c.text); }), used = {};
         var grid = h('div.cmp');
         ia.forEach(function (c) {
@@ -82,18 +82,18 @@
         });
         ib.forEach(function (o, j) {
           if (used[j]) return;
-          grid.appendChild(h('div.cmp-cell', null, h('p.faint', { text: 'Kein näherer Claim links' })));
+          grid.appendChild(h('div.cmp-cell', null, h('p.faint', { text: 'No closer claim on the left' })));
           var t = h('div.cmp-text'); t.textContent = o.text;
           grid.appendChild(cell(B, o, null, t));
         });
         cmpBox.appendChild(grid);
-      }, function (e) { if (!destroyed && my === seq) U.set(cmpBox, h('p.notice.err', { text: 'Claims nicht ladbar: ' + U.errText(e) })); });
+      }, function (e) { if (!destroyed && my === seq) U.set(cmpBox, h('p.notice.err', { text: 'Could not load claims: ' + U.errText(e) })); });
     }
     function cell(m, c, same, textEl) {
       return h('div.cmp-cell', null,
         h('div', { style: { display: 'flex', gap: '8px', 'align-items': 'baseline', 'flex-wrap': 'wrap' } },
           h('a.mono', { href: App.patentHref(m.pn, { claim: c.n }), text: m.pn, style: { 'font-weight': '500' } }), h('span', { text: 'Claim ' + c.n }),
-          same != null ? h('span.faint.mono', { style: { 'margin-left': 'auto' }, text: Math.round(same * 100) + ' % der W\u00f6rter gleich' }) : null),
+          same != null ? h('span.faint.mono', { style: { 'margin-left': 'auto' }, text: Math.round(same * 100) + '% of words identical' }) : null),
         textEl);
     }
 
@@ -103,5 +103,5 @@
     };
   }
 
-  g.LnpApp.registerView({ id: 'familie', title: 'Familie', icon: 'family', parent: 'suche', mount: mount });
+  g.LnpApp.registerView({ id: 'familie', title: 'Family', icon: 'family', parent: 'suche', mount: mount });
 })(window);

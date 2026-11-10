@@ -1,6 +1,8 @@
 /* LNP-FTO opinion renderer (global LnpFtoRender). Plain script, no dependencies.
    render(opinion, "md" | "html" | "json") -> string.
-   - Every rendering STARTS and ENDS with the verbatim limits block (opinion.limits = LIMITS_DE / LIMITS_EN with the
+   - Output language: English by default; German only when opinion.lang === "de". Internal codes (risk levels, verdicts,
+     flags, schema field names) are mapped to English labels for display; claim quotes stay verbatim.
+   - Every rendering STARTS and ENDS with the verbatim limits block (opinion.limits = LIMITS_EN / LIMITS_DE with the
      status snapshot date filled in). Markdown: first and last characters; HTML: first and last element of <body>;
      JSON: first key "hinweis" and last key "hinweis_ende".
    - Model output and patent text are untrusted. The document is first built as a list of plain-data nodes; the HTML
@@ -40,24 +42,24 @@
     },
     en: {
       title: 'FTO pre-screen (not a legal opinion)', created: 'Created', depth: 'Depth', markets: 'Markets', corpus: 'Corpus snapshot', none: 'none', yes: 'yes', no: 'no', unknown: 'unknown',
-      s_summary: '1. Summary', s_overall: 'Overall risk per market (computed by the app from the individual assessments)', market: 'Market', risk: 'Risk', drivers: 'Driving rights',
-      pendingApps: 'Pending applications (separate; claims may change)', matrix: 'Risk matrix', right: 'Right', rel: 'Relevance', literal: 'Literal reading (worst claim)', status: 'Legal status', expiry: 'Expiry (estimate)', notes: 'Notes',
-      riskBE: 'chart / red team', noAi: 'The AI feature was not available. This document only contains the search and the legal status, no claim charts.',
-      noCharts: 'No right was analysed.', depthWarn: 'Attention: rights with triage relevance A or B were NOT analysed because of the selected depth', seeNotCharted: 'see section 6',
+      s_summary: '1. Summary', s_overall: 'Overall risk per market (computed by the app from the individual assessments)', market: 'Market', risk: 'Risk', drivers: 'Driving patent rights',
+      pendingApps: 'Pending applications (separate; claims may change)', matrix: 'Risk matrix', right: 'Patent right', rel: 'Relevance', literal: 'Literal infringement (worst claim)', status: 'Legal status', expiry: 'Expiry (estimate)', notes: 'Notes',
+      riskBE: 'Claim chart / red team', noAi: 'The AI feature was not available. This document only contains the search and the legal status, no claim charts.',
+      noCharts: 'No patent right was analysed.', depthWarn: 'Attention: patent rights with triage relevance A or B were NOT analysed because of the selected depth', seeNotCharted: 'see section 6',
       warnings: 'App notes on this run', modelSummary: 'Summary assessment (Claude; from the individual assessments, not binding)', synthFailed: 'The summary assessment (synthesis) failed', synthFlags: 'App notes on the synthesis',
       s_profile: '2. Subject of the screen (product profile as understood)', ionLipid: 'Ionizable lipid', name: 'Name', structDesc: 'Structure description', formula: 'Formula', mw: 'Molecular weight', computed: 'computed by the app (OpenChemLib), not by the model',
-      otherLipids: 'Further lipids', role: 'Role', composition: 'Composition (mol-% of total lipid)', basis: 'Basis', payload: 'Payload', particle: 'Particle', process: 'Process', formulation: 'Formulation / storage', use: 'Use', acts: 'Acts and markets',
+      otherLipids: 'Other lipids', role: 'Role', composition: 'Composition (mol-% of total lipid)', basis: 'Basis', payload: 'Payload', particle: 'Particle', process: 'Process', formulation: 'Formulation / storage', use: 'Use', acts: 'Acts and markets',
       features: 'Product feature list', id: 'ID', category: 'Category', statement: 'Statement', value: 'Value', source: 'Source', certainty: 'Certainty', assumptions: 'Assumptions', openData: 'Open questions on the product', profileWarn: 'App notes on the profile',
       modelText: 'Description by Claude', s_search: '3. Search record (for reproducibility)', snapshot: 'Corpus and snapshots', counts: 'Size', structRoute: 'Structure search (exact / substructure / similarity per lipid)', lipid: 'Lipid', mode: 'Mode', compounds: 'Compounds', pubs: 'Occurrences',
-      textRoute: 'Text search (generated boolean queries, verbatim)', query: 'Query', hits: 'Hits', taken: 'evaluated', seedRoute: 'Key families of the watched applicants', tier: 'Tier', semRoute: 'Semantic search (Claude)', candidates: 'Candidates', triage: 'Triage',
-      charted: 'analysed', s_patents: '4. Individual assessment of the analysed rights', assignee: 'Proprietor/applicant', assessedFor: 'Assessed for', found: 'Found through', relevance: 'Triage', expiryBasis: 'Basis', riskFinal: 'Risk (final = the more adverse of chart and red team)',
-      riskChartDead: 'Result of the claim chart (hypothetical, right no longer in force)', appNotes: 'App checks', failed: 'Analysis failed', claim: 'Claim', claimChart: 'Claim chart', feature: 'Feature', quote: 'Claim wording (quote)', quoteCheck: 'Quote check', product: 'Product',
-      verdict: 'Verdict', reasoning: 'Reasoning / construction / clarification', resultApp: 'Result (computed from the feature rows)', resultModel: 'model', resultE: 'red team', resultFinal: 'final', markush: 'Formula test (Markush)', scaffold: 'Scaffold', variables: 'Variables', mappings: 'Mappings',
+      textRoute: 'Text search (generated boolean queries, verbatim)', query: 'Query', hits: 'Hits', taken: 'Evaluated', seedRoute: 'Key families of the watched applicants', tier: 'Tier', semRoute: 'Semantic search (Claude)', candidates: 'Candidates', triage: 'Triage',
+      charted: 'Analysed', s_patents: '4. Individual assessment of the analysed patent rights', assignee: 'Proprietor/applicant', assessedFor: 'Assessed for', found: 'Found via', relevance: 'Triage', expiryBasis: 'Basis', riskFinal: 'Risk (final = the more adverse of chart and red team)',
+      riskChartDead: 'Result of the claim chart (hypothetical, patent right no longer in force)', appNotes: 'App checks', failed: 'Analysis failed', claim: 'Claim', claimChart: 'Claim chart', feature: 'Feature', quote: 'Claim wording (quote)', quoteCheck: 'Quote check', product: 'Product',
+      verdict: 'Verdict', reasoning: 'Reasoning / construction / clarification', resultApp: 'Result (computed from the feature rows)', resultModel: 'Model', resultE: 'Red team', resultFinal: 'Final', markush: 'Formula test (Markush)', scaffold: 'Scaffold', variables: 'Variables', mappings: 'Mappings',
       provisos: 'Provisos', equivalence: 'Equivalence questions for counsel (NOT decided here)', eqNote: 'model view, not a decision', replaced: 'Replaced means', dependent: 'Dependent claims (fallback positions)', added: 'Added feature (quote)',
       chain: 'Chain (app)', species: 'Named individually', fallback: 'Fallback positions', constructionHints: 'Construction hints from the dependent claims', revision: 'Review recommended', redteam: 'Red team (patentee view)', attack: 'Attack', patentee: 'Patentee argument',
       counter: 'Counter-argument', outcome: 'Outcome', otherRoutes: 'Further routes of attack', revised: 'Revised risk of the red team', questions: 'Open questions for counsel', designAround: 'Design-around ideas (ideas only: technical hypotheses, to be validated technically and legally)',
       exemptions: 'Exemptions and role (model view)', shortVerdict: 'Short verdict (Claude)', s_cross: '5. Cross-cutting points (Claude; from the individual assessments)', crossPatterns: 'Cross-patent patterns', timeline: 'Timeline (expiry dates are estimates)', exemptionsAll: 'Exemptions',
-      daAll: 'Design-around ideas cross-checked (ideas only)', collides: 'Collides with', redAll: 'Red team', pendingText: 'Pending applications', s_not: '6. Rights not analysed, and why', reason: 'Reason', s_next: '7. Next steps', prio: 'Priority', step: 'Step', why: 'Why',
+      daAll: 'Design-around ideas cross-checked (ideas only)', collides: 'Collides with', redAll: 'Red team', pendingText: 'Pending applications', s_not: '6. Patent rights not analysed, and why', reason: 'Reason', s_next: '7. Next steps', prio: 'Priority', step: 'Step', why: 'Why',
       alwaysNext: 'Always recommended (method)', openQ: 'Open questions', s_usage: 'Usage', calls: 'calls', resumed: 'steps taken from saved state', notAssessed: 'not assessed', estimate: 'estimate', flagsLabel: 'Flags', dependentFailed: 'Dependent-claim analysis failed', redteamFailed: 'Red team failed',
       forcedBy: 'set to "unclear" by the app', modelRisk: 'Risk according to the model', construction: 'Construction', broad: 'broad', narrow: 'narrow', definition: 'Definition', clarification: 'Clarification', assumption: 'Assumption', numeric: 'Numeric comparison', imagesSent: 'formula images sent', claimsLang: 'Claim language'
     }
@@ -66,6 +68,65 @@
     de: { '5_sehr_hoch': 'sehr hoch (5)', '4_hoch': 'hoch (4)', '3_mittel': 'mittel (3)', '2_gering': 'gering (2)', '1_sehr_gering': 'sehr gering (1)', nicht_beurteilbar: 'nicht beurteilbar' },
     en: { '5_sehr_hoch': 'very high (5)', '4_hoch': 'high (4)', '3_mittel': 'medium (3)', '2_gering': 'low (2)', '1_sehr_gering': 'very low (1)', nicht_beurteilbar: 'cannot be assessed' }
   };
+  /* English labels for the internal codes (schema enum values, app flags, modifiers) and for the schema field names
+     that appear as row labels. The codes themselves never change; German output shows them as they are. */
+  var CODE_EN = {
+    ja: 'yes', nein: 'no', offen: 'open', entfaellt: 'n/a', hoch: 'high', mittel: 'medium', niedrig: 'low', gering: 'low', keine: 'none',
+    erfuellt: 'met', nicht_erfuellt: 'not met', unklar: 'unclear', moeglich: 'possible', nicht_beurteilbar: 'cannot be assessed',
+    wortsinngemaess_erfuellt: 'literally met', wortsinngemaess_moeglich: 'literally possible', wortsinngemaess_nicht_erfuellt: 'literally not met',
+    '5_sehr_hoch': 'very high (5)', '4_hoch': 'high (4)', '3_mittel': 'medium (3)', '2_gering': 'low (2)', '1_sehr_gering': 'very low (1)',
+    formel_fehlt: 'formula not available', faellt_unter_formel: 'falls under the formula', faellt_nicht_unter_formel: 'does not fall under the formula',
+    haelt: 'finding holds', wackelt: 'finding is shaky', faellt: 'finding fails', robust: 'robust', knapp: 'narrow margin', greift: 'applies', greift_nicht: 'does not apply',
+    lipid_struktur: 'lipid structure', komponente: 'component', verhaeltnis: 'ratio', payload: 'payload', partikel: 'particle', verfahren: 'process', formulierung: 'formulation', anwendung: 'use', handlung: 'act',
+    stoff: 'compound', zusammensetzung: 'composition', herstellungsverfahren: 'manufacturing process', verwendung_behandlung: 'use / method of treatment', product_by_process: 'product-by-process', vorrichtung: 'device', kit: 'kit',
+    sonstiges: 'other', sonstige: 'other', nutzer: 'user', berechnet: 'computed', annahme: 'assumption', original: 'original', machine_translation: 'machine translation', ocr: 'OCR', unbekannt: 'unknown',
+    kopfgruppe: 'head group', spacer: 'spacer', linker: 'linker', kette: 'chain', helferlipid_phospholipid: 'helper lipid / phospholipid', sterol: 'sterol', peg_lipid: 'PEG-lipid', polymer_lipid_sonstig: 'other polymer lipid',
+    permanent_kationisch: 'permanently cationic lipid', targeting: 'targeting lipid', ionizable_lipid: 'ionizable lipid', phospholipid: 'phospholipid',
+    gesamtlipid_nominal_einsatz: 'total lipid, nominal (as charged)', gesamtlipid_gemessen_partikel: 'total lipid, measured in the particle', leer: 'empty (no payload)',
+    t_stueck: 'T-junction', impinging_jet: 'impinging jet', mikrofluidik_herringbone: 'microfluidics (herringbone)', mikrofluidik_bifurkierend_toroidal: 'microfluidics (bifurcating/toroidal)', ethanol_injektion: 'ethanol injection', extrusion: 'extrusion',
+    selbst: 'in-house', cdmo: 'CDMO', kooperationspartner: 'collaboration partner',
+    forschung: 'research', praeklinik: 'preclinical', klinik_phase_1_2: 'clinical phase 1/2', klinik_phase_3: 'clinical phase 3', zulassung_beantragt: 'marketing authorisation applied for', kommerziell: 'commercial',
+    herstellen: 'making', gebrauchen: 'using', anbieten: 'offering', inverkehrbringen: 'placing on the market', einfuehren: 'importing', ausfuehren: 'exporting', besitzen: 'keeping', liefern_an_dritte: 'supplying to third parties',
+    derzeit: 'current', geplant: 'planned',
+    versuchsprivileg_bolar_derzeit_einschlaegig: 'experimental-use / Bolar exemption currently relevant', rechtsstand_ungeprueft: 'legal status unverified', anmeldung_ansprueche_veraenderlich: 'application: claims may change',
+    uebersetzung: 'translation', einspruch_ipr_anhaengig: 'opposition / IPR pending', familie_mit_anhaengigen_anmeldungen: 'family with pending applications', produktdaten_unvollstaendig: 'product data incomplete',
+    weitere_auslegung: 'broader construction', produktfakten: 'product facts', markush_mapping: 'Markush mapping', aequivalenz: 'equivalence', massgabe: 'proviso', gegenfehler: 'opposite error', vollstaendigkeit: 'completeness',
+    anderer_unabhaengiger_anspruch: 'another independent claim', andere_anspruchskategorie: 'another claim category', mittelbare_verletzung: 'indirect infringement', verfahrenserzeugnis: 'product directly obtained by a process',
+    anhaengige_anmeldung_anspruchsaenderung: 'pending application: claim amendment', teilanmeldung_continuation: 'divisional / continuation',
+    kein_unabhaengiger_anspruch: 'not an independent claim', anspruch_nicht_im_korpus: 'claim not in the corpus', zitat_abweichend: 'quote deviates', zitat_nicht_verifiziert: 'quote not verified',
+    definitionszitat_nicht_verifiziert: 'definition quote not verified', markush_zitat_nicht_verifiziert: 'formula quote not verified', markush_unklar: 'formula test unclear', text_gekuerzt: 'text shortened',
+    literal_neu_berechnet: 'literal result recomputed', anspruch_fehlt_in_analyse: 'claim missing from the analysis', urteil_von_app_auf_unklar_gesetzt: 'verdict set to unclear by the app', ungueltiges_urteil: 'invalid verdict',
+    einzelnennung_zitat_nicht_verifiziert: 'quote for the individually named compound not verified', kette_neu_berechnet: 'chain result recomputed', unteransprueche_fehlgeschlagen: 'dependent-claim analysis failed',
+    gegenpruefung_fehlgeschlagen: 'red-team review failed', eskalation_durch_gegenpruefung: 'escalated by the red-team review', triage_ohne_ergebnis: 'no triage result', analyse_fehlgeschlagen: 'analysis failed',
+    unbekannte_nummer_in_zeitachse: 'unknown number in the timeline', formulierung_pruefen: 'check wording', gesamtrisiko_abweichend: 'overall risk differs from the computed one',
+    expired: 'expired', lapsed: 'lapsed', revoked: 'revoked', withdrawn: 'withdrawn', refused: 'refused', lapsed_de: 'lapsed in DE'
+  };
+  var FIELD_EN = {
+    typ: 'Type', nukleosidmodifikation: 'Nucleoside modification', laenge_nt: 'Length (nt)', kodiert_fuer: 'Encodes', anzahl_spezies: 'Number of species',
+    groesse_nm: 'Size (nm)', groesse_methode: 'Size method', pdi: 'PDI', verkapselung_prozent: 'Encapsulation (%)', zeta_mv: 'Zeta potential (mV)', morphologie: 'Morphology',
+    mischprinzip: 'Mixing principle', geraet: 'Device', flussratenverhaeltnis_waessrig_zu_organisch: 'Flow rate ratio aqueous:organic', gesamtflussrate_ml_min: 'Total flow rate (mL/min)', loesungsmittel: 'Solvent',
+    ethanol_prozent_bei_mischung: 'Ethanol at mixing (%)', waessriger_puffer: 'Aqueous buffer', ph_bei_mischung: 'pH at mixing', temperatur_c: 'Temperature (\u00b0C)', nachbehandlung: 'Post-processing', schritte_frei: 'Process steps',
+    ort_der_herstellung: 'Manufacturing site', hersteller: 'Manufacturer', endpuffer: 'Final buffer', kryoprotektor: 'Cryoprotectant', lyophilisiert: 'Lyophilised', lagerung: 'Storage',
+    applikationsweg: 'Route of administration', indikationsklasse: 'Indication class', zielgewebe: 'Target tissue', dosis: 'Dose',
+    entwicklungsstand: 'Development stage', regulatorischer_zweck: 'Regulatory purpose', oeffentlicher_auftraggeber_us: 'US government contract',
+    land: 'Country', akt: 'Act', zeitpunkt: 'Timing', geplant_ab: 'Planned from', zweck: 'Purpose', abstand: 'Distance (failing variables)', konfidenz: 'Confidence', 'nicht zugeordnet': 'Not mapped',
+    'Versuchsprivileg \u00a7 11 Nr. 2 PatG': 'Experimental-use exemption (\u00a7 11 No. 2 PatG)', 'Zulassungsprivileg \u00a7 11 Nr. 2b PatG': 'Regulatory (Bolar) exemption (\u00a7 11 No. 2b PatG)',
+    'US safe harbor \u00a7 271(e)(1)': 'US safe harbor (35 U.S.C. \u00a7 271(e)(1))', Kipppunkt: 'Tipping point', lipid_zu_nukleinsaeure_gewicht: 'Lipid : nucleic acid (w/w)', chargenvariabilitaet: 'Batch variability'
+  };
+  /* label(code, lang): display text of an internal code. German: the code as it is. English: the mapped label; compound
+     flags are resolved by their prefix; unknown codes are shown with blanks instead of underscores. */
+  function label(c, lang) {
+    c = str(c);
+    if (lang === 'de' || !c) return c;
+    if (Object.prototype.hasOwnProperty.call(CODE_EN, c)) return CODE_EN[c];
+    var m = /^markush_widerspruch_(.+)$/.exec(c); if (m) return 'formula test contradicts the verdict (' + m[1] + ')';
+    m = /^unteransprueche_(.+)$/.exec(c); if (m) return 'dependent claims: ' + label(m[1], lang);
+    m = /^rechtsstand_(.+)$/.exec(c); if (m) return 'legal status: ' + label(m[1], lang);
+    return c.replace(/_/g, ' ');
+  }
+  /* a value that may be a code or free text: mapped only when it is a known code */
+  function soft(v, lang) { v = str(v); return lang !== 'de' && Object.prototype.hasOwnProperty.call(CODE_EN, v) ? CODE_EN[v] : v; }
+  function field(k, lang) { return lang !== 'de' && Object.prototype.hasOwnProperty.call(FIELD_EN, k) ? FIELD_EN[k] : k; }
   var LIT = {
     de: { wortsinngemaess_erfuellt: 'wortsinngem\u00e4\u00df erf\u00fcllt', wortsinngemaess_moeglich: 'wortsinngem\u00e4\u00df m\u00f6glich', wortsinngemaess_nicht_erfuellt: 'wortsinngem\u00e4\u00df nicht erf\u00fcllt', nicht_beurteilbar: 'nicht beurteilbar' },
     en: { wortsinngemaess_erfuellt: 'literally met', wortsinngemaess_moeglich: 'literally possible', wortsinngemaess_nicht_erfuellt: 'literally not met', nicht_beurteilbar: 'cannot be assessed' }
@@ -97,10 +158,13 @@
   // ------------------------------------------------------------------------------------------------ node model
   /* nodes: {h: level, t} | {p: text, cls?} | {ul: [text]} | {table: {head: [..], rows: [[..]], cls?}} | {limits: text} | {md: model text} | {kv: [[k, v]]} */
   function build(op) {
-    var lang = op.lang === 'en' ? 'en' : 'de', L = T[lang], N = [], syn = op.synthesis || null, de = lang === 'de';
+    var lang = op.lang === 'de' ? 'de' : 'en', L = T[lang], N = [], syn = op.synthesis || null, de = lang === 'de';
     function risk(r) { return r ? (RISK[lang][r] || str(r)) : L.notAssessed; }
     function lit(r) { return r ? (LIT[lang][r] || str(r)) : '-'; }
     function verd(v) { return VERD[lang][v] || str(v); }
+    function code(c) { return label(c, lang); }
+    function codes(a) { return arr(a).map(code).join(', '); }
+    function fld(k) { return field(k, lang); }
     function h(l, t) { N.push({ h: l, t: str(t) }); }
     function p(t, cls) { if (str(t)) N.push({ p: str(t), cls: cls || null }); }
     function ul(a) { a = arr(a).map(str).filter(Boolean); if (a.length) N.push({ ul: a }); }
@@ -113,7 +177,7 @@
     N.push({ limits: str(op.limits) });
     h(1, op.title || L.title);
     kv([[L.created, str(op.finished || op.created).slice(0, 16).replace('T', ' ')], [L.depth, op.depth], [L.markets, arr(op.markets).join(', ')],
-      [L.corpus, [snap.ep_text ? 'EP-Text ' + snap.ep_text : '', snap.us_text ? 'US-Text ' + snap.us_text : '', snap.ep_register ? 'EP-Register ' + snap.ep_register : '', snap.surechembl ? 'SureChEMBL ' + snap.surechembl : ''].filter(Boolean).join('; ')], ['ID', op.id]]);
+      [L.corpus, [snap.ep_text ? (de ? 'EP-Text ' : 'EP full text ') + snap.ep_text : '', snap.us_text ? (de ? 'US-Text ' : 'US full text ') + snap.us_text : '', snap.ep_register ? (de ? 'EP-Register ' : 'EP Register ') + snap.ep_register : '', snap.surechembl ? 'SureChEMBL ' + snap.surechembl : ''].filter(Boolean).join('; ')], ['ID', op.id]]);
 
     // 1 summary
     h(2, L.s_summary);
@@ -128,9 +192,9 @@
     h(3, L.matrix);
     if (!arr(op.matrix).length) p(L.noCharts);
     table([L.right, L.market, L.rel, L.risk, L.riskBE, L.literal, L.status, L.expiry, L.notes], arr(op.matrix).map(function (m) {
-      return [m.pn, arr(m.markets).join('/'), m.rel, risk(m.risk), risk(m.riskB) + ' / ' + (m.riskE ? risk(m.riskE) : '-'), lit(m.literal), m.status, m.expiry ? m.expiry + ' (' + L.estimate + ')' : L.unknown, arr(m.flags).join(', ')];
+      return [m.pn, arr(m.markets).join('/'), m.rel, risk(m.risk), risk(m.riskB) + ' / ' + (m.riskE ? risk(m.riskE) : '-'), lit(m.literal), m.status, m.expiry ? m.expiry + ' (' + L.estimate + ')' : L.unknown, codes(m.flags)];
     }), 'matrix');
-    if (syn) { h(3, L.modelSummary); md(syn.zusammenfassung); if (syn.app && arr(syn.app.flags).length) p(L.synthFlags + ': ' + syn.app.flags.join(', ') + (arr(syn.app.wording).length ? ' (' + syn.app.wording.map(function (w) { return '"' + w.phrase + '"'; }).join(', ') + ')' : ''), 'warn'); }
+    if (syn) { h(3, L.modelSummary); md(syn.zusammenfassung); if (syn.app && arr(syn.app.flags).length) p(L.synthFlags + ': ' + codes(syn.app.flags) + (arr(syn.app.wording).length ? ' (' + syn.app.wording.map(function (w) { return '"' + w.phrase + '"'; }).join(', ') + ')' : ''), 'warn'); }
     if (op.synthesisFailed) p(L.synthFailed + ': ' + str(op.synthesisFailed.message), 'warn');
     if (arr(op.warnings).length) { h(3, L.warnings); ul(op.warnings); }
 
@@ -140,20 +204,20 @@
     p(pf.bezeichnung);
     h(3, L.ionLipid);
     kv([[L.name, [il.name_user, il.name_normalised].filter(Boolean).join(' / ')], ['SMILES', il.smiles], ['InChIKey', il.inchikey], [L.formula + ' (' + L.computed + ')', ds.formula], [L.mw, ds.mw], ['pKa', il.pka_apparent], [L.structDesc, il.strukturbeschreibung]]);
-    if (arr(pf.weitere_lipide).length) { h(3, L.otherLipids); table([L.role, L.name, 'SMILES', 'PEG-MW'], pf.weitere_lipide.map(function (l) { return [l.rolle, [l.name_user, l.name_normalised].filter(Boolean).join(' / '), l.smiles, l.peg_mw]; })); }
+    if (arr(pf.weitere_lipide).length) { h(3, L.otherLipids); table([L.role, L.name, 'SMILES', 'PEG-MW'], pf.weitere_lipide.map(function (l) { return [code(l.rolle), [l.name_user, l.name_normalised].filter(Boolean).join(' / '), l.smiles, l.peg_mw]; })); }
     h(3, L.composition);
-    kv([['ionizable_lipid', val(mol.ionizable_lipid)], ['phospholipid', val(mol.phospholipid)], ['sterol', val(mol.sterol)], ['peg_lipid', val(mol.peg_lipid)], ['sonstige', val(mol.sonstige)], [L.basis, z.basis], ['N/P', val(z.np_verhaeltnis)]]);
+    kv([[code('ionizable_lipid'), val(mol.ionizable_lipid)], [code('phospholipid'), val(mol.phospholipid)], [code('sterol'), val(mol.sterol)], [code('peg_lipid'), val(mol.peg_lipid)], [code('sonstige'), val(mol.sonstige)], [L.basis, soft(z.basis, lang)], ['N/P', val(z.np_verhaeltnis)]]);
     [[L.payload, pf.payload], [L.particle, pf.partikel], [L.process, pf.verfahren], [L.formulation, pf.formulierung_lagerung], [L.use, pf.anwendung]].forEach(function (s) {
       var o = s[1] || {}, rows = [], k;
-      for (k in o) { var v = Array.isArray(o[k]) ? o[k].join('; ') : val(o[k]); if (v) rows.push([k, v]); }
+      for (k in o) { var v = Array.isArray(o[k]) ? o[k].join('; ') : val(o[k]); if (v) rows.push([fld(k), soft(v, lang)]); }
       if (rows.length) { h(3, s[0]); kv(rows); }
     });
     var hd = pf.handlungen || {};
     h(3, L.acts);
-    kv([['entwicklungsstand', hd.entwicklungsstand], [L.markets, arr(hd.maerkte).join(', ')], ['regulatorischer_zweck', hd.regulatorischer_zweck]]);
-    table(['land', 'akt', 'zeitpunkt', 'geplant_ab', 'zweck'], arr(hd.akte).map(function (a) { return [a.land, a.akt, a.zeitpunkt, a.geplant_ab, a.zweck]; }));
+    kv([[fld('entwicklungsstand'), soft(hd.entwicklungsstand, lang)], [L.markets, arr(hd.maerkte).join(', ')], [fld('regulatorischer_zweck'), hd.regulatorischer_zweck]]);
+    table(['land', 'akt', 'zeitpunkt', 'geplant_ab', 'zweck'].map(fld), arr(hd.akte).map(function (a) { return [a.land, soft(a.akt, lang), soft(a.zeitpunkt, lang), a.geplant_ab, a.zweck]; }));
     h(3, L.features);
-    table([L.id, L.category, L.statement, L.value, L.source, L.certainty], arr(pf.merkmalsliste).map(function (f) { return [f.id, f.kategorie, f.aussage, (f.wert == null ? '' : str(f.wert)) + (f.einheit ? ' ' + f.einheit : ''), f.quelle, f.sicherheit]; }));
+    table([L.id, L.category, L.statement, L.value, L.source, L.certainty], arr(pf.merkmalsliste).map(function (f) { return [f.id, code(f.kategorie), f.aussage, (f.wert == null ? '' : soft(f.wert, lang)) + (f.einheit ? ' ' + f.einheit : ''), code(f.quelle), code(f.sicherheit)]; }));
     if (arr(pf.annahmen).length) { h(3, L.assumptions); ul(pf.annahmen); }
     if (arr(pf.offene_fragen).length) { h(3, L.openData); ul(pf.offene_fragen); }
     if (pf._app && arr(pf._app.warnings).length) { h(3, L.profileWarn); ul(pf._app.warnings); }
@@ -166,7 +230,7 @@
       [L.counts, rec && rec.counts ? Object.keys(rec.counts).map(function (k) { return k + ' ' + rec.counts[k]; }).join('; ') : null],
       [L.candidates, se.candidates], [L.triage, se.triage ? 'A ' + (se.triage.A || 0) + ', B ' + (se.triage.B || 0) + ', C ' + (se.triage.C || 0) : null], [L.charted, se.charted]]);
     if (rec) {
-      if (arr(rec.structure).length) { h(3, L.structRoute); table([L.lipid, L.role, L.mode, L.compounds, L.pubs], rec.structure.map(function (s) { return [s.lipid, s.role, s.mode, s.error ? 'ERR: ' + s.error : s.compounds, s.publications]; })); }
+      if (arr(rec.structure).length) { h(3, L.structRoute); table([L.lipid, L.role, L.mode, L.compounds, L.pubs], rec.structure.map(function (s) { return [s.lipid, s.role, de ? s.mode : ({ exact: 'exact', sub: 'substructure', sim: 'similarity' }[s.mode] || s.mode), s.error ? 'ERR: ' + s.error : s.compounds, s.publications]; })); }
       if (arr(rec.text).length) { h(3, L.textRoute); table(['', L.query, L.hits, L.taken], rec.text.map(function (t) { return [t.label, t.query, t.error ? 'ERR: ' + t.error : t.total, t.taken]; }), 'queries'); }
       if (arr(rec.seed).length) { h(3, L.seedRoute); table([L.tier, L.hits], rec.seed.map(function (s) { return [s.tier, s.error ? 'ERR: ' + s.error : s.total]; })); }
       if (rec.semantic) { h(3, L.semRoute); kv([['strict', rec.semantic.queries && rec.semantic.queries.strict], ['relaxed', rec.semantic.queries && rec.semantic.queries.relaxed], [L.hits, rec.semantic.hits], [L.calls, rec.semantic.calls], ['degraded', arr(rec.semantic.degraded).join(', ') || rec.semantic.error]]); }
@@ -185,7 +249,7 @@
         [L.status, e.status + (e.right && arr(e.right.notes).length ? '; ' + e.right.notes.join('; ') : '')], [L.expiry, e.expiry && e.expiry.date ? e.expiry.date + ' (' + L.estimate + ')' : L.unknown], [L.expiryBasis, e.expiry && e.expiry.basis],
         [L.riskFinal, risk(e.risk && e.risk.final) + ' [' + L.riskBE + ': ' + risk(e.risk && e.risk.b) + ' / ' + (e.risk && e.risk.e ? risk(e.risk.e) : '-') + ']'],
         [L.riskChartDead, e.risk && e.risk.chart ? risk(e.risk.chart) : null], [L.modelRisk, ch && ch.app && ch.app.risk_model ? risk(ch.app.risk_model) : null],
-        [L.flagsLabel, arr(e.flags).join(', ')], [L.claimsLang, e.claimsLang], [L.imagesSent, ch && ch.app && ch.app.images_sent ? ch.app.images_sent : null]]);
+        [L.flagsLabel, codes(e.flags)], [L.claimsLang, e.claimsLang], [L.imagesSent, ch && ch.app && ch.app.images_sent ? ch.app.images_sent : null]]);
       if (e.failed) p(L.failed + ': ' + str(e.failed.message), 'warn');
       if (ch && ch.app && arr(ch.app.notes).length) { h(4, L.appNotes); ul(ch.app.notes.concat(rt && rt.app ? arr(rt.app.notes) : [])); }
       if (einzel[e.pn]) { h(4, L.shortVerdict); p(einzel[e.pn].kurzfazit); md(einzel[e.pn].text); }
@@ -193,8 +257,8 @@
         if (ch.textqualitaet && arr(ch.textqualitaet.probleme).length) ul(ch.textqualitaet.probleme);
         arr(ch.claims).forEach(function (c) {
           var a = c.app || {};
-          h(4, L.claimChart + ': ' + L.claim + ' ' + c.claim_no + ' (' + str(c.kategorie) + ')');
-          kv([[L.resultApp, lit(a.literal)], [L.resultModel, a.literal_model ? lit(a.literal_model) : null], [L.resultE, a.literal_e ? lit(a.literal_e) : null], [L.resultFinal, a.literal_final ? lit(a.literal_final) : null], [L.flagsLabel, arr(a.flags).join(', ')]]);
+          h(4, L.claimChart + ': ' + L.claim + ' ' + c.claim_no + ' (' + code(c.kategorie) + ')');
+          kv([[L.resultApp, lit(a.literal)], [L.resultModel, a.literal_model ? lit(a.literal_model) : null], [L.resultE, a.literal_e ? lit(a.literal_e) : null], [L.resultFinal, a.literal_final ? lit(a.literal_final) : null], [L.flagsLabel, codes(a.flags)]]);
           table([L.feature, L.quote, L.quoteCheck, L.product, L.verdict, L.reasoning], arr(c.merkmale).map(function (m) {
             var x = m.app || {}, au = m.auslegung || {}, nu = m.numerik || null, parts = [str(m.begruendung)];
             if (au.weite_auslegung || au.enge_auslegung) parts.push(L.construction + ': ' + L.broad + ' = ' + str(au.weite_auslegung) + '; ' + L.narrow + ' = ' + str(au.enge_auslegung));
@@ -202,21 +266,21 @@
             if (nu && (nu.anspruch_min != null || nu.anspruch_max != null)) parts.push(L.numeric + ': ' + str(nu.anspruch_min) + ' - ' + str(nu.anspruch_max) + ' ' + str(nu.einheit) + '; ' + L.product + ' ' + str(nu.produktwert) + '; \u0394 ' + str(nu.abstand_zur_grenze));
             if (m.annahme) parts.push(L.assumption + ': ' + m.annahme);
             if (m.klaerung) parts.push(L.clarification + ': ' + m.klaerung);
-            if (x.redteam) parts.push(L.redteam + ': ' + x.redteam);
+            if (x.redteam) parts.push(L.redteam + ': ' + code(x.redteam));
             return [m.feature_id, m.claim_quote, QCHK[lang][x.quote] || str(x.quote), [str(m.product_value), arr(m.product_refs).join(', ')].filter(Boolean).join(' [') + (arr(m.product_refs).length && m.product_value ? ']' : ''),
-              verd(x.verdict || m.verdict) + (x.forced ? ' (' + L.forcedBy + ': ' + x.forced + '; ' + L.resultModel + ': ' + verd(m.verdict) + ')' : ''), parts.filter(Boolean).join(' \u2014 ')];
+              verd(x.verdict || m.verdict) + (x.forced ? ' (' + L.forcedBy + ': ' + code(x.forced) + '; ' + L.resultModel + ': ' + verd(m.verdict) + ')' : ''), parts.filter(Boolean).join(' \u2014 ')];
           }), 'chart');
           arr(c.merkmale).forEach(function (m) {
             var mk = m.markush; if (!mk) return;
-            h(5, L.markush + ' ' + m.feature_id + ': ' + str(mk.app_ergebnis || mk.ergebnis) + (mk.app_ergebnis && mk.app_ergebnis !== mk.ergebnis ? ' (' + L.resultModel + ': ' + mk.ergebnis + ')' : ''));
-            kv([[L.scaffold, mk.geruest], ['abstand', val(mk.abstand)], ['konfidenz', mk.konfidenz], ['nicht zugeordnet', arr(mk.nicht_zugeordnete_teile).join('; ')], [L.species, mk.einzelverbindung_genannt]]);
+            h(5, L.markush + ' ' + m.feature_id + ': ' + code(mk.app_ergebnis || mk.ergebnis) + (mk.app_ergebnis && mk.app_ergebnis !== mk.ergebnis ? ' (' + L.resultModel + ': ' + code(mk.ergebnis) + ')' : ''));
+            kv([[L.scaffold, mk.geruest], [fld('abstand'), val(mk.abstand)], [fld('konfidenz'), code(mk.konfidenz)], [fld('nicht zugeordnet'), arr(mk.nicht_zugeordnete_teile).join('; ')], [L.species, code(mk.einzelverbindung_genannt)]]);
             table([L.variables, L.definition, L.quoteCheck], arr(mk.variablen).map(function (v) { return [v.name, v.definition_quote, v.app ? QCHK[lang][v.app.quote] : '']; }));
-            arr(mk.mappings).forEach(function (mp) { table([L.mappings + ' ' + str(mp.mapping_id) + ' (' + str(mp.alle_erfuellt) + ')', 'Fragment', L.verdict, L.reasoning], arr(mp.zuordnung).map(function (zz) { return [zz.variable, zz.fragment + (zz.zaehlung ? ' [' + zz.zaehlung + ']' : ''), verd(zz.verdict), str(zz.begruendung) + (zz.naechster_zulaessiger_wert ? ' (' + zz.naechster_zulaessiger_wert + ')' : '')]; })); });
-            table([L.provisos, de ? 'schlie\u00dft Produkt aus' : 'excludes product', L.reasoning], arr(mk.massgaben).map(function (v) { return [v.quote, v.schliesst_produkt_aus, v.begruendung]; }));
+            arr(mk.mappings).forEach(function (mp) { table([L.mappings + ' ' + str(mp.mapping_id) + ' (' + (de ? '' : 'all met: ') + code(mp.alle_erfuellt) + ')', 'Fragment', L.verdict, L.reasoning], arr(mp.zuordnung).map(function (zz) { return [zz.variable, zz.fragment + (zz.zaehlung ? ' [' + zz.zaehlung + ']' : ''), verd(zz.verdict), str(zz.begruendung) + (zz.naechster_zulaessiger_wert ? ' (' + zz.naechster_zulaessiger_wert + ')' : '')]; })); });
+            table([L.provisos, de ? 'schlie\u00dft Produkt aus' : 'excludes product', L.reasoning], arr(mk.massgaben).map(function (v) { return [v.quote, code(v.schliesst_produkt_aus), v.begruendung]; }));
           });
           if (arr(c.aequivalenz).length) {
             h(5, L.equivalence);
-            ul(c.aequivalenz.map(function (q) { return q.feature_id + ': ' + L.replaced + ' = ' + str(q.austauschmittel) + '; ' + L.eqNote + ': ' + str(q.aequivalenz_risiko) + '. ' + str(q.begruendung); }));
+            ul(c.aequivalenz.map(function (q) { return q.feature_id + ': ' + L.replaced + ' = ' + str(q.austauschmittel) + '; ' + L.eqNote + ': ' + code(q.aequivalenz_risiko) + '. ' + str(q.begruendung); }));
           }
         });
       }
@@ -226,8 +290,8 @@
         var rows = [];
         arr(da.unteransprueche).forEach(function (u) {
           var zs = arr(u.zusatzmerkmale);
-          if (!zs.length) rows.push([u.claim_no, '', '', verd((u.app && u.app.ketten_ergebnis) || u.ketten_ergebnis), u.einzelnennung]);
-          zs.forEach(function (zz, i) { rows.push([i ? '' : u.claim_no, zz.claim_quote + (zz.app && zz.app.quote !== 'ok' ? ' [' + QCHK[lang][zz.app.quote] + ']' : ''), verd((zz.app && zz.app.verdict) || zz.verdict) + ': ' + str(zz.begruendung), i ? '' : verd((u.app && u.app.ketten_ergebnis) || u.ketten_ergebnis), i ? '' : str(u.einzelnennung) + (u.einzelnennung_quote ? ': "' + u.einzelnennung_quote + '"' : '')]); });
+          if (!zs.length) rows.push([u.claim_no, '', '', verd((u.app && u.app.ketten_ergebnis) || u.ketten_ergebnis), code(u.einzelnennung)]);
+          zs.forEach(function (zz, i) { rows.push([i ? '' : u.claim_no, zz.claim_quote + (zz.app && zz.app.quote !== 'ok' ? ' [' + QCHK[lang][zz.app.quote] + ']' : ''), verd((zz.app && zz.app.verdict) || zz.verdict) + ': ' + str(zz.begruendung), i ? '' : verd((u.app && u.app.ketten_ergebnis) || u.ketten_ergebnis), i ? '' : code(u.einzelnennung) + (u.einzelnennung_quote ? ': "' + u.einzelnennung_quote + '"' : '')]); });
         });
         table([L.claim, L.added, L.verdict, L.chain, L.species], rows);
         if (arr(da.rueckzugspositionen).length) { h(5, L.fallback); ul(da.rueckzugspositionen.map(function (r) { return L.claim + ' ' + r.unabhaengiger_anspruch + ' -> ' + (r.engster_noch_treffender_anspruch == null ? '-' : L.claim + ' ' + r.engster_noch_treffender_anspruch) + (r.produkt_faellt_heraus_bei ? ' (' + r.produkt_faellt_heraus_bei + ')' : '') + ': ' + str(r.erlaeuterung); })); }
@@ -239,22 +303,22 @@
         h(4, L.redteam);
         var rr = [];
         arr(rt.claims).forEach(function (rc) {
-          arr(rc.angriffe).forEach(function (a2) { rr.push([rc.claim_no, a2.feature_id, arr(a2.angriffsart).join(', '), a2.argument_patentinhaber, a2.gegenargument_nutzer, str(a2.ergebnis) + ' -> ' + verd(a2.verdict_revidiert)]); });
-          arr(rc.gegenfehler).forEach(function (a2) { rr.push([rc.claim_no, a2.feature_id, 'gegenfehler', a2.problem, '', verd(a2.verdict_revidiert)]); });
+          arr(rc.angriffe).forEach(function (a2) { rr.push([rc.claim_no, a2.feature_id, codes(a2.angriffsart), a2.argument_patentinhaber, a2.gegenargument_nutzer, code(a2.ergebnis) + ' -> ' + verd(a2.verdict_revidiert)]); });
+          arr(rc.gegenfehler).forEach(function (a2) { rr.push([rc.claim_no, a2.feature_id, code('gegenfehler'), a2.problem, '', verd(a2.verdict_revidiert)]); });
           var v = rc.vollstaendigkeit || {}, miss = arr(v.fehlende_merkmale).concat(arr(v.zitatfehler)).concat(arr(v.uebersehene_alternativen));
           if (miss.length) rr.push([rc.claim_no, '', de ? 'Vollst\u00e4ndigkeit' : 'completeness', miss.join(' | '), '', '']);
         });
         table([L.claim, L.feature, L.attack, L.patentee, L.counter, L.outcome], rr);
-        if (arr(rt.weitere_angriffswege).length) { h(5, L.otherRoutes); ul(rt.weitere_angriffswege.map(function (w) { return str(w.weg) + ' (' + str(w.relevanz) + '): ' + str(w.beschreibung); })); }
+        if (arr(rt.weitere_angriffswege).length) { h(5, L.otherRoutes); ul(rt.weitere_angriffswege.map(function (w) { return code(w.weg) + ' (' + code(w.relevanz) + '): ' + str(w.beschreibung); })); }
         if (rt.revidiert) p(L.revised + ': ' + risk(rt.revidiert.risiko) + '. ' + str(rt.revidiert.begruendung));
       }
       if (ch) {
         var qs = arr(gs.offene_fragen).concat(rt ? arr(rt.zu_klaeren) : []);
         arr(ch.claims).forEach(function (c) { arr(c.merkmale).forEach(function (m) { if (m.app && m.app.verdict === 'unklar' && m.klaerung) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + m.klaerung); if (m.app && !m.app.verified) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + (QCHK[lang][m.app.quote] || '') + (de ? ' - am Originaldokument pr\u00fcfen' : ' - check against the original document')); }); if (arr(c.aequivalenz).length) qs.push(L.claim + ' ' + c.claim_no + ': ' + (de ? '\u00c4quivalenz f\u00fcr ' : 'equivalence for ') + c.aequivalenz.map(function (q) { return q.feature_id; }).join(', ') + (de ? ' (nicht entschieden)' : ' (not decided)')); });
         if (qs.length) { h(4, L.questions); ul(qs); }
-        if (arr(gs.umgehungsloesungen).length) { h(4, L.designAround); ul(gs.umgehungsloesungen.map(function (u) { return str(u.feature_id) + ': ' + str(u.aenderung) + ' [' + str(u.robustheit) + '] - ' + str(u.vorbehalt); })); }
+        if (arr(gs.umgehungsloesungen).length) { h(4, L.designAround); ul(gs.umgehungsloesungen.map(function (u) { return str(u.feature_id) + ': ' + str(u.aenderung) + ' [' + code(u.robustheit) + '] - ' + str(u.vorbehalt); })); }
         var ex = gs.ausnahmen || {}, ro = gs.rolle_des_nutzers || {};
-        if (ex.erlaeuterung || ro.erlaeuterung) { h(4, L.exemptions); kv([['Versuchsprivileg \u00a7 11 Nr. 2 PatG', ex.versuchsprivileg_par11_nr2], ['Zulassungsprivileg \u00a7 11 Nr. 2b PatG', ex.zulassungsprivileg_par11_nr2b], ['US safe harbor \u00a7 271(e)(1)', ex.us_safe_harbor_271e1], ['Kipppunkt', ex.kipppunkt], ['', ex.erlaeuterung], [de ? 'unmittelbar' : 'direct', ro.unmittelbar], [de ? 'mittelbar' : 'indirect', ro.mittelbar_par10_patg_oder_271bc], ['', ro.erlaeuterung]]); }
+        if (ex.erlaeuterung || ro.erlaeuterung) { h(4, L.exemptions); kv([[fld('Versuchsprivileg \u00a7 11 Nr. 2 PatG'), code(ex.versuchsprivileg_par11_nr2)], [fld('Zulassungsprivileg \u00a7 11 Nr. 2b PatG'), code(ex.zulassungsprivileg_par11_nr2b)], [fld('US safe harbor \u00a7 271(e)(1)'), code(ex.us_safe_harbor_271e1)], [fld('Kipppunkt'), ex.kipppunkt], ['', ex.erlaeuterung], [de ? 'unmittelbar' : 'Direct infringement by the user', code(ro.unmittelbar)], [de ? 'mittelbar' : 'Indirect / contributory infringement', code(ro.mittelbar_par10_patg_oder_271bc)], ['', ro.erlaeuterung]]); }
         if (arr(gs.hinweise).length) ul(gs.hinweise);
       }
     });
@@ -339,7 +403,7 @@
       else if (n.table) out.push('<div class="tw"><table><thead><tr>' + n.table.head.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
         n.table.rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>');
     });
-    return '<!doctype html>\n<html lang="' + (doc.lang === 'en' ? 'en' : 'de') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(doc.title) + '</title><style>' + CSS + '</style></head><body>\n' + out.join('\n') + '\n</body></html>';
+    return '<!doctype html>\n<html lang="' + (doc.lang === 'de' ? 'de' : 'en') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(doc.title) + '</title><style>' + CSS + '</style></head><body>\n' + out.join('\n') + '\n</body></html>';
   }
 
   function toJson(op) {
@@ -358,7 +422,7 @@
   /* body fragment for the page: the same nodes without the document frame (strings escaped the same way) */
   function fragment(op) { var h = toHtml(build(op)); return h.slice(h.indexOf('<body>') + 6, h.lastIndexOf('</body>')).trim(); }
 
-  var api = { render: render, fragment: fragment, build: build, esc: esc, mdToHtml: mdToHtml, CSS: CSS };
+  var api = { render: render, fragment: fragment, build: build, esc: esc, mdToHtml: mdToHtml, CSS: CSS, label: label, field: field };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   g.LnpFtoRender = api;
 })(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this));

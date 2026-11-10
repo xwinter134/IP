@@ -10,7 +10,7 @@
       return reg[n] || (reg[n] = new Promise(function (res, rej) {
         var el;
         if (/\.css$/.test(n)) { el = document.createElement('link'); el.rel = 'stylesheet'; el.href = n; el.onload = el.onerror = function () { res(true); }; }
-        else { el = document.createElement('script'); el.src = n; el.async = false; el.onload = function () { res(true); }; el.onerror = function () { delete reg[n]; rej({ code: 'script', message: 'nicht ladbar: ' + n }); }; }
+        else { el = document.createElement('script'); el.src = n; el.async = false; el.onload = function () { res(true); }; el.onerror = function () { delete reg[n]; rej({ code: 'script', message: 'could not be loaded: ' + n }); }; }
         document.head.appendChild(el);
       }));
     }
@@ -19,29 +19,29 @@
         var inst = null, dead = false;
         need.reduce(function (p, n) { return p.then(function () { return one(n); }); }, Promise.resolve()).then(function () { if (!dead) inst = real(host, route, App); }).catch(function (e) {
           App.logError('view ' + id, e);
-          if (!dead) g.LnpUI.set(host, g.LnpUI.h('div.page', null, g.LnpUI.h('p.notice.err', { text: 'Die Ansicht konnte nicht aufgebaut werden: ' + g.LnpUI.errText(e) })));
+          if (!dead) g.LnpUI.set(host, g.LnpUI.h('div.page', null, g.LnpUI.h('p.notice.err', { text: 'The view could not be built: ' + g.LnpUI.errText(e) })));
         });
         return { update: function (r) { return inst && inst.update ? inst.update(r) : false; }, destroy: function () { dead = true; try { if (typeof inst === 'function') inst(); else if (inst && inst.destroy) inst.destroy(); } catch (e) { App.logError('destroy ' + id, e); } } };
       };
     };
   })();
 
-  var CPC_DE = { A61K: 'Arzneizubereitungen', A61P: 'Therapeutische Wirkung', C12N: 'Gentechnik, Nukleinsäuren, Enzyme', C07C: 'Acyclische und carbocyclische Verbindungen', C07D: 'Heterocyclische Verbindungen', C07K: 'Peptide',
-    C07H: 'Zucker, Nukleoside, Nukleinsäuren', C07F: 'Elementorganische Verbindungen (P, Si)', C07J: 'Steroide', C08G: 'Polykondensate, Polyether (PEG)', C08L: 'Polymerzusammensetzungen', B82Y: 'Nanotechnologie',
-    B01J: 'Chemische Verfahren, Kolloidchemie', B01F: 'Mischen', C12Q: 'Nachweisverfahren mit Nukleinsäuren', G01N: 'Analytik', A61L: 'Materialien für Medizinprodukte', A61Q: 'Kosmetische Anwendung', C12P: 'Fermentation', A61J: 'Behälter, Darreichung',
-    C12Y: 'Enzyme (Index)', Y02A: 'Anpassung an den Klimawandel (Index)', A61M: 'Applikationsgeräte', C09K: 'Sonstige Stoffe', A61B: 'Diagnostik, Chirurgie', C11D: 'Reinigungsmittel', A23L: 'Lebensmittel', C08F: 'Polymerisate', A01N: 'Biozide, Konservierung', Y10S: 'Frühere US-Klassen (Index)', Y10T: 'Frühere US-Klassen (Index)', C12M: 'Apparate für Mikrobiologie' };
-  var STATUS_GROUPS = [['granted', 'Erteilt, Laufzeit offen', 0, ['granted']], ['pending', 'Anhängig', 1, ['pending']], ['dead', 'Nicht mehr in Kraft', -1, ['lapsed', 'revoked', 'withdrawn', 'refused', 'expired']], ['open', 'Rechtsstand offen', -2, ['unknown', '']]];
+  var CPC_DE = { A61K: 'Medicinal preparations', A61P: 'Therapeutic activity', C12N: 'Genetic engineering, nucleic acids, enzymes', C07C: 'Acyclic and carbocyclic compounds', C07D: 'Heterocyclic compounds', C07K: 'Peptides',
+    C07H: 'Sugars, nucleosides, nucleic acids', C07F: 'Organometallic compounds (P, Si)', C07J: 'Steroids', C08G: 'Polycondensates, polyethers (PEG)', C08L: 'Polymer compositions', B82Y: 'Nanotechnology',
+    B01J: 'Chemical processes, colloid chemistry', B01F: 'Mixing', C12Q: 'Assays involving nucleic acids', G01N: 'Analysis', A61L: 'Materials for medical devices', A61Q: 'Cosmetic use', C12P: 'Fermentation', A61J: 'Containers, administration',
+    C12Y: 'Enzymes (index)', Y02A: 'Climate change adaptation (index)', A61M: 'Delivery devices', C09K: 'Other materials', A61B: 'Diagnosis, surgery', C11D: 'Detergents', A23L: 'Foods', C08F: 'Polymers', A01N: 'Biocides, preservation', Y10S: 'Former US classes (index)', Y10T: 'Former US classes (index)', C12M: 'Apparatus for microbiology' };
+  var STATUS_GROUPS = [['granted', 'Granted, term running', 0, ['granted']], ['pending', 'Pending', 1, ['pending']], ['dead', 'No longer in force', -1, ['lapsed', 'revoked', 'withdrawn', 'refused', 'expired']], ['open', 'Legal status open', -2, ['unknown', '']]];
 
   function mount(host, route, App) {
     var K = g.LnpKit, C = g.LnpChart, D = g.LnpData, M = App.manifest, dead = false, offs = [];
     var scope = route.params.r === 'kern' ? 'kern' : 'alle', A = null;
-    var body = h('div'), scopeSeg = h('div.seg', { role: 'group', 'aria-label': 'Umfang' });
+    var body = h('div'), scopeSeg = h('div.seg', { role: 'group', 'aria-label': 'Scope' });
     var page = h('div.page.k-page', null,
-      K.head('Landschaft', 'Wer meldet was an,', 'und wann läuft es ab', 'Auswertung der Patenttabelle im Browser. Gezählt werden Patentfamilien, bei Rechtsstand und Ablauf einzelne Anmeldungen. Jede Säule, jeder Balken und jede Zelle öffnet die passende Auswahl in der Suche; dort wird je Schrift gezählt.'),
-      h('div.k-filters', null, h('span.k-filters-l', { text: 'Umfang' }), scopeSeg), body);
+      K.head('Landscape', 'Who files what,', 'and when it expires', 'Analysis of the patent table in the browser. Patent families are counted; for legal status and expiry, individual applications. Every column, bar and cell opens the matching selection in the search, where publications are counted.'),
+      h('div.k-filters', null, h('span.k-filters-l', { text: 'Scope' }), scopeSeg), body);
     host.appendChild(page);
-    [['alle', 'Gesamter Bestand'], ['kern', 'Kernbestand']].forEach(function (x) {
-      scopeSeg.appendChild(h('button', { type: 'button', 'aria-pressed': scope === x[0] ? 'true' : 'false', title: x[0] === 'kern' ? 'Schlüsselfamilien und Stufe 1 bis 2 der Feldabgrenzung' : 'Alle Schriften der Tabelle, auch das weitere Umfeld', onclick: function () { R.go({ view: 'landschaft', params: x[0] === 'kern' ? { r: 'kern' } : {} }); } }, x[1]));
+    [['alle', 'Whole dataset'], ['kern', 'Core dataset']].forEach(function (x) {
+      scopeSeg.appendChild(h('button', { type: 'button', 'aria-pressed': scope === x[0] ? 'true' : 'false', title: x[0] === 'kern' ? 'Key families and tiers 1 to 2 of the field definition' : 'All publications in the table, including the wider periphery', onclick: function () { R.go({ view: 'landschaft', params: x[0] === 'kern' ? { r: 'kern' } : {} }); } }, x[1]));
     });
     function setScope(s) { scope = s; Array.prototype.forEach.call(scopeSeg.children, function (b, i) { b.setAttribute('aria-pressed', (i === 0) === (s === 'alle') ? 'true' : 'false'); }); if (A) draw(); }
     function cleanup() { offs.forEach(function (f) { try { f(); } catch (e) { /* ignore */ } }); offs = []; K.tip.hide(); }
@@ -74,7 +74,7 @@
       var top = order.slice(0, 7), rest = order.slice(7), slot = {}; top.forEach(function (idx, k) { slot[idx] = k; });
       var years = []; for (var yy = yearMin; yy <= yearMax; yy++) years.push(yy);
       var series = top.map(function (idx, k) { return { name: A.players[idx], color: C.color(k), values: years.map(function () { return 0; }), players: [idx] }; });
-      if (rest.length) series.push({ name: 'Übrige Akteure (' + rest.length + ')', color: C.OTHER, values: years.map(function () { return 0; }), players: rest });
+      if (rest.length) series.push({ name: 'Other players (' + rest.length + ')', color: C.OTHER, values: years.map(function () { return 0; }), players: rest });
       var before = 0;
       fams.forEach(function (r) {
         if (r.pl < 0) return;
@@ -116,67 +116,67 @@
       var X = aggregate(), grid = h('div.k-grid2');
       U.set(body,
         K.stats([
-          ['Patentfamilien', U.num(X.families), scope === 'kern' ? 'im Kernbestand' : 'im gesamten Bestand'],
-          ['Mit zugeordnetem Akteur', U.num(X.named), X.order.length + ' beobachtete Akteure'],
-          ['Erteilte Rechte mit offener Laufzeit', U.num(X.inForce), 'EP und US, je Anmeldung, Laufzeit geschätzt'],
-          ['Stärkstes Ablaufjahr', X.peak[0] ? String(X.peak[0]) : '–', X.peak[0] ? U.num(X.peak[1]) + ' Rechte laufen aus' : null]]),
+          ['Patent families', U.num(X.families), scope === 'kern' ? 'in the core dataset' : 'in the whole dataset'],
+          ['With an assigned player', U.num(X.named), X.order.length + ' players observed'],
+          ['Granted rights with term running', U.num(X.inForce), 'EP and US, per application, term estimated'],
+          ['Peak expiry year', X.peak[0] ? String(X.peak[0]) : '–', X.peak[0] ? U.num(X.peak[1]) + ' rights expire' : null]]),
         grid);
 
       // 1 filings per year by player
-      var c1 = chartSec('Anmeldungen', 'Neue Familien der beobachteten Akteure je Prioritätsjahr', 'Jahr der frühesten Priorität. Die letzten 18 Monate sind unvollständig, weil Anmeldungen erst dann veröffentlicht werden.' + (X.before ? ' ' + U.num(X.before) + ' Familien vor 2000 sind nicht gezeichnet.' : ''));
+      var c1 = chartSec('Filings', 'New families of the observed players per priority year', 'Year of the earliest priority. The last 18 months are incomplete because applications are only published after that time.' + (X.before ? ' ' + U.num(X.before) + ' families before 2000 are not drawn.' : ''));
       c1.sec.classList.add('wide'); grid.appendChild(c1.sec);
       if (X.series.length) {
-        offs.push(C.stacked(c1.box, { cats: X.years, series: X.series, unit: 'Familien', height: 280, label: 'Neue Patentfamilien je Prioritätsjahr, gestapelt nach Akteur',
+        offs.push(C.stacked(c1.box, { cats: X.years, series: X.series, unit: 'families', height: 280, label: 'New patent families per priority year, stacked by player',
           onClick: function (ci, si) { var ps = si >= 0 ? X.series[si].players : X.order; R.go(sUrl('prio:' + X.years[ci], { p: ps.map(String) })); } }));
-        C.table(c1.box, { head: ['Jahr'].concat(X.series.map(function (x) { return x.name; })), rows: X.years.map(function (y, i) { return [String(y)].concat(X.series.map(function (x) { return x.values[i]; })); }) });
-      } else c1.box.appendChild(h('p.faint', { text: 'In diesem Umfang ist keinem Akteur eine Familie zugeordnet.' }));
+        C.table(c1.box, { head: ['Year'].concat(X.series.map(function (x) { return x.name; })), rows: X.years.map(function (y, i) { return [String(y)].concat(X.series.map(function (x) { return x.values[i]; })); }) });
+      } else c1.box.appendChild(h('p.faint', { text: 'In this scope no family is assigned to a player.' }));
 
       // 2 top players
-      var c2 = chartSec('Akteure', 'Familien je Akteur', 'Zuordnung über Namensvarianten der Anmelder; Schriften ohne Treffer bleiben ohne Akteur.');
+      var c2 = chartSec('Players', 'Families per player', 'Assigned via name variants of the applicants; publications with no match remain without a player.');
       grid.appendChild(c2.sec);
-      C.hbars(c2.box, { unit: 'Familien', color: 'var(--s1)', rows: X.order.slice(0, 15).map(function (idx) { return { label: A.players[idx], value: X.byPlayer[idx], href: sUrl('', { p: [String(idx)] }) }; }) });
+      C.hbars(c2.box, { unit: 'families', color: 'var(--s1)', rows: X.order.slice(0, 15).map(function (idx) { return { label: A.players[idx], value: X.byPlayer[idx], href: sUrl('', { p: [String(idx)] }) }; }) });
 
       // 3 CPC
-      var c3 = chartSec('Klassen', 'Familien je CPC-Unterklasse', 'Eine Familie zählt in jeder Unterklasse, in der eine ihrer Schriften eingeordnet ist.');
+      var c3 = chartSec('Classes', 'Families per CPC subclass', 'A family counts in every subclass in which one of its publications is classified.');
       grid.appendChild(c3.sec);
-      C.hbars(c3.box, { unit: 'Familien', color: 'var(--s3)', rows: X.cpcTop.slice(0, 15).map(function (c) { return { label: c + (CPC_DE[c] ? '  ' + CPC_DE[c] : ''), value: X.cpc[c], href: sUrl('', { c: [c] }) }; }) });
+      C.hbars(c3.box, { unit: 'families', color: 'var(--s3)', rows: X.cpcTop.slice(0, 15).map(function (c) { return { label: c + (CPC_DE[c] ? '  ' + CPC_DE[c] : ''), value: X.cpc[c], href: sUrl('', { c: [c] }) }; }) });
 
       // 4 expiry wave
-      var c4 = chartSec('Ablauf', 'Wann erteilte Rechte auslaufen', 'Erteilte EP- und US-Patente, deren geschätzte Laufzeit noch nicht beendet ist, nach Ablaufjahr. Schätzung: Anmeldetag plus 20 Jahre, US mit Laufzeitanpassung. Erloschene Rechte wegen nicht gezahlter Gebühren sind nur für EP erfasst.');
+      var c4 = chartSec('Expiry', 'When granted rights expire', 'Granted EP and US patents whose estimated term has not yet ended, by expiry year. Estimate: filing date plus 20 years, US with term adjustment. Rights lapsed for unpaid fees are recorded for EP only.');
       c4.sec.classList.add('wide'); grid.appendChild(c4.sec);
       var eSeries = [{ name: 'EP', color: 'var(--s1)', values: X.expYears.map(function (y) { return (X.exp[y] || {}).EP || 0; }) }, { name: 'US', color: 'var(--s2)', values: X.expYears.map(function (y) { return (X.exp[y] || {}).US || 0; }) }];
-      offs.push(C.stacked(c4.box, { cats: X.expYears.map(function (y) { return y === X.expMax ? y + '+' : y; }), series: eSeries, unit: 'Rechte', height: 240, label: 'Erteilte Rechte nach geschätztem Ablaufjahr, EP und US',
+      offs.push(C.stacked(c4.box, { cats: X.expYears.map(function (y) { return y === X.expMax ? y + '+' : y; }), series: eSeries, unit: 'rights', height: 240, label: 'Granted rights by estimated expiry year, EP and US',
         onClick: function (ci, si) { var y = X.expYears[ci]; R.go(sUrl('exp:' + (y === X.expMax ? y + '-' : y) + ' status:granted', si >= 0 ? { a: [eSeries[si].name] } : { a: ['EP', 'US'] })); } }));
-      C.table(c4.box, { head: ['Ablaufjahr', 'EP', 'US'], rows: X.expYears.map(function (y, i) { return [String(y), eSeries[0].values[i], eSeries[1].values[i]]; }) });
+      C.table(c4.box, { head: ['Expiry year', 'EP', 'US'], rows: X.expYears.map(function (y, i) { return [String(y), eSeries[0].values[i], eSeries[1].values[i]]; }) });
 
       // 5 status mix
-      var c5 = chartSec('Rechtsstand', 'Was aus den Anmeldungen geworden ist', 'Je Anmeldung die jüngste Schrift. EP nach Registerstand vom ' + U.date((M.snapshots || {}).ep_register) + '; US gerechnet, ohne Prüfung der Aufrechterhaltungsgebühren. „Rechtsstand offen“ heißt: für diese Anmeldung liegt keine Angabe vor.');
+      var c5 = chartSec('Legal status', 'What became of the applications', 'The latest publication per application. EP according to the register status of ' + U.date((M.snapshots || {}).ep_register) + '; US calculated, without checking maintenance fees. \u201cLegal status open\u201d means that no information is available for this application.');
       c5.sec.classList.add('wide'); grid.appendChild(c5.sec);
       var SC = ['var(--s1)', 'var(--s2)', 'var(--s-other)', 'var(--s-open)'], two = h('div.k-two'); c5.box.appendChild(two);
       ['EP', 'US'].forEach(function (au) {
         var col = h('div'); two.appendChild(col);
-        col.appendChild(h('p.k-sub', null, h('b', { text: au }), ' · ' + U.num(Object.keys(X.st[au]).reduce(function (a, k) { return a + X.st[au][k]; }, 0)) + ' Anmeldungen'));
-        C.segbar(col, { unit: 'Anmeldungen', label: 'Rechtsstand der ' + au + '-Anmeldungen', parts: STATUS_GROUPS.map(function (grp, gi) {
+        col.appendChild(h('p.k-sub', null, h('b', { text: au }), ' · ' + U.num(Object.keys(X.st[au]).reduce(function (a, k) { return a + X.st[au][k]; }, 0)) + ' applications'));
+        C.segbar(col, { unit: 'applications', label: 'Legal status of the ' + au + ' applications', parts: STATUS_GROUPS.map(function (grp, gi) {
           var v = grp[3].reduce(function (a, k) { return a + (X.st[au][k] || 0); }, 0);
           return { name: grp[1], value: v, color: SC[gi], href: grp[0] === 'open' ? null : sUrl(grp[0] === 'granted' ? 'exp:' + X.thisYear + '-' : '', { a: [au], t: grp[0] === 'granted' ? ['granted'] : grp[3].filter(Boolean) }) };
         }) });
       });
 
       // 6 heat map
-      var c6 = chartSec('Schwerpunkte', 'Akteur gegen CPC-Unterklasse', 'Familien der zwölf größten Akteure in den zehn häufigsten Unterklassen.');
+      var c6 = chartSec('Focus areas', 'Player against CPC subclass', 'Families of the twelve largest players in the ten most frequent subclasses.');
       c6.sec.classList.add('wide'); grid.appendChild(c6.sec);
-      if (X.hp.length && X.hc.length) C.heat(c6.box, { rows: X.hp.map(function (idx) { return A.players[idx]; }), cols: X.hc, v: X.hv, unit: 'Familien', colTitle: function (ci) { return CPC_DE[X.hc[ci]] || X.hc[ci]; },
+      if (X.hp.length && X.hc.length) C.heat(c6.box, { rows: X.hp.map(function (idx) { return A.players[idx]; }), cols: X.hc, v: X.hv, unit: 'families', colTitle: function (ci) { return CPC_DE[X.hc[ci]] || X.hc[ci]; },
         href: function (ri, ci) { return sUrl('', { p: [String(X.hp[ri])], c: [X.hc[ci]] }); }, rowHref: function (ri) { return sUrl('', { p: [String(X.hp[ri])] }); }, colHref: function (ci) { return sUrl('', { c: [X.hc[ci]] }); } });
-      else c6.box.appendChild(h('p.faint', { text: 'Keine Daten in diesem Umfang.' }));
+      else c6.box.appendChild(h('p.faint', { text: 'No data in this scope.' }));
     }
 
-    U.set(body, K.busy('Patenttabelle wird vollständig geladen (' + U.num((M.counts || {}).patents) + ' Schriften)'));
-    D.all().then(function (all) { if (dead) return; A = all; draw(); }, function (e) { if (!dead) U.set(body, K.errBox(e, 'Die Patenttabelle konnte nicht geladen werden')); });
+    U.set(body, K.busy('Loading the full patent table (' + U.num((M.counts || {}).patents) + ' publications)'));
+    D.all().then(function (all) { if (dead) return; A = all; draw(); }, function (e) { if (!dead) U.set(body, K.errBox(e, 'The patent table could not be loaded')); });
 
     return {
       update: function (r) { var s2 = r.params.r === 'kern' ? 'kern' : 'alle'; if (s2 !== scope) setScope(s2); return true; },
       destroy: function () { dead = true; cleanup(); }
     };
   }
-  g.LnpApp.registerView({ id: 'landschaft', title: 'Landschaft', icon: 'landscape', mount: g.LnpLazyView('landschaft', ['app/views/views.css', 'app/views/lib/kit.js', 'app/views/lib/chart.js'], mount) });
+  g.LnpApp.registerView({ id: 'landschaft', title: 'Landscape', icon: 'landscape', mount: g.LnpLazyView('landschaft', ['app/views/views.css', 'app/views/lib/kit.js', 'app/views/lib/chart.js'], mount) });
 })(window);

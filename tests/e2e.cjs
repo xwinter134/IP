@@ -65,11 +65,11 @@ const rtObj = (id, risiko, claims) => ({ schema_version: 'rt-1', patent_id: id, 
 const daObj = (id) => ({ schema_version: 'da-1', patent_id: id, abhaengigkeiten: [{ claim_no: 2, bezieht_sich_auf: [1], wurzel: [1], eigene_kategorie: false }],
   unteransprueche: [{ claim_no: 2, zusatzmerkmale: [{ claim_quote: 'not a real quote', verdict: 'unklar', product_refs: [], begruendung: 'x' }], ketten_ergebnis: 'moeglich', fehlstelle: 'keine', einzelnennung: 'entfaellt', einzelnennung_quote: null }],
   rueckzugspositionen: [{ unabhaengiger_anspruch: 1, engster_noch_treffender_anspruch: 2, produkt_faellt_heraus_bei: 'Anspruch 3', erlaeuterung: 'r' }], auslegungshinweise: [], revision_empfohlen: [], konfidenz: 'mittel' });
-const opObj = (ids) => ({ schema_version: 'op-1', output_language: 'de', titel: 'FTO-Vorpruefung (e2e)', gesamtrisiko: [{ markt: 'DE', risiko: '2_gering', treibende_schutzrechte: ids.slice(0, 1), begruendung: 'g' }, { markt: 'US', risiko: '4_hoch', treibende_schutzrechte: [], begruendung: 'g' }],
+const opObj = (ids) => ({ schema_version: 'op-1', output_language: 'en', titel: 'FTO-Vorpruefung (e2e)', gesamtrisiko: [{ markt: 'DE', risiko: '2_gering', treibende_schutzrechte: ids.slice(0, 1), begruendung: 'g' }, { markt: 'US', risiko: '4_hoch', treibende_schutzrechte: [], begruendung: 'g' }],
   zusammenfassung: 'Im geprüften Korpus bestehen mehrere Risiken.\n\n- Punkt eins\n- Punkt zwei <script>window.__xss=9</script>', gegenstand: 'Gegenstand.', recherche: 'Recherche.', einzelbewertungen: ids.map((id) => ({ patent_id: id, risiko: '3_mittel', kurzfazit: 'Kurzfazit ' + id, text: 'Text ' + id })),
   anhaengige_anmeldungen: 'Anhängig.', querschnitt: 'Querschnitt.', zeitachse: ids.map((id) => ({ patent_id: id, ablauf_geschaetzt: '2035-06-01', bemerkung: 'Schätzung' })), ausnahmen: 'Ausnahmen.', umgehungsloesungen: [{ aenderung: 'mol-% ändern', betrifft_schutzrechte: ids.slice(0, 1), kollision_mit_anderen: [], bewertung: 'technische Hypothese' }],
   gegenpruefung: 'Gegenprüfung.', offene_fragen: ['Frage 1'], naechste_schritte: [{ prioritaet: 1, schritt: 'Markush-Recherche', warum: 'Lücke' }] });
-const pfObj = () => ({ schema_version: 'pf-1', output_language: 'de', bezeichnung: 'E2E-Produkt', ionizable_lipid: { name_user: 'ALC-0315', name_normalised: 'ALC-0315', cas: null, smiles: 'CC(WRONG)N', inchikey: 'INVENTED', descriptors: { formula: 'C1H1', mw: 1, c_atoms_total: 99 }, pka_apparent: null, pka_methode: null, strukturbeschreibung: 'Tertiäres Amin mit zwei Esterarmen.', quelle: 'nutzer' },
+const pfObj = () => ({ schema_version: 'pf-1', output_language: 'en', bezeichnung: 'E2E-Produkt', ionizable_lipid: { name_user: 'ALC-0315', name_normalised: 'ALC-0315', cas: null, smiles: 'CC(WRONG)N', inchikey: 'INVENTED', descriptors: { formula: 'C1H1', mw: 1, c_atoms_total: 99 }, pka_apparent: null, pka_methode: null, strukturbeschreibung: 'Tertiäres Amin mit zwei Esterarmen.', quelle: 'nutzer' },
   weitere_lipide: [{ rolle: 'helferlipid_phospholipid', name_user: 'DSPC', name_normalised: '1,2-distearoyl-sn-glycero-3-phosphocholine', smiles: 'INVENTED', quelle: 'nutzer' }, { rolle: 'sterol', name_user: 'cholesterol', name_normalised: 'Cholesterol', quelle: 'nutzer' }, { rolle: 'peg_lipid', name_user: 'ALC-0159', name_normalised: 'ALC-0159', peg_mw: 2000, quelle: 'nutzer' }],
   zusammensetzung: { molprozent: { ionizable_lipid: 50, phospholipid: 10, sterol: 38.5, peg_lipid: 1.5, sonstige: null }, basis: 'gesamtlipid_nominal_einsatz', np_verhaeltnis: 6 }, payload: { typ: 'mRNA', nukleosidmodifikation: 'm1Ψ' }, partikel: { groesse_nm: 80 }, verfahren: { mischprinzip: 't_stueck' }, formulierung_lagerung: {}, anwendung: { applikationsweg: 'i.m.' },
   handlungen: { entwicklungsstand: 'praeklinik', maerkte: ['DE', 'EP', 'US'], akte: [{ land: 'DE', akt: 'herstellen', zeitpunkt: 'derzeit' }] }, merkmalsliste: [{ id: 'P1', kategorie: 'verhaeltnis', aussage: 'Ionisierbares Lipid 50 mol-%', wert: 50, einheit: 'mol-%', quelle: 'nutzer', sicherheit: 'hoch' }], annahmen: [], offene_fragen: ['Gemessen oder nominal?'],
@@ -98,7 +98,7 @@ function makeSample(plan = {}) {
       case 'D': { const ids = [...new Set([...prompt.slice(prompt.lastIndexOf('<digests>[')).matchAll(/"patent_id":"([^"]+)"/g)].map((m) => m[1]))]; out = opObj(ids); break; }
       case 'X': out = { concepts: [{ label: 'lnp', must: true, en: ['lipid nanoparticle', 'nucleic acid-lipid particle'], de: ['lipidnanopartikel'], prefix: ['liposom'] }, { label: 'ratio', must: false, en: ['mol %'], de: [], prefix: [] }], cpc: ['A61K9/51'], exclude: [], note: 'n' }; break;
       case 'R': { const ids = [...prompt.matchAll(/<claim id="(\d+)"/g)].map((m) => Number(m[1])); out = { r: ids.map((x) => ({ id: x, s: x % 4, why: 'reason ' + x + ' <i>x</i>', check: ['c'] })) }; break; }
-      case 'Q': out = 'Der Anspruch schützt ein Partikel. <script>window.__xss=7</script> Dies ist eine Erläuterung, keine Rechtsberatung.'; break;
+      case 'Q': out = 'The claim protects a particle. <script>window.__xss=7</script> This is an explanation, not legal advice.'; break;
       default: out = 'plain';
     }
     return { text: typeof out === 'string' ? out : JSON.stringify(out) };
@@ -221,7 +221,7 @@ async function searchUi(S, q, extra) {
   // the result list is virtualised and filled asynchronously: mark what is there now, wait until it has been replaced
   await S.page.evaluate((h) => { if (location.hash !== h) document.querySelectorAll('.results > *').forEach((e) => { e.dataset.old = '1'; }); }, hash);
   await S.go(hash);
-  await S.wait((qq) => { const i = document.getElementById('q'), c = document.querySelector('.s-count'), res = document.querySelector('.results'); return i && i.value === qq && c && res && !res.querySelector(':scope > [data-old]') && !c.querySelector('.spin') && /Patent|gescheitert/.test(c.textContent) && (res.querySelectorAll('.res-block .hrow').length > 0 || !!res.querySelector(':scope > .empty')); }, q, 30000)
+  await S.wait((qq) => { const i = document.getElementById('q'), c = document.querySelector('.s-count'), res = document.querySelector('.results'); return i && i.value === qq && c && res && !res.querySelector(':scope > [data-old]') && !c.querySelector('.spin') && /patent|failed/.test(c.textContent) && (res.querySelectorAll('.res-block .hrow').length > 0 || !!res.querySelector(':scope > .empty')); }, q, 30000)
     .catch(async (e) => { throw new Error('search view did not settle for ' + JSON.stringify(q) + ': ' + JSON.stringify(await S.page.evaluate(() => { const i = document.getElementById('q'), c = document.querySelector('.s-count'), res = document.querySelector('.results'); return { hash: location.hash, value: i && i.value, count: c && c.textContent, old: res && res.querySelectorAll(':scope > [data-old]').length, rows: res && res.querySelectorAll('.res-block .hrow').length, kids: res && Array.from(res.children).slice(0, 3).map((x) => x.className + ':' + x.children.length) }; }))); });
   return S.page.evaluate(() => ({ count: document.querySelector('.s-count').textContent, rows: document.querySelectorAll('.results .hrow').length, empty: !document.querySelector('.results .res-block') && !!document.querySelector('.results .empty'), marks: document.querySelectorAll('.results mark').length }));
 }
@@ -306,7 +306,7 @@ async function knownItems(S) {
     await S.go('#patent-' + st.pt.pn);
     await S.wait(() => !!document.querySelector('.pt-id .pill') && !!document.querySelector('.pt-side') && !document.querySelector('.pt-side .spin'), null, 30000);
     const ui = await S.page.evaluate(() => ({ pill: document.querySelector('.pt-id .pill').textContent, side: document.querySelector('.pt-side').innerText.replace(/\s+/g, ' ').slice(0, 200) }));
-    ok(/erteilt/i.test(ui.pill) && ui.side.length > 60, 'patent view of ' + st.pt.pn + ' shows the status pill "' + ui.pill + '" and the status block', ui);
+    ok(/granted/i.test(ui.pill) && ui.side.length > 60, 'patent view of ' + st.pt.pn + ' shows the status pill "' + ui.pill + '" and the status block', ui);
   }
   // (2) seed B1 numbers whose text sits on the B9 / B2 record lead to the record with the claims
   for (const pn of ['EP2449114B1', 'EP2350043B1', 'EP3394030B1']) {
@@ -375,22 +375,22 @@ async function partMain() {
       const r1 = await searchUi(S, 'lipid nanoparticle');
       ok(r1.rows > 0 && r1.marks > 0, 'UI search "lipid nanoparticle": ' + r1.rows + ' rows with highlighted snippets (' + r1.count.trim().slice(0, 60) + ')', r1);
       const api = await apiSearch(S, 'lipid nanoparticle');
-      ok(r1.count.replace(/\./g, '').indexOf(String(api.total)) >= 0, 'UI count equals the engine total ' + api.total, r1.count);
+      ok(r1.count.replace(/[.,]/g, '').indexOf(String(api.total)) >= 0, 'UI count equals the engine total ' + api.total, r1.count);
       const z = await searchUi(S, 'xyzzyqwertnotaword');
       ok(z.rows === 0 && z.empty, '0-hit search shows the empty state', z);
-      ok((await viewText(S)).indexOf('Keine Treffer') >= 0 || (await viewText(S)).indexOf('nichts') >= 0, '0-hit copy is readable');
+      ok((await viewText(S)).indexOf('No results') >= 0 || (await viewText(S)).indexOf('Nothing in the dataset') >= 0, '0-hit copy is readable');
       const bad = await searchUi(S, '((lipid AND "unterminated');
       ok(bad.rows >= 0 && (await count(S, '.s-count')) === 1, 'malformed query does not break the view (' + bad.count.trim().slice(0, 50) + ')');
       // filters through the route
       const f = await searchUi(S, 'nanoparticle', { a: ['EP'] });
       const fa = await apiSearch(S, 'nanoparticle', { filters: { auth: ['EP'] } });
-      ok(f.rows > 0 && f.count.replace(/\./g, '').indexOf(String(fa.total)) >= 0, 'authority filter in the route is applied (' + fa.total + ' EP)', f);
+      ok(f.rows > 0 && f.count.replace(/[.,]/g, '').indexOf(String(fa.total)) >= 0, 'authority filter in the route is applied (' + fa.total + ' EP)', f);
       // sorting and CSV export
-      await S.page.click('.s-bar .seg button:has-text("Datum")'); await sleep(400);
+      await S.page.click('.s-bar .seg button:has-text("Date")'); await sleep(400);
       await S.wait(() => document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.results .res-ph .spin'));
       ok(/--s/.test(await S.page.evaluate(() => location.hash)), 'sort by date is written to the route', await S.page.evaluate(() => location.hash));
       const before = await S.page.evaluate(() => window.__e2e.saved.length);
-      await S.page.click('button[aria-label="CSV-Export"]');
+      await S.page.click('button[aria-label="CSV export"]');
       await S.wait((n) => window.__e2e.saved.length > n, before, 20000);
       const sv = await S.page.evaluate(() => window.__e2e.saved[window.__e2e.saved.length - 1]);
       ok(/\.csv$/.test(sv.filename) && sv.size > 200, 'CSV export goes through downloads.save (' + sv.filename + ', ' + sv.size + ' chars)', sv);
@@ -406,9 +406,9 @@ async function partMain() {
       await S.page.type('#q', ' peg', { delay: 10 });
       const finalQ = await S.page.inputValue('#q');
       await S.page.keyboard.press('Enter');
-      await S.wait((qq) => { const c = document.querySelector('.s-count'); return c && !c.querySelector('.spin') && /Patent/.test(c.textContent) && !document.querySelector('.results .res-ph .spin') && decodeURIComponent(location.hash).length > 6; }, finalQ, 20000);
+      await S.wait((qq) => { const c = document.querySelector('.s-count'); return c && !c.querySelector('.spin') && /patent/.test(c.textContent) && !document.querySelector('.results .res-ph .spin') && decodeURIComponent(location.hash).length > 6; }, finalQ, 20000);
       await sleep(500);
-      const api = await apiSearch(S, finalQ), ui = await S.page.evaluate(() => document.querySelector('.s-count').textContent.replace(/\./g, ''));
+      const api = await apiSearch(S, finalQ), ui = await S.page.evaluate(() => document.querySelector('.s-count').textContent.replace(/[.,]/g, ''));
       ok(ui.indexOf(String(api.total)) >= 0, 'rapid typing: the list shows the result of the final text "' + finalQ + '" (' + api.total + ') after ' + (Date.now() - t0) + ' ms', ui);
     });
     await S.clean('search');
@@ -421,13 +421,13 @@ async function partMain() {
         const tree = await S.page.evaluate(async (p) => { const cl = await window.LnpSearch.claims(p, 'en'); return { n: cl.length, indep: cl.filter((c) => c.indep).length, withKids: cl.filter((c) => c.children && c.children.length).length, rootsOk: cl.every((c) => c.indep || (c.roots && c.roots.length > 0)) }; }, pt.p);
         ok(tree.indep > 0 && tree.rootsOk && d.claims >= tree.indep, pt.pn + ': claims tree: ' + tree.n + ' claims, ' + tree.indep + ' independent, every dependent claim has a root', tree);
         if (d.kids > 0) {
-          await S.page.click('.claims-ctl button:has-text("Abhängige")'); await sleep(250);
+          await S.page.click('.claims-ctl button:has-text("Expand dependents")'); await sleep(250);
           const open = await count(S, '.claims details.claim-kids[open]');
           ok(open > 0, pt.pn + ': dependent claims unfold (' + open + ' groups open)');
         }
         if (pt.auth === 'EP') {
           const enText = await S.page.evaluate(() => document.querySelector('.claims article.claim .claim-text').textContent.slice(0, 200));
-          await S.page.click('.claims-ctl .seg button:has-text("Deutsch")');
+          await S.page.click('.claims-ctl .seg button:has-text("German")');
           await S.wait((t) => { const el = document.querySelector('.claims article.claim .claim-text'); return el && el.textContent.slice(0, 200) !== t; }, enText, 15000);
           const de = await S.page.evaluate(() => document.querySelector('.claims').innerText.slice(0, 4000));
           ok(/\b(und|der|die|das|ein|eine|nach Anspruch|umfassend|wobei)\b/.test(de), pt.pn + ': German claims are shown after the language switch', de.slice(0, 160));
@@ -435,8 +435,8 @@ async function partMain() {
         }
         if (pt.compounds) {
           // the section loads when it comes near the viewport (IntersectionObserver): scroll to it like a reader would
-          await S.page.evaluate(() => { const t = Array.from(document.querySelectorAll('.pt-main .sec')).find((x) => /Verbindungen in dieser Schrift/.test(x.textContent)); if (t) t.scrollIntoView({ block: 'start' }); });
-          await S.wait(() => document.querySelectorAll('.cmpds .cmpd svg').length > 0 || /keine|nicht/i.test((document.querySelector('.cmpds') || { textContent: '' }).textContent), null, 60000).catch(async () => {
+          await S.page.evaluate(() => { const t = Array.from(document.querySelectorAll('.pt-main .sec')).find((x) => /Compounds in this publication/.test(x.textContent)); if (t) t.scrollIntoView({ block: 'start' }); });
+          await S.wait(() => document.querySelectorAll('.cmpds .cmpd svg').length > 0 || /No structures/i.test((document.querySelector('.cmpds') || { textContent: '' }).textContent), null, 60000).catch(async () => {
             info('compounds did not appear: ' + JSON.stringify(await S.page.evaluate(() => { const v = document.getElementById('view'), secs = Array.from(document.querySelectorAll('.pt-main .sec')).map((x) => x.innerText.replace(/\s+/g, ' ').slice(0, 160)); return { hash: location.hash, scroll: [v.scrollTop, v.clientHeight, v.scrollHeight], secs, errors: window.LnpApp.errors.slice(0, 3) }; })));
           });
           const c = await S.page.evaluate(() => ({ n: document.querySelectorAll('.cmpds .cmpd').length, svg: document.querySelectorAll('.cmpds .cmpd svg').length }));
@@ -448,9 +448,9 @@ async function partMain() {
       await S.shot('main-patent');
       // explain a claim with the mocked model
       const n0 = S.st.sample.calls.length;
-      const btn = await S.page.$('.claims button:has-text("Mit Claude erklären")');
+      const btn = await S.page.$('.claims button:has-text("Explain with Claude")');
       ok(!!btn, 'claim explanation is offered when Claude is available');
-      if (btn) { await btn.click(); await S.wait(() => /keine Rechtsberatung/.test((document.querySelector('.ai-box') || { textContent: '' }).textContent), null, 20000);
+      if (btn) { await btn.click(); await S.wait(() => /This is an explanation, not legal advice/.test((document.querySelector('.ai-box') || { textContent: '' }).textContent), null, 20000);
         ok(S.st.sample.calls.length === n0 + 1 && S.st.sample.calls[n0].step === 'Q', 'one sample call for the explanation');
         ok(await S.page.evaluate(() => window.__xss === undefined && !document.querySelector('.ai-box script')), 'model text with a script tag is rendered inert'); }
       // family view
@@ -479,7 +479,7 @@ async function partMain() {
       ok(api.sim > 0 && api.top >= 0.99 && api.sub > 0 && api.scaf > 0, 'similarity (' + api.sim + '), substructure (' + api.sub + ') and scaffold (' + api.scaf + ') searches answer', api);
       info('chem engine: mode ' + api.mode + ', ' + api.workers + ' workers, ms ' + JSON.stringify(api.ms));
       report.parts.main.chem = api;
-      for (const m of ['Exakt', 'Teilstruktur', 'Gerüst', 'Ähnlichkeit']) {
+      for (const m of ['Exact', 'Substructure', 'Scaffold', 'Similarity']) {
         await S.page.click('.seg button:has-text("' + m + '")');
         await S.wait(() => !document.querySelector('.k-status .spin') && (document.querySelectorAll('.k-card').length > 0 || !!document.querySelector('.k-struct .empty, #view .empty')), null, 90000);
         await sleep(200);
@@ -503,14 +503,14 @@ async function partMain() {
     let profileId = null;
     await step('product profile', async () => {
       await S.go('#produkte'); await S.wait(() => !!document.querySelector('#view button.btn.primary'), null, 20000);
-      await S.page.click('#view button:has-text("Neues Profil")');
+      await S.page.click('#view button:has-text("New profile")');
       await S.wait(() => !!document.getElementById('pf-name'));
       await S.page.fill('#pf-name', 'E2E mRNA-LNP <b>Test</b>');
       const lip = [['ALC-0315', '50', '6.1'], ['DSPC', '10'], ['Cholesterol', '38.5'], ['ALC-0159', '1.5']];
       for (let i = 0; i < lip.length; i++) { await S.page.fill('#pf-l' + i + '-name', lip[i][0]); await S.page.fill('#pf-l' + i + '-mol', lip[i][1]); }
       await S.page.fill('#pf-l0-pka', '6,1'); await S.page.fill('#pf-np', '6'); await S.page.fill('#pf-size', '80');
       await S.page.selectOption('#pf-pay', { index: 1 }).catch(() => {});
-      await S.page.fill('#pf-free', 'Freitext mit <script>window.__xss=5</script> und "Anführungszeichen".');
+      await S.page.fill('#pf-free', 'Free text with <script>window.__xss=5</script> and "quotation marks".');
       await S.page.keyboard.press('Tab'); await sleep(1800);
       const saved = await S.page.evaluate(async () => { const l = await window.LnpStore.list('profiles'); return l.map((p) => ({ id: p.id, name: p.name, lipids: (p.lipids || []).map((x) => x.name + ':' + x.molPct) })); });
       const mine = saved.find((p) => /E2E mRNA-LNP/.test(p.name));
@@ -545,8 +545,8 @@ async function partMain() {
       ok(/^T+B+D$/.test(steps), 'depth quick: triage, charts, synthesis in this order, nothing else (' + steps + ')');
       ok(calls.every((c) => c.bytes <= 262144), 'every prompt within 262,144 bytes (max ' + Math.max(...calls.map((c) => c.bytes)) + ')');
       ok(calls.filter((c) => c.step === 'T').every((c) => c.tier === 'quick') && calls.filter((c) => c.step === 'D').every((c) => c.tier === 'complex'), 'model tiers: triage quick, synthesis complex');
-      ok(done.limits >= 2 && /kein Rechtsgutachten|keine Rechtsberatung/i.test(done.text), 'limits block shown at the top and at the end');
-      ok(/nicht verifiziert|nicht_verifiziert|Zitat/i.test(done.text), 'the invented quote of the mock is flagged in the chart');
+      ok(done.limits >= 2 && /not a legal opinion|not legal advice/i.test(done.text), 'limits block shown at the top and at the end');
+      ok(/not verified|no quote/i.test(done.text), 'the invented quote of the mock is flagged in the chart');
       ok(await S.page.evaluate(() => window.__xss === undefined && document.querySelectorAll('#view script, #view img[onerror], #view [onerror]').length === 0), 'model output with script / onerror payloads is rendered inert');
       ok(done.text.indexOf('<img src=x onerror=') >= 0 || done.text.indexOf('<script>') >= 0, 'the payload is visible as text');
       await S.shot('main-fto-opinion');
@@ -595,7 +595,7 @@ async function partMain() {
       const n0 = S.st.sample.calls.length;
       await S.page.click('#ai-toggle'); await sleep(300);
       await S.page.fill('#q', 'LNP mit ionisierbarem Lipid und weniger als 1 mol-% PEG-Lipid'); await S.page.keyboard.press('Enter');
-      await S.wait(() => /aus der KI-Suche|gescheitert/.test((document.querySelector('.s-count') || { textContent: '' }).textContent), null, 60000);
+      await S.wait(() => /from AI search|AI search failed/.test((document.querySelector('.s-count') || { textContent: '' }).textContent), null, 60000);
       const r = await S.page.evaluate(() => ({ count: document.querySelector('.s-count').textContent, rows: document.querySelectorAll('.results .hrow').length }));
       const st = S.st.sample.calls.slice(n0).map((c) => c.step).join('');
       ok(r.rows > 0 && /^XR+$/.test(st), 'AI search: ' + r.rows + ' rows; calls ' + st + ' (expansion + re-rank)', r);
@@ -610,9 +610,9 @@ async function partMain() {
       const d = await S.page.evaluate(() => ({ boxes: document.querySelectorAll('.k-chartbox').length, svg: document.querySelectorAll('.k-chartbox svg').length, rects: document.querySelectorAll('.k-chartbox svg rect').length, marks: document.querySelectorAll('.k-chartbox a, .k-chartbox button').length, empty: Array.from(document.querySelectorAll('.k-chartbox')).filter((b) => b.innerText.trim().length < 20 && !b.querySelector('svg')).length, text: document.getElementById('view').innerText.length }));
       ok(d.boxes >= 3 && d.svg > 0 && d.rects > 10 && d.empty === 0, 'landscape: ' + d.boxes + ' chart boxes, ' + d.svg + ' SVG charts with ' + d.rects + ' bars, ' + d.marks + ' linked marks, none empty', d);
       await S.shot('main-landschaft');
-      await S.page.click('.seg button:has-text("Kernbestand")'); await sleep(1500);
+      await S.page.click('.seg button:has-text("Core dataset")'); await sleep(1500);
       const d2 = await S.page.evaluate(() => ({ rects: document.querySelectorAll('.k-chartbox svg rect').length, hash: location.hash }));
-      ok(d2.rects > 0 && /--rkern/.test(d2.hash), 'landscape scope "Kernbestand" redraws (' + d2.rects + ' bars)', d2);
+      ok(d2.rects > 0 && /--rkern/.test(d2.hash), 'landscape scope "Core dataset" redraws (' + d2.rects + ' bars)', d2);
       const hs = await S.hscroll(); ok(hs.length === 0, 'landscape: no horizontal scroll', hs);
       // a chart mark leads into the search
       const href = await S.page.evaluate(() => { const a = document.querySelector('.k-chartbox a[href^="#suche"]'); return a ? a.getAttribute('href') : null; });
@@ -640,18 +640,18 @@ async function partMain() {
       await S.shot('main-merkliste');
       // saved search and rerun
       await searchUi(S, '"lipid nanoparticle" AND cholesterol');
-      await S.page.click('button[aria-label="Suche speichern"]'); await sleep(400);
+      await S.page.click('button[aria-label="Save search"]'); await sleep(400);
       const dlgInput = await S.page.$('.scrim input[type="text"], #overlays input[type="text"]');
-      if (dlgInput) { await dlgInput.fill('E2E gespeicherte Suche'); await S.page.keyboard.press('Enter'); }
+      if (dlgInput) { await dlgInput.fill('E2E saved search'); await S.page.keyboard.press('Enter'); }
       await sleep(800);
       const ss = await S.page.evaluate(() => window.LnpStore.list('searches').then((l) => l.map((x) => ({ name: x.name, q: x.q, total: x.total }))));
       ok(ss.length >= 1 && ss.some((x) => /lipid nanoparticle/.test(x.q)), 'search saved (' + JSON.stringify(ss).slice(0, 120) + ')', ss);
       await S.go('#merkliste'); await S.wait(() => document.querySelectorAll('.k-search').length > 0, null, 20000);
-      await S.page.click('.k-search button:has-text("Erneut ausführen")');
+      await S.page.click('.k-search button:has-text("Run again")');
       await S.wait(() => (document.querySelector('.k-search-res') || { textContent: '' }).textContent.trim().length > 10 && !document.querySelector('.k-search-res .spin'), null, 30000);
       ok(true, 'saved search reruns: ' + (await S.page.evaluate(() => document.querySelector('.k-search-res').innerText.trim().slice(0, 100).replace(/\n/g, ' '))));
       // hand over to FTO
-      await S.page.click('#view button:has-text("Alle zur FTO-Prüfung")');
+      await S.page.click('#view button:has-text("All to FTO check")');
       await S.wait(() => /^#fto/.test(location.hash) && !!document.getElementById('fto-handover'), null, 30000);
       ok(true, 'watchlist hands its publications to the FTO view');
       const hs = await S.hscroll(); ok(hs.length === 0, 'watchlist / FTO: no horizontal scroll', hs);
@@ -663,10 +663,10 @@ async function partMain() {
       await S.page.click('#sys-test');
       await S.wait(() => { const r = document.getElementById('sys-test-result'); return r && r.dataset.ok != null; }, null, 120000);
       const r = await S.page.evaluate(() => ({ ok: document.getElementById('sys-test-result').dataset.ok, text: document.getElementById('sys-test-result').textContent, rows: Array.from(document.querySelectorAll('.k-steps li')).map((li) => li.children[0].textContent + ' | ' + li.children[1].textContent + ' | ' + li.children[2].textContent) }));
-      ok(r.ok === '1' && /8 Prüfungen bestanden/.test(r.text), 'system self-test: ' + r.text, r.rows);
+      ok(r.ok === '1' && /8 checks passed/.test(r.text), 'system self-test: ' + r.text, r.rows);
       r.rows.forEach((x) => info(x));
       const sys = await viewText(S);
-      ok(/Rechtsstand/.test(sys) && (await count(S, '#sys-limits')) === 1 && (await count(S, '#sys-stale')) === 1, 'system view shows data snapshots, status age and the limits block');
+      ok(/Legal status/.test(sys) && (await count(S, '#sys-limits')) === 1 && (await count(S, '#sys-stale')) === 1, 'system view shows data snapshots, status age and the limits block');
       const d = await S.page.evaluate(() => window.LnpStore.get('diag', 'boot'));
       ok(d && d.ok === true && d.engines && d.engines.search && d.caps.sample === true, 'diag/boot document written', d && { ok: d.ok, caps: d.caps });
       await S.shot('main-system');
@@ -741,23 +741,23 @@ async function partNoClaude(kind) {
     const ai = await S.page.evaluate(() => { const b = document.getElementById('ai-toggle'); return { there: !!b, disabled: b ? (b.disabled || b.getAttribute('aria-disabled') === 'true') : null, title: b ? (b.title || b.getAttribute('aria-label')) : null, avail: !!(window.LnpAI && window.LnpAI.available()) }; });
     ok(!ai.avail && (!ai.there || ai.disabled), 'AI search is off (button ' + (ai.there ? 'disabled' : 'absent') + ')', ai);
     const seeds = await pickSeeds(S); await openPatent(S, seeds[0], 'patent');
-    ok(!(await S.page.$('.claims button:has-text("Mit Claude erklären")')), 'no "explain with Claude" button');
+    ok(!(await S.page.$('.claims button:has-text("Explain with Claude")')), 'no "explain with Claude" button');
     // structure search
     const chem = await S.page.evaluate(() => window.LnpChem.search({ query: 'SM-102', mode: 'exact', limit: 3 }).then((h) => h.length));
     ok(chem > 0, 'structure search works');
     // FTO without the model
     await S.go('#fto'); await S.wait(() => !!document.getElementById('fto-noai'), null, 20000);
-    ok(/nicht verfügbar/i.test(await S.page.evaluate(() => document.getElementById('fto-noai').innerText)), 'FTO view explains that Claude is not available');
-    await S.page.click('#view button:has-text("Beispielprofil verwenden")');
+    ok(/not available/i.test(await S.page.evaluate(() => document.getElementById('fto-noai').innerText)), 'FTO view explains that Claude is not available');
+    await S.page.click('#view button:has-text("Use example profile")');
     await S.wait(() => !!document.getElementById('fto-find') || !!document.querySelector('.k-cands'), null, 30000);
     if (await S.page.$('#fto-find')) await S.page.click('#fto-find');
     await S.wait(() => document.querySelectorAll('.k-cands tbody tr').length > 3 && !!document.getElementById('fto-start'), null, 180000);
     const label = await S.page.evaluate(() => document.getElementById('fto-start').textContent);
-    ok(/Ohne Claude/.test(label), 'start button says "' + label.trim() + '"');
+    ok(/without Claude/.test(label), 'start button says "' + label.trim() + '"');
     await S.page.click('#fto-start');
     await S.wait(() => !!document.querySelector('#view [data-fmt="md"]') || !!document.querySelector('#view .notice.err'), null, 120000);
     const o = await S.page.evaluate(() => ({ err: (document.querySelector('#view .notice.err') || {}).textContent, text: document.getElementById('view').innerText, limits: document.querySelectorAll('.k-limits').length }));
-    ok(!o.err && o.limits >= 2 && /ohne Claude|nicht beurteil|keine Merkmalsanalyse|Claude/i.test(o.text), 'compilation without the model renders (status, expiry, search record) and says what is missing', o.err || o.text.slice(0, 200));
+    ok(!o.err && o.limits >= 2 && /without Claude|cannot be assessed|no claim chart/i.test(o.text), 'compilation without the model renders (status, expiry, search record) and says what is missing', o.err || o.text.slice(0, 200));
     await S.page.click('#view [data-fmt="md"]');
     await sleep(1200);
     ok(S.st.downloads.some((f) => /\.md$/.test(f)), 'export falls back to a file link of the browser (' + S.st.downloads.join(', ') + ')');
@@ -766,7 +766,7 @@ async function partNoClaude(kind) {
     await S.go('#system--xtest');
     await S.wait(() => { const r = document.getElementById('sys-test-result'); return r && r.dataset.ok != null; }, null, 120000);
     const t = await S.page.evaluate(() => document.getElementById('sys-test-result').textContent);
-    ok(/7 Prüfungen bestanden, 1 entfallen/.test(t), 'self-test: ' + t);
+    ok(/7 checks passed, 1 skipped/.test(t), 'self-test: ' + t);
     // persistence over a reload
     await S.page.evaluate(() => window.LnpApp.marks.save('EP3532103B1', { star: true, tag: 'x' })); await sleep(300);
     await S.page.reload(); await S.wait(() => document.getElementById('app').dataset.state === 'ready', null, 60000);
@@ -805,7 +805,7 @@ async function partFallback(mode, dist) {
     await S.go('#system--xtest');
     await S.wait(() => { const x = document.getElementById('sys-test-result'); return x && x.dataset.ok != null; }, null, 180000);
     const t = await S.page.evaluate(() => document.getElementById('sys-test-result').textContent);
-    ok(/7 Prüfungen bestanden/.test(t), 'self-test: ' + t);
+    ok(/7 checks passed/.test(t), 'self-test: ' + t);
     await S.shot(mode + '-system');
     await S.clean(mode, allow);
   } finally { await S.close(); }
@@ -851,7 +851,7 @@ async function partFaults() {
         const r = await searchUi(S, 'lipid nanoparticle').catch((e) => ({ rows: -1, err: String(e) }));
         ok(r.rows > 0, file + ' ' + fault + ': app still boots and searches (degraded path)', r);
       } else {
-        ok(/konnten nicht geladen/.test(d.title || '') && d.diag.length > 80 && d.retry && d.diag.indexOf(file.replace(/^data\//, '').replace(/^.*\//, '')) >= 0, file + ' ' + fault + ': readable boot error naming the file, with retry (' + d.diag.replace(/\s+/g, ' ').slice(0, 110) + ')', d);
+        ok(/Could not load/.test(d.title || '') && d.diag.length > 80 && d.retry && d.diag.indexOf(file.replace(/^data\//, '').replace(/^.*\//, '')) >= 0, file + ' ' + fault + ': readable boot error naming the file, with retry (' + d.diag.replace(/\s+/g, ' ').slice(0, 110) + ')', d);
         // retry heals once the file is back
         delete S.faults[file];
         await S.page.click('#boot-diag button.primary');
@@ -889,9 +889,9 @@ async function partFaults() {
       const term = man.idx.post[Math.floor(man.idx.post.length / 2)][1];
       const hash = await S.hashOf({ view: 'suche', arg: term });
       await S.go(hash);
-      await S.wait(() => { const c = document.querySelector('.s-count'); return c && /gescheitert|Patent/.test(c.textContent) && !c.querySelector('.spin'); }, null, 30000);
+      await S.wait(() => { const c = document.querySelector('.s-count'); return c && /failed|patent/.test(c.textContent) && !c.querySelector('.spin'); }, null, 30000);
       const e = await S.page.evaluate(() => ({ count: document.querySelector('.s-count').textContent, box: (document.querySelector('.results .empty') || {}).innerText }));
-      ok(/gescheitert/.test(e.count) && e.box && e.box.length > 40, 'missing postings shard (' + post + ', term "' + term + '"): the search view shows an error with a reason ("' + String(e.box).replace(/\s+/g, ' ').slice(0, 100) + '")', e);
+      ok(/failed/.test(e.count) && e.box && e.box.length > 40, 'missing postings shard (' + post + ', term "' + term + '"): the search view shows an error with a reason ("' + String(e.box).replace(/\s+/g, ' ').slice(0, 100) + '")', e);
       delete S.faults[post];
       await S.page.evaluate(() => { window.LnpSearch.reset(); });
       const again = await searchUi(S, 'lipid nanoparticle'); ok(again.rows > 0, 'search recovers afterwards');
@@ -989,11 +989,11 @@ async function partFixture() {
     // patent page
     await S.go('#patent-EP9999991B1--qzzfixture');
     await S.wait(() => document.querySelectorAll('.claims article.claim').length > 0, null, 30000);
-    await S.page.click('.claims-ctl button:has-text("Abhängige")').catch(() => {}); await sleep(600);
+    await S.page.click('.claims-ctl button:has-text("Expand dependents")').catch(() => {}); await sleep(600);
     const p = await S.page.evaluate(() => ({ text: document.querySelector('.claims').innerText, title: document.querySelector('.pt-title').textContent, defs: (document.querySelector('.defs') || {}).innerText || '' }));
     ok(p.text.indexOf('IGNORE ALL PREVIOUS INSTRUCTIONS') >= 0 && p.text.indexOf('<script>window.__xss=1</script>') >= 0 && p.title.indexOf('<script>') >= 0, 'claim with script tags and injection text is displayed verbatim');
     await noXss('patent page');
-    await S.page.click('.claims-ctl .seg button:has-text("Deutsch")').catch(() => {}); await sleep(500); await noXss('German claims');
+    await S.page.click('.claims-ctl .seg button:has-text("German")').catch(() => {}); await sleep(500); await noXss('German claims');
     hs = await S.hscroll(); ok(hs.length === 0, 'patent page: no horizontal scroll', hs);
     await S.shot('fixture-patent');
     // very long claim (about 500,000 characters) and 401 chained claims
@@ -1005,7 +1005,7 @@ async function partFixture() {
     ok(ms < 8000 && lc.len > 1000, 'a ' + lc.len + '-character claim with 400 chained dependents renders in ' + ms + ' ms (' + lc.nodes + ' DOM nodes)', lc);
     report.perf.longClaimMs = ms;
     hs = await S.hscroll(); ok(hs.length === 0, 'long claim: no horizontal scroll', hs);
-    t0 = Date.now(); await S.page.click('.claims-ctl button:has-text("Abhängige")').catch(() => {}); await sleep(300);
+    t0 = Date.now(); await S.page.click('.claims-ctl button:has-text("Expand dependents")').catch(() => {}); await sleep(300);
     const dn = await S.page.evaluate(() => document.querySelectorAll('.claims article.claim').length);
     ok(Date.now() - t0 < 8000, 'unfolding the 400-deep chain stays responsive (' + (Date.now() - t0) + ' ms, ' + dn + ' claim elements)');
     const sr = await apiSearch(S, 'zzlongclaim'); ok(sr.total === 1 && sr.first && sr.first.snippet && sr.first.snippet.map((x) => x[0]).join('').length < 1200, 'snippet of the long claim is short (' + (sr.first ? sr.first.snippet.map((x) => x[0]).join('').length : '-') + ' characters)', sr);
@@ -1014,11 +1014,11 @@ async function partFixture() {
     await S.go('#familie-EP9999991B1'); await sleep(1500); await noXss('family view');
     // explain + FTO over the hostile claim: where does the text land in the prompt?
     const calls = S.st.sample.calls;
-    await S.go('#patent-EP9999991B1'); await S.page.waitForSelector('.claims button:has-text("Mit Claude erklären")', { timeout: 30000 });
-    await S.page.click('.claims button:has-text("Mit Claude erklären")');
-    await S.wait(() => /keine Rechtsberatung/.test((document.querySelector('.ai-box') || { textContent: '' }).textContent), null, 20000);
+    await S.go('#patent-EP9999991B1'); await S.page.waitForSelector('.claims button:has-text("Explain with Claude")', { timeout: 30000 });
+    await S.page.click('.claims button:has-text("Explain with Claude")');
+    await S.wait(() => /This is an explanation, not legal advice/.test((document.querySelector('.ai-box') || { textContent: '' }).textContent), null, 20000);
     const q = calls[calls.length - 1];
-    ok(q.step === 'Q' && q.prompt.indexOf('IGNORE ALL PREVIOUS INSTRUCTIONS') > q.prompt.indexOf('Erkläre'), 'explain: the claim text sits after the instructions');
+    ok(q.step === 'Q' && q.prompt.indexOf('IGNORE ALL PREVIOUS INSTRUCTIONS') > q.prompt.indexOf('Explain the following patent claim'), 'explain: the claim text sits after the instructions');
     await noXss('claim explanation');
     const res = await S.page.evaluate(async () => {
       const F = window.LnpFto, ex = window.LnpProfile.example();
@@ -1082,7 +1082,7 @@ async function partPerf() {
       if (i === 4) {
         // interactive: type into the field right away
         const t1 = Date.now(); await S.page.fill('#q', 'ionizable lipid'); await S.page.keyboard.press('Enter');
-        await S.wait(() => /Patent/.test(document.querySelector('.s-count').textContent) && document.getElementById('q').value === 'ionizable lipid' && document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.results .res-ph .spin') && /ionizable/.test(decodeURIComponent(location.hash)), null, 30000);
+        await S.wait(() => /patent/.test(document.querySelector('.s-count').textContent) && document.getElementById('q').value === 'ionizable lipid' && document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.results .res-ph .spin') && /ionizable/.test(decodeURIComponent(location.hash)), null, 30000);
         P.firstQueryUiMs = Date.now() - t1;
       }
       await S.close();
@@ -1119,7 +1119,7 @@ async function partPerf() {
     const tUi = [];
     for (const q of ['cholesterol peg', 'mrna vaccine lipid', '"ionizable lipid" pka']) {
       await S.page.fill('#q', ''); const t0 = Date.now(); await S.page.type('#q', q, { delay: 0 }); await S.page.keyboard.press('Enter');
-      await S.wait((qq) => { const c = document.querySelector('.s-count'); return c && /Patent/.test(c.textContent) && !c.querySelector('.spin') && document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.results .res-ph .spin') && (window.LnpApp.state.lastQuery === qq); }, q, 30000);
+      await S.wait((qq) => { const c = document.querySelector('.s-count'); return c && /patent/.test(c.textContent) && !c.querySelector('.spin') && document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.results .res-ph .spin') && (window.LnpApp.state.lastQuery === qq); }, q, 30000);
       tUi.push(Date.now() - t0);
     }
     P.searchUiMs = tUi; info('UI: typed query to rendered list ' + tUi.join(' / ') + ' ms');

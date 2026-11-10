@@ -95,7 +95,7 @@ async function loadRef(bd, limit) {
   for await (const line of rl) {
     if (!line) continue; if (limit && ref.P >= limit) break;
     const r = JSON.parse(line), p = ref.P++, lv = keep ? keep[p] : 2;
-    const st = r.status || statusExtra.get(r.pn) || null, cl = r.claims || {}, en = cl.en || [], de = cl.de || [];
+    const st = statusExtra.get(r.pn) || r.status || null, cl = r.claims || {}, en = cl.en || [], de = cl.de || [];
     const hasText = !!r.text && (en.length + de.length) > 0, textKept = hasText && lv >= 1;
     const code = st ? (ST_CODES.includes(st.code || '') ? (st.code || '') : 'unknown') : '';
     ref.rec.push({ pn: r.pn, auth: r.auth, kind: r.kind || '', pub: ymd(r.pub_date), year: +(r.pub_date || '0').slice(0, 4), prioYear: +(r.priority_date || '0').slice(0, 4), cpc: r.cpc || [], player: r.player || null,

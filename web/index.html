@@ -56,28 +56,28 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--
 <div class="app" id="app" data-state="boot">
   <header class="band" id="band">
     <div class="band-in">
-      <a class="brand" href="#suche" id="brand" aria-label="LNP Patent Desk, zur Suche">
+      <a class="brand" href="#suche" id="brand" aria-label="LNP Patent Desk, go to Search">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name"><b>LNP</b> <span>Patent Desk</span></span>
       </a>
-      <dl class="band-counts" id="band-counts" aria-label="Datenbestand"></dl>
+      <dl class="band-counts" id="band-counts" aria-label="Dataset"></dl>
       <button class="jump" id="jump" type="button" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
         <span class="jump-ico" aria-hidden="true"></span>
-        <span class="jump-text">Patentnummer, Suche oder Ansicht</span>
-        <kbd id="jump-kbd">Strg K</kbd>
+        <span class="jump-text">Patent number, search or view</span>
+        <kbd id="jump-kbd">Ctrl K</kbd>
       </button>
-      <button class="band-btn" id="theme-btn" type="button" aria-label="Darstellung wechseln" title="Darstellung: automatisch"></button>
+      <button class="band-btn" id="theme-btn" type="button" aria-label="Change appearance" title="Appearance: automatic"></button>
     </div>
   </header>
-  <nav class="rail" id="rail" aria-label="Bereiche"></nav>
+  <nav class="rail" id="rail" aria-label="Sections"></nav>
   <main class="view" id="view" tabindex="-1">
     <section class="boot" id="boot" aria-live="polite">
-      <p class="overline">Start</p>
-      <h1 class="boot-title">Datenbestand wird geladen</h1>
+      <p class="overline">Start-up</p>
+      <h1 class="boot-title">Loading dataset</h1>
       <div class="boot-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="boot-bar"><span id="boot-fill"></span></div>
-      <p class="boot-now" id="boot-now">Skripte werden gestartet</p>
+      <p class="boot-now" id="boot-now">Starting scripts</p>
       <ol class="boot-steps" id="boot-steps"></ol>
-      <noscript><p class="boot-now">Diese Seite braucht JavaScript.</p></noscript>
+      <noscript><p class="boot-now">This page needs JavaScript.</p></noscript>
     </section>
   </main>
 </div>

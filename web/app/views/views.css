@@ -272,13 +272,13 @@ a.k-hbar:hover { background: var(--muted); }
 .k-run-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .k-run-head .sec-title { margin-right: auto; }
 .k-log { border: 1px solid var(--line); border-radius: 10px; max-height: 300px; overflow-y: auto; font-size: 12.5px; }
-.k-log:empty::after { content: "Noch keine Ereignisse"; display: block; padding: 10px 12px; color: var(--faint); }
+.k-log:empty::after { content: "No events yet"; display: block; padding: 10px 12px; color: var(--faint); }
 .k-log li { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; padding: 5px 12px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
 .k-log li:first-child { border-top: 0; }
 .k-log time { color: var(--faint); font-size: 10.5px; padding-top: 2px; }
 .k-log li.warn { box-shadow: inset 2px 0 0 var(--warn); } .k-log li.ok { box-shadow: inset 2px 0 0 var(--good); }
 .k-stream { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--dim); white-space: pre-wrap; overflow-wrap: anywhere; min-height: 54px; max-height: 190px; overflow: hidden; }
-.k-stream:empty::after { content: "wartet auf den nächsten Schritt"; color: var(--faint); }
+.k-stream:empty::after { content: "waiting for the next step"; color: var(--faint); }
 .k-matrix td { vertical-align: middle; }
 .k-matrix { min-width: 900px; } .k-chart-t { min-width: 780px; } .k-cands table.data { min-width: 880px; } .k-marks { min-width: 940px; }
 .k-pat { border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
@@ -292,7 +292,7 @@ a.k-hbar:hover { background: var(--muted); }
 .k-claim { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .k-chart-t td { vertical-align: top; }
 .k-quote { min-width: 220px; max-width: 420px; }
-.k-quote q { quotes: "„" "“"; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.k-quote q { quotes: "\201C" "\201D"; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
 .k-reason { margin-top: 4px; color: var(--dim); min-width: 200px; max-width: 420px; overflow-wrap: anywhere; }
 .k-verif { white-space: nowrap; }
 .k-ok, .k-nok { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; }

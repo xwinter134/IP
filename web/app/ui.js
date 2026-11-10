@@ -74,19 +74,22 @@
   }
 
   /* ------------------------------------------------------------ formatting */
-  var nf = (function () { try { return new Intl.NumberFormat('de-DE'); } catch (e) { return { format: String }; } })();
+  var nf = (function () { try { return new Intl.NumberFormat('en-GB'); } catch (e) { return { format: String }; } })();
   function num(n) { return n == null || isNaN(n) ? '–' : nf.format(n); }
-  // yyyymmdd int | "yyyy-mm-dd" -> "dd.mm.yyyy"
+  // yyyymmdd int | "yyyy-mm-dd" -> "26 Oct 2037"
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function date(d) {
     if (!d) return '–';
     var s = String(d).replace(/-/g, '');
     if (!/^\d{8}/.test(s)) return String(d);
-    return s.slice(6, 8) + '.' + s.slice(4, 6) + '.' + s.slice(0, 4);
+    var mo = +s.slice(4, 6);
+    if (mo < 1 || mo > 12) return String(d);
+    return (+s.slice(6, 8)) + ' ' + MONTHS[mo - 1] + ' ' + s.slice(0, 4);
   }
   function year(d) { return d ? String(d).replace(/-/g, '').slice(0, 4) : ''; }
   function ymd(d) { return d ? Number(String(d).replace(/-/g, '').slice(0, 8)) : 0; }
   function today() { var t = new Date(); return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate(); }
-  function bytes(n) { return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : n >= 1024 ? Math.round(n / 1024) + ' kB' : (n || 0) + ' B'; }
+  function bytes(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : n >= 1024 ? Math.round(n / 1024) + ' kB' : (n || 0) + ' B'; }
   function pnPretty(pn) {
     var m = /^([A-Z]{2})(\d{4})?(\d+)([A-Z]\d?)?$/.exec(pn || '');
     if (!m) return pn || '';
@@ -98,14 +101,14 @@
     return cc + ' ' + n + (m[4] ? ' ' + m[4] : '');
   }
   var STATUS = {
-    granted: ['Erteilt', 'good'], pending: ['Anhängig', 'info'], lapsed: ['Erloschen', ''], revoked: ['Widerrufen', 'crit'],
-    withdrawn: ['Zurückgenommen', ''], refused: ['Zurückgewiesen', 'crit'], expired: ['Abgelaufen', ''], unknown: ['Rechtsstand offen', 'hollow'], '': ['Kein Rechtsstand', 'hollow']
+    granted: ['Granted', 'good'], pending: ['Pending', 'info'], lapsed: ['Lapsed', ''], revoked: ['Revoked', 'crit'],
+    withdrawn: ['Withdrawn', ''], refused: ['Refused', 'crit'], expired: ['Expired', ''], unknown: ['Status open', 'hollow'], '': ['No legal status', 'hollow']
   };
   function statusLabel(code) { return (STATUS[code || ''] || STATUS['']) [0]; }
-  function statusPill(code) { var s = STATUS[code || ''] || STATUS['']; return h('span.pill' + (s[1] ? '.' + s[1] : ''), { title: 'Rechtsstand laut Datenstand, keine Rechtsauskunft' }, s[0]); }
+  function statusPill(code) { var s = STATUS[code || ''] || STATUS['']; return h('span.pill' + (s[1] ? '.' + s[1] : ''), { title: 'Legal status as per the dataset; not legal advice' }, s[0]); }
   function dePill(deIn) {
-    return deIn === 1 ? h('span.pill.good', { title: 'EP-Register: für DE benannt, nicht als erloschen vermerkt' }, 'DE in Kraft')
-      : deIn === 0 ? h('span.pill', { title: 'Nach Datenstand in DE nicht in Kraft' }, 'DE nicht in Kraft') : null;
+    return deIn === 1 ? h('span.pill.good', { title: 'EP Register: DE designated, not recorded as lapsed' }, 'DE in force')
+      : deIn === 0 ? h('span.pill', { title: 'Not in force in DE according to the dataset' }, 'DE not in force') : null;
   }
 
   /* ------------------------------------------------------------ highlight pieces [[text, isMatch], ...] -> nodes */
@@ -165,7 +168,7 @@
   function dialog(title, body, o) {
     o = o || {};
     var prev = document.activeElement;
-    var closeBtn = h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Schließen', onclick: close }, icon('x'));
+    var closeBtn = h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Close', onclick: close }, icon('x'));
     var dlg = h('div.dialog', { role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
       o.bare ? null : h('div.dialog-head', null, h('h2', { text: title }), closeBtn), o.bare ? body : h('div.dialog-body', null, body));
     var scrim = h('div.scrim', { onmousedown: function (ev) { if (ev.target === scrim) close(); } }, dlg);
@@ -192,10 +195,10 @@
       var ta = h('textarea', { style: { position: 'fixed', left: '-999px', top: '0' } }); ta.value = text; document.body.appendChild(ta); ta.select();
       var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
       document.body.removeChild(ta);
-      toast(ok ? (okMsg || 'Kopiert') : 'Kopieren wird hier nicht unterstützt', { error: !ok });
+      toast(ok ? (okMsg || 'Copied') : 'Copying is not supported here', { error: !ok });
     }
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(okMsg || 'Kopiert'); }, fallback);
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(okMsg || 'Copied'); }, fallback);
       else fallback();
     } catch (e) { fallback(); }
   }
@@ -206,19 +209,19 @@
       try {
         var blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' });
         var url = URL.createObjectURL(blob);
-        var a = h('a', { href: url, download: filename }, 'Datei öffnen');
-        toast(filename + ' erzeugt', { node: a, ms: 15000 });
+        var a = h('a', { href: url, download: filename }, 'Open file');
+        toast(filename + ' created', { node: a, ms: 15000 });
         var c = h('a', { href: url, download: filename, style: { display: 'none' } }); document.body.appendChild(c); c.click(); document.body.removeChild(c);
         setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
         return Promise.resolve({ via: 'link' });
-      } catch (e) { toast('Datei konnte nicht erzeugt werden: ' + errText(e), { error: true }); return Promise.resolve({ via: 'none' }); }
+      } catch (e) { toast('Could not create the file: ' + errText(e), { error: true }); return Promise.resolve({ via: 'none' }); }
     }
     if (!caps.downloads) return viaLink();
-    return caps.downloads.save({ filename: filename, data: data }).then(function () { toast(filename + ' gespeichert'); return { via: 'downloads' }; }, function (e) {
+    return caps.downloads.save({ filename: filename, data: data }).then(function () { toast(filename + ' saved'); return { via: 'downloads' }; }, function (e) {
       var code = e && e.code;
-      if (code === 'declined') { toast('Speichern abgebrochen'); return { via: 'declined' }; }
-      if (code === 'rate_limited') { toast('Es ist noch ein Speichern-Dialog offen. Bitte gleich noch einmal versuchen.', { error: true }); return { via: 'none' }; }
-      if (code === 'rejected_extension' || code === 'extension_not_enabled' || code === 'too_large' || code === 'bad_request') { toast('Speichern nicht möglich: ' + errText(e), { error: true }); return { via: 'none' }; }
+      if (code === 'declined') { toast('Save cancelled'); return { via: 'declined' }; }
+      if (code === 'rate_limited') { toast('A save dialog is still open. Please try again in a moment.', { error: true }); return { via: 'none' }; }
+      if (code === 'rejected_extension' || code === 'extension_not_enabled' || code === 'too_large' || code === 'bad_request') { toast('Cannot save: ' + errText(e), { error: true }); return { via: 'none' }; }
       return viaLink();
     });
   }

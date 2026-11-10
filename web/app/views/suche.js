@@ -1,36 +1,36 @@
 /* LNP Patent Desk: search view. Route: #suche[-<query>][--a..][--k..][--y..][--p..][--c..][--t..][--r..][--e..][--x..][--s..][--mai]
    a auth, k kinds, y [from, to] publication year, p player indexes, c CPC subclasses, t status codes, r tiers,
-   e seed tiers, x switches (text, comp, img, de, indep, seed), s sort (date | expiry), m = "ai" (KI-Suche). */
+   e seed tiers, x switches (text, comp, img, de, indep, seed), s sort (date | expiry), m = "ai" (AI search). */
 (function (g) {
   'use strict';
   var U = g.LnpUI, R = g.LnpRouter, h = U.h;
   var PAGE = 30, MAX_BLOCKS = 400, EXPORT_MAX = 20000;
   var OPS = [
-    ['AND', ' AND ', 'beide Begriffe'], ['OR', ' OR ', 'einer der Begriffe'], ['NOT', ' NOT ', 'ohne den Begriff'], ['"…"', '""', 'exakte Wortfolge', 1],
-    ['NEAR/5', ' NEAR/5 ', 'höchstens 5 Wörter Abstand'], ['*', '*', 'Wortanfang'], ['( )', '()', 'Gruppe', 1],
-    ['indep:', 'indep:', 'nur unabhängige Claims'], ['claims:', 'claims:', 'nur Claims'], ['title:', 'title:', 'nur Titel'], ['asg:', 'asg:', 'Anmelder'],
-    ['same:( )', 'same:()', 'alles im selben Claim', 1], ['cpc:', 'cpc:', 'CPC-Klasse'], ['year:', 'year:', 'Jahr der Veröffentlichung'], ['player:', 'player:', 'Akteur'], ['status:', 'status:', 'Rechtsstand']
+    ['AND', ' AND ', 'both terms'], ['OR', ' OR ', 'either term'], ['NOT', ' NOT ', 'without the term'], ['"…"', '""', 'exact phrase', 1],
+    ['NEAR/5', ' NEAR/5 ', 'at most 5 words apart'], ['*', '*', 'word stem'], ['( )', '()', 'group', 1],
+    ['indep:', 'indep:', 'independent claims only'], ['claims:', 'claims:', 'claims only'], ['title:', 'title:', 'title only'], ['asg:', 'asg:', 'applicant'],
+    ['same:( )', 'same:()', 'all in the same claim', 1], ['cpc:', 'cpc:', 'CPC class'], ['year:', 'year:', 'publication year'], ['player:', 'player:', 'player'], ['status:', 'status:', 'legal status']
   ];
   var HELP = [
-    ['lipid nanoparticle', 'beide Wörter, irgendwo im Patent (AND ist Standard)'],
-    ['"ionizable lipid"', 'exakte Wortfolge innerhalb eines Claims'],
-    ['pKa NEAR/8 lipid', 'höchstens 8 Wörter Abstand, im selben Claim'],
-    ['cholest* OR sterol', 'Wortanfang; Alternativen'],
-    ['lipid -siRNA', 'ohne den Begriff (auch NOT)'],
-    ['same:(PEG "mol %")', 'alle Bedingungen im selben Claim'],
-    ['indep:(molar ratio)', 'nur unabhängige Claims; ebenso dep: claims: title: abstract:'],
-    ['asg:acuitas  player:Moderna', 'Anmelder (Wortanfang); zugeordneter Akteur'],
-    ['cpc:A61K9/51  cpc:C07C|C07D', 'CPC-Präfix, Listen mit |'],
-    ['year:2018-2022  prio:-2012  exp:2030-', 'Veröffentlichung, Priorität, Ablauf (Jahre)'],
-    ['status:granted  inforce:1', 'Rechtsstand; in DE in Kraft'],
-    ['pn:"EP 3 532 103"  fam:62025447', 'Nummer, Familie'],
-    ['DLin-MC3-DMA  C12-200', 'Namen mit Bindestrich gelten als Wortfolge'],
-    ['lang:de  text:1  compounds:1', 'deutsche Claims; nur Volltext; mit Strukturen']
+    ['lipid nanoparticle', 'both words, anywhere in the patent (AND is the default)'],
+    ['"ionizable lipid"', 'exact phrase within a claim'],
+    ['pKa NEAR/8 lipid', 'at most 8 words apart, in the same claim'],
+    ['cholest* OR sterol', 'word stem; alternatives'],
+    ['lipid -siRNA', 'without the term (also NOT)'],
+    ['same:(PEG "mol %")', 'all conditions in the same claim'],
+    ['indep:(molar ratio)', 'independent claims only; likewise dep: claims: title: abstract:'],
+    ['asg:acuitas  player:Moderna', 'applicant (word stem); assigned player'],
+    ['cpc:A61K9/51  cpc:C07C|C07D', 'CPC prefix, lists with |'],
+    ['year:2018-2022  prio:-2012  exp:2030-', 'publication, priority, expiry (years)'],
+    ['status:granted  inforce:1', 'legal status; in force in DE'],
+    ['pn:"EP 3 532 103"  fam:62025447', 'number, family'],
+    ['DLin-MC3-DMA  C12-200', 'hyphenated names are treated as a phrase'],
+    ['lang:de  text:1  compounds:1', 'German claims; full text only; with structures']
   ];
   var EXAMPLES = ['"ionizable lipid" NEAR/10 pKa', 'indep:("molar ratio" cholesterol PEG)', 'player:Acuitas status:granted', 'cpc:A61K9/5123 year:2021-', 'DLin-MC3-DMA'];
-  var TIER = { 0: 'nur Schlüsselliste', 1: 'Stufe 1 (Kern)', 2: 'Stufe 2', 3: 'Stufe 3', 4: 'Stufe 4 (Umfeld)', 5: 'nur Klassensuche' };
-  var SWITCH = { text: 'Volltext vorhanden', comp: 'Strukturen vorhanden', img: 'Formelbild im Hauptanspruch', de: 'In DE in Kraft', indep: 'Nur unabhängige Claims durchsuchen', seed: 'Nur Schlüsselfamilien' };
-  var FIELD = { title: 'Titel', abstract: 'Abstract', assignee: 'Anmelder' };
+  var TIER = { 0: 'key list only', 1: 'Tier 1 (core)', 2: 'Tier 2', 3: 'Tier 3', 4: 'Tier 4 (periphery)', 5: 'class search only' };
+  var SWITCH = { text: 'Full text available', comp: 'Structures available', img: 'Formula image in main claim', de: 'In force in DE', indep: 'Search independent claims only', seed: 'Key families only' };
+  var FIELD = { title: 'Title', abstract: 'Abstract', assignee: 'Applicant' };
 
   function mount(host, route, App) {
     var D = g.LnpData, S = g.LnpSearch, M = App.manifest;
@@ -39,28 +39,28 @@
     var density = 'comfortable'; try { density = g.localStorage.getItem('lnp.density') || density; } catch (e) { /* ignore */ }
 
     /* ---------------- skeleton */
-    var qInput = h('input', { id: 'q', type: 'search', placeholder: 'Begriffe, "Wortfolgen", Felder wie indep: oder cpc:', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Suchanfrage', enterkeyhint: 'search' });
-    var helpBtn = h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Suchsyntax', title: 'Suchsyntax', onclick: showHelp }, U.icon('help'));
-    var aiBtn = h('button.btn', { type: 'button', id: 'ai-toggle', 'aria-pressed': 'false', onclick: toggleAi }, U.icon('spark'), h('span.lbl', { text: 'KI-Suche' }));
-    var ops = h('div.q-ops', { role: 'group', 'aria-label': 'Operatoren' });
+    var qInput = h('input', { id: 'q', type: 'search', placeholder: 'Terms, "phrases", fields such as indep: or cpc:', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Search query', enterkeyhint: 'search' });
+    var helpBtn = h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Search syntax', title: 'Search syntax', onclick: showHelp }, U.icon('help'));
+    var aiBtn = h('button.btn', { type: 'button', id: 'ai-toggle', 'aria-pressed': 'false', onclick: toggleAi }, U.icon('spark'), h('span.lbl', { text: 'AI search' }));
+    var ops = h('div.q-ops', { role: 'group', 'aria-label': 'Operators' });
     OPS.forEach(function (o) { ops.appendChild(h('button.chip', { type: 'button', title: o[2], onclick: function () { insert(o[1], o[3]); } }, o[0])); });
     var warn = h('div.q-warn', { hidden: true });
     var count = h('div.s-count', { 'aria-live': 'polite' });
     var active = h('div.s-active');
-    var sortSeg = h('div.seg', { role: 'group', 'aria-label': 'Sortierung' });
-    [['', 'Relevanz'], ['date', 'Datum'], ['expiry', 'Ablauf']].forEach(function (s) { sortSeg.appendChild(h('button', { type: 'button', data: { s: s[0] }, onclick: function () { st.s = s[0]; commit(); } }, s[1])); });
-    var densBtn = h('button.btn.icon', { type: 'button', 'aria-label': 'Dichte der Trefferliste', title: 'Dichte der Trefferliste', onclick: function () { setDensity(density === 'compact' ? 'comfortable' : 'compact'); } });
-    var fToggle = h('button.btn.f-toggle', { type: 'button', 'aria-expanded': 'false', onclick: function () { var open = root.dataset.facets !== 'open'; root.dataset.facets = open ? 'open' : ''; fToggle.setAttribute('aria-expanded', String(open)); } }, U.icon('filter'), 'Filter');
-    var saveBtn = h('button.btn.icon', { type: 'button', 'aria-label': 'Suche speichern', title: 'Suche speichern', onclick: saveSearch }, U.icon('save'));
-    var savedBtn = h('button.btn', { type: 'button', title: 'Gespeicherte Suchen', 'aria-label': 'Gespeicherte Suchen', onclick: showSaved }, U.icon('rows'), h('span.lbl', { text: 'Gespeichert' }));
-    var csvBtn = h('button.btn', { type: 'button', title: 'Trefferliste als CSV', 'aria-label': 'CSV-Export', onclick: exportCsv }, U.icon('download'), h('span.lbl', { text: 'CSV' }));
+    var sortSeg = h('div.seg', { role: 'group', 'aria-label': 'Sort order' });
+    [['', 'Relevance'], ['date', 'Date'], ['expiry', 'Expiry']].forEach(function (s) { sortSeg.appendChild(h('button', { type: 'button', data: { s: s[0] }, onclick: function () { st.s = s[0]; commit(); } }, s[1])); });
+    var densBtn = h('button.btn.icon', { type: 'button', 'aria-label': 'Result list density', title: 'Result list density', onclick: function () { setDensity(density === 'compact' ? 'comfortable' : 'compact'); } });
+    var fToggle = h('button.btn.f-toggle', { type: 'button', 'aria-expanded': 'false', onclick: function () { var open = root.dataset.facets !== 'open'; root.dataset.facets = open ? 'open' : ''; fToggle.setAttribute('aria-expanded', String(open)); } }, U.icon('filter'), 'Filters');
+    var saveBtn = h('button.btn.icon', { type: 'button', 'aria-label': 'Save search', title: 'Save search', onclick: saveSearch }, U.icon('save'));
+    var savedBtn = h('button.btn', { type: 'button', title: 'Saved searches', 'aria-label': 'Saved searches', onclick: showSaved }, U.icon('rows'), h('span.lbl', { text: 'Saved' }));
+    var csvBtn = h('button.btn', { type: 'button', title: 'Result list as CSV', 'aria-label': 'CSV export', onclick: exportCsv }, U.icon('download'), h('span.lbl', { text: 'CSV' }));
     var top = h('div.s-top', null,
       h('div.q-row', null, h('div.q-box', null, U.icon('search'), qInput, helpBtn), aiBtn),
       ops, warn,
       h('div.s-bar', null, count, fToggle, sortSeg, densBtn, saveBtn, savedBtn, csvBtn),
       active);
-    var facets = h('aside.facets', { 'aria-label': 'Filter' });
-    var results = h('div.results', { role: 'list', 'aria-label': 'Treffer' });
+    var facets = h('aside.facets', { 'aria-label': 'Filters' });
+    var results = h('div.results', { role: 'list', 'aria-label': 'Results' });
     var selbar = h('div.selbar', { hidden: true });
     var root = h('div.page.search', { data: { density: density } }, top, facets, h('div', { style: { 'min-width': '0' } }, results, selbar));
     host.appendChild(root);
@@ -143,9 +143,9 @@
         if (my !== seq || destroyed) return;
         root.removeAttribute('aria-busy');
         res = null; teardownBlocks();
-        U.set(count, 'Suche gescheitert');
-        U.set(results, h('div.empty', null, h('p.overline', { text: 'Fehler' }), h('h3', { text: 'Die Suche konnte nicht ausgeführt werden' }), h('p', { text: U.errText(e) }),
-          e && e.name ? h('p.mono', { text: 'Datei: ' + e.name + (e.status ? '  HTTP ' + e.status : '') }) : null));
+        U.set(count, 'Search failed');
+        U.set(results, h('div.empty', null, h('p.overline', { text: 'Error' }), h('h3', { text: 'The search could not be run' }), h('p', { text: U.errText(e) }),
+          e && e.name ? h('p.mono', { text: 'File: ' + e.name + (e.status ? '  HTTP ' + e.status : '') }) : null));
         App.logError('search', e);
       });
     }
@@ -173,26 +173,26 @@
     function drawCount() {
       if (!res) return;
       var fam = res.totalFamilies != null ? res.totalFamilies : res.total;
-      U.set(count, h('b', { text: U.num(fam) }), ' ' + (fam === 1 ? 'Familie' : 'Familien') + ' · ', h('b', { text: U.num(res.total) }), ' ' + (res.total === 1 ? 'Patent' : 'Patente'),
+      U.set(count, h('b', { text: U.num(fam) }), ' ' + (fam === 1 ? 'family' : 'families') + ' · ', h('b', { text: U.num(res.total) }), ' ' + (res.total === 1 ? 'patent' : 'patents'),
         h('span.faint.mono', { text: '  ' + (res.ms != null ? Math.round(res.ms) : res.wall) + ' ms' }),
-        isStart() ? h('span.faint', { text: '  \u00b7 Startansicht: Schl\u00fcsselfamilien. Eine Eingabe durchsucht alle ' + U.num(M.counts.patents) + ' Patente.' }) : null);
+        isStart() ? h('span.faint', { text: '  \u00b7 Start view: key families. Any input searches all ' + U.num(M.counts.patents) + ' patents.' }) : null);
     }
     function drawBar() {
       var bs = sortSeg.querySelectorAll('button');
       for (var i = 0; i < bs.length; i++) bs[i].setAttribute('aria-pressed', String(bs[i].dataset.s === st.s));
       U.clear(active);
-      function chip(label, off) { active.appendChild(h('button.chip.on', { type: 'button', title: 'Filter entfernen', onclick: off }, label, h('span.x', { text: '×' }))); }
+      function chip(label, off) { active.appendChild(h('button.chip.on', { type: 'button', title: 'Remove filter', onclick: off }, label, h('span.x', { text: '×' }))); }
       st.t.forEach(function (v) { chip(U.statusLabel(v), function () { toggle('t', v); }); });
       st.a.forEach(function (v) { chip(v, function () { toggle('a', v); }); });
-      st.k.forEach(function (v) { chip('Art ' + v, function () { toggle('k', v); }); });
+      st.k.forEach(function (v) { chip('Kind ' + v, function () { toggle('k', v); }); });
       st.p.forEach(function (v) { chip(M.players[+v] || v, function () { toggle('p', v); }); });
       if (st.y.length) chip(st.y[0] + (st.y[1] && st.y[1] !== st.y[0] ? '–' + st.y[1] : ''), function () { st.y = []; commit(); });
       st.c.forEach(function (v) { chip('CPC ' + v, function () { toggle('c', v); }); });
-      st.r.forEach(function (v) { chip(TIER[v] || 'Stufe ' + v, function () { toggle('r', v); }); });
-      st.e.forEach(function (v) { chip('Schlüsselfamilie Stufe ' + v, function () { toggle('e', v); }); });
+      st.r.forEach(function (v) { chip(TIER[v] || 'Tier ' + v, function () { toggle('r', v); }); });
+      st.e.forEach(function (v) { chip('Key family tier ' + v, function () { toggle('e', v); }); });
       st.x.forEach(function (v) { chip(SWITCH[v] || v, function () { toggle('x', v); }); });
-      if (nFilters() > 1) active.appendChild(h('button.btn.quiet.sm', { type: 'button', onclick: function () { ['a', 'k', 'y', 'p', 'c', 't', 'r', 'e', 'x'].forEach(function (k) { st[k] = []; }); commit(); } }, 'Alle Filter lösen'));
-      U.set(fToggle, U.icon('filter'), h('span', { text: 'Filter' + (nFilters() ? ' (' + nFilters() + ')' : '') }));
+      if (nFilters() > 1) active.appendChild(h('button.btn.quiet.sm', { type: 'button', onclick: function () { ['a', 'k', 'y', 'p', 'c', 't', 'r', 'e', 'x'].forEach(function (k) { st[k] = []; }); commit(); } }, 'Clear all filters'));
+      U.set(fToggle, U.icon('filter'), h('span', { text: 'Filters' + (nFilters() ? ' (' + nFilters() + ')' : '') }));
       drawAi();
     }
 
@@ -214,7 +214,7 @@
       }
       blocks[0].data = { hits: r.hits }; fill(blocks[0]);
       blocks.forEach(function (b) { io.observe(b.el); });
-      if (fam > n * PAGE) results.appendChild(h('div.empty', null, h('p', { text: 'Die Liste endet nach ' + U.num(n * PAGE) + ' Familien. Die Suche lässt sich mit Filtern eingrenzen; der CSV-Export enthält bis zu ' + U.num(EXPORT_MAX) + ' Patente.' })));
+      if (fam > n * PAGE) results.appendChild(h('div.empty', null, h('p', { text: 'The list ends after ' + U.num(n * PAGE) + ' families. Use filters to narrow the search; the CSV export contains up to ' + U.num(EXPORT_MAX) + ' patents.' })));
     }
     function onSee(entries) {
       entries.forEach(function (en) {
@@ -235,11 +235,11 @@
     function load(b) {
       if (b.data) { fill(b); return; }
       var my = seq; b.state = 'loading';
-      U.set(b.el, h('div.res-ph', { style: { height: '56px' } }, h('span.spin'), '  Treffer ' + U.num(b.i * PAGE + 1) + ' bis ' + U.num(b.i * PAGE + b.n)));
+      U.set(b.el, h('div.res-ph', { style: { height: '56px' } }, h('span.spin'), '  Results ' + U.num(b.i * PAGE + 1) + ' to ' + U.num(b.i * PAGE + b.n)));
       S.search(st.q, opts({ offset: b.i * PAGE, facets: false })).then(function (r) {
         if (my !== seq || destroyed) return;
         b.data = { hits: r.hits }; fill(b);
-      }, function (e) { if (my !== seq || destroyed) return; b.state = 'empty'; U.set(b.el, h('div.res-ph', { style: { height: '56px' } }, 'Nachladen gescheitert: ' + U.errText(e))); });
+      }, function (e) { if (my !== seq || destroyed) return; b.state = 'empty'; U.set(b.el, h('div.res-ph', { style: { height: '56px' } }, 'Loading more failed: ' + U.errText(e))); });
     }
     function fill(b) {
       var my = seq, hits = b.data.hits || [];
@@ -257,37 +257,37 @@
           if (avg > 20) blocks.forEach(function (o) { if (o !== b && o.state === 'empty' && !o.data) o.el.style.minHeight = Math.round(o.n * avg) + 'px'; });
         }
         if (!near(b)) free(b);                     // it scrolled away while loading
-      }, function (e) { if (my !== seq || destroyed) return; b.state = 'empty'; U.set(b.el, h('div.res-ph', { style: { height: '56px' } }, 'Patentdaten nicht ladbar: ' + U.errText(e))); });
+      }, function (e) { if (my !== seq || destroyed) return; b.state = 'empty'; U.set(b.el, h('div.res-ph', { style: { height: '56px' } }, 'Could not load patent data: ' + U.errText(e))); });
     }
     function hitRow(x, map, idx) {
       var p = map[x.p], pn = p.pn, href = App.patentHref(pn, { q: st.q });
-      var chk = h('input.chk', { type: 'checkbox', 'aria-label': U.pnPretty(pn) + ' auswählen', checked: selected.has(pn), onchange: function () { select(pn, p, chk.checked); } });
-      var star = h('button.btn.quiet.icon.sm.star', { type: 'button', 'aria-pressed': String(App.marks.isStar(pn)), 'aria-label': 'Merken', title: 'Auf die Merkliste', data: { pn: pn },
+      var chk = h('input.chk', { type: 'checkbox', 'aria-label': 'Select ' + U.pnPretty(pn), checked: selected.has(pn), onchange: function () { select(pn, p, chk.checked); } });
+      var star = h('button.btn.quiet.icon.sm.star', { type: 'button', 'aria-pressed': String(App.marks.isStar(pn)), 'aria-label': 'Add to watchlist', title: 'Add to watchlist', data: { pn: pn },
         onclick: function () { App.marks.toggle(pn, { title: p.title, player: p.player || '' }); } }, U.icon('star'));
       var meta = h('div.hit-meta', null,
         p.status ? U.statusPill(p.status) : null, U.dePill(p.deIn),
-        h('span', { text: p.player || p.assignee || 'Anmelder unbekannt', title: p.assignee || '' }),
-        p.prio ? h('span', null, 'Prio ', h('span.mono', { text: U.year(p.prio) })) : null,
-        h('span', null, 'veröff. ', h('span.mono', { text: U.date(p.pub) })),
-        p.exp ? h('span', { title: 'Schätzung: Anmeldetag + 20 Jahre (US zuzüglich PTA)' }, 'Ablauf ca. ', h('span.mono', { text: U.date(p.exp) })) : null,
-        p.seedTier ? h('span.tag.seed', { title: 'Schlüsselfamilie ' + (p.seedFam || '') }, 'Schlüssel ' + p.seedTier) : null,
-        p.text ? null : h('span.tag', { title: p.textCut ? 'Volltext aus Platzgründen nicht im Bestand' : 'Kein Volltext im Bestand' }, 'nur Biblio'),
-        p.hasCompounds ? h('span.tag', { title: 'Strukturen aus SureChEMBL vorhanden' }, 'Strukturen') : null);
+        h('span', { text: p.player || p.assignee || 'Applicant unknown', title: p.assignee || '' }),
+        p.prio ? h('span', null, 'Priority ', h('span.mono', { text: U.year(p.prio) })) : null,
+        h('span', null, 'publ. ', h('span.mono', { text: U.date(p.pub) })),
+        p.exp ? h('span', { title: 'Estimate: filing date + 20 years (US plus PTA)' }, 'Expiry est. ', h('span.mono', { text: U.date(p.exp) })) : null,
+        p.seedTier ? h('span.tag.seed', { title: 'Key family ' + (p.seedFam || '') }, 'Key ' + p.seedTier) : null,
+        p.text ? null : h('span.tag', { title: p.textCut ? 'Full text not in the dataset (omitted for size)' : 'No full text in the dataset' }, 'bibliographic only'),
+        p.hasCompounds ? h('span.tag', { title: 'Structures from SureChEMBL available' }, 'Structures') : null);
       var main = h('div.hit-main', null,
-        h('div.hit-l1', null, h('a.hit-pn', { href: href, text: U.pnPretty(pn) }), h('a.hit-title', { href: href, text: p.title || '(ohne Titel)' })),
+        h('div.hit-l1', null, h('a.hit-pn', { href: href, text: U.pnPretty(pn) }), h('a.hit-title', { href: href, text: p.title || '(untitled)' })),
         meta);
       var mem = (x.members || []).filter(function (m) { return m !== x.p && map[m]; });
       if (mem.length || (x.nMembers || 0) > 1) {
-        var fam = h('div.hit-fam', null, h('a.tag', { href: R.build({ view: 'familie', arg: pn }), title: 'Familie vergleichen' }, 'Familie ' + (x.nMembers || mem.length + 1)));
+        var fam = h('div.hit-fam', null, h('a.tag', { href: R.build({ view: 'familie', arg: pn }), title: 'Compare family' }, 'Family ' + (x.nMembers || mem.length + 1)));
         mem.slice(0, 8).forEach(function (m) { fam.appendChild(h('a.tag', { href: App.patentHref(map[m].pn, { q: st.q }), text: map[m].pn, title: map[m].title || '' })); });
         if ((x.nMembers || 0) - 1 > 8) fam.appendChild(h('span.faint', { text: '+' + (x.nMembers - 9) }));
         main.appendChild(fam);
       }
-      if (x.why) main.appendChild(h('div.snip.first', null, h('span.w.ind', { text: 'KI' }), h('span.t', { text: x.why })));
+      if (x.why) main.appendChild(h('div.snip.first', null, h('span.w.ind', { text: 'AI' }), h('span.t', { text: x.why })));
       (x.top && x.top.length ? x.top : x.best ? [x.best] : []).forEach(function (u) {
         if (!u || !u.snippet || u.field === 'title') return;
         var label = u.field === 'claim' || !u.field ? 'Claim ' + u.n + (u.lang === 'de' ? ' DE' : '') : (FIELD[u.field] || u.field);
-        var w = u.field === 'claim' || !u.field ? h('a.w' + (u.indep ? '.ind' : ''), { href: App.patentHref(pn, { claim: u.n, lang: u.lang === 'de' ? 'de' : '', q: st.q }), title: u.indep ? 'unabhängiger Claim' : 'abhängiger Claim', text: label + (u.indep ? ' ●' : '') }) : h('span.w', { text: label });
+        var w = u.field === 'claim' || !u.field ? h('a.w' + (u.indep ? '.ind' : ''), { href: App.patentHref(pn, { claim: u.n, lang: u.lang === 'de' ? 'de' : '', q: st.q }), title: u.indep ? 'independent claim' : 'dependent claim', text: label + (u.indep ? ' ●' : '') }) : h('span.w', { text: label });
         main.appendChild(h('div.snip' + (main.querySelector('.snip') ? '' : '.first'), null, w, U.pieces(h('span.t'), u.snippet)));
       });
       var row = h('div.hrow' + (selected.has(pn) ? '.sel' : ''), { role: 'listitem', tabindex: '-1', data: { pn: pn, idx: idx } }, chk, main, h('div.hit-act', null, star));
@@ -295,11 +295,11 @@
       return row;
     }
     function emptyState() {
-      var box = h('div.empty', null, h('p.overline', { text: 'Keine Treffer' }), h('h3', { text: 'Dazu steht nichts im Bestand' }));
-      box.appendChild(h('p', { text: nFilters() ? 'Mit den gesetzten Filtern bleibt nichts übrig. Ein Filter weniger oder ein allgemeinerer Begriff hilft meist.' : 'Kein Claim, Titel oder Abstract enthält alle Begriffe. OR, ein Wortanfang mit * oder weniger Begriffe erweitern die Suche.' }));
+      var box = h('div.empty', null, h('p.overline', { text: 'No results' }), h('h3', { text: 'Nothing in the dataset matches' }));
+      box.appendChild(h('p', { text: nFilters() ? 'Nothing is left with the filters applied. Removing a filter or using a more general term usually helps.' : 'No claim, title or abstract contains all the terms. OR, a word stem with * or fewer terms will widen the search.' }));
       var ex = h('div', { style: { display: 'flex', gap: '6px', 'flex-wrap': 'wrap' } });
       EXAMPLES.forEach(function (q) { ex.appendChild(h('button.chip', { type: 'button', onclick: function () { qInput.value = q; st.q = q; commit(); } }, q)); });
-      box.appendChild(h('p.faint', { text: 'Beispiele:' })); box.appendChild(ex);
+      box.appendChild(h('p.faint', { text: 'Examples:' })); box.appendChild(ex);
       return box;
     }
 
@@ -323,7 +323,7 @@
         if (shown < limit || isOn) { out.push(row); shown++; } else rest.push(row);
       });
       if (rest.length) {
-        var more = h('button.btn.quiet.sm.f-more', { type: 'button', onclick: function () { rest.forEach(function (r) { more.parentNode.insertBefore(r, more); }); more.parentNode.removeChild(more); } }, rest.length + ' weitere');
+        var more = h('button.btn.quiet.sm.f-more', { type: 'button', onclick: function () { rest.forEach(function (r) { more.parentNode.insertBefore(r, more); }); more.parentNode.removeChild(more); } }, rest.length + ' more');
         out.push(more);
       }
       return out;
@@ -333,15 +333,15 @@
     }
     function drawFacets(f) {
       U.clear(facets);
-      facets.appendChild(facetBox('t', 'Rechtsstand', st.t.length + (st.x.indexOf('de') >= 0 ? 1 : 0), [switchRow('de', f.deInForce)].concat(rowsOf('t', f.status, { label: U.statusLabel }))));
-      facets.appendChild(facetBox('a', 'Amt', st.a.length, rowsOf('a', f.auth)));
-      facets.appendChild(facetBox('p', 'Akteur', st.p.length, rowsOf('p', f.player, { toState: function (name) { var i = M.players.indexOf(name); return i >= 0 ? i : null; }, fromState: function (i) { return M.players[+i]; }, limit: 10 })));
-      facets.appendChild(facetBox('y', 'Jahr', st.y.length ? 1 : 0, histogram(f.year || {})));
-      facets.appendChild(facetBox('c', 'CPC-Unterklasse', st.c.length, rowsOf('c', f.cpc4, { limit: 8 })));
-      facets.appendChild(facetBox('k', 'Schriftart', st.k.length, rowsOf('k', f.kind, { limit: 6 })));
-      facets.appendChild(facetBox('r', 'Relevanzstufe', st.r.length + st.e.length, rowsOf('r', f.tier, { label: function (k) { return TIER[k] || 'Stufe ' + k; }, sort: function (a, b) { return a - b; } })
-        .concat(rowsOf('e', f.seedTier, { label: function (k) { return 'Schlüsselfamilie Stufe ' + k; }, toState: function (k) { return +k > 0 ? k : null; }, sort: function (a, b) { return a - b; } }))));
-      facets.appendChild(facetBox('x', 'Inhalt', st.x.filter(function (v) { return v !== 'de'; }).length, [switchRow('text', f.text), switchRow('comp'), switchRow('img'), switchRow('indep'), switchRow('seed')]));
+      facets.appendChild(facetBox('t', 'Legal status', st.t.length + (st.x.indexOf('de') >= 0 ? 1 : 0), [switchRow('de', f.deInForce)].concat(rowsOf('t', f.status, { label: U.statusLabel }))));
+      facets.appendChild(facetBox('a', 'Office', st.a.length, rowsOf('a', f.auth)));
+      facets.appendChild(facetBox('p', 'Player', st.p.length, rowsOf('p', f.player, { toState: function (name) { var i = M.players.indexOf(name); return i >= 0 ? i : null; }, fromState: function (i) { return M.players[+i]; }, limit: 10 })));
+      facets.appendChild(facetBox('y', 'Year', st.y.length ? 1 : 0, histogram(f.year || {})));
+      facets.appendChild(facetBox('c', 'CPC subclass', st.c.length, rowsOf('c', f.cpc4, { limit: 8 })));
+      facets.appendChild(facetBox('k', 'Kind code', st.k.length, rowsOf('k', f.kind, { limit: 6 })));
+      facets.appendChild(facetBox('r', 'Relevance tier', st.r.length + st.e.length, rowsOf('r', f.tier, { label: function (k) { return TIER[k] || 'Tier ' + k; }, sort: function (a, b) { return a - b; } })
+        .concat(rowsOf('e', f.seedTier, { label: function (k) { return 'Key family tier ' + k; }, toState: function (k) { return +k > 0 ? k : null; }, sort: function (a, b) { return a - b; } }))));
+      facets.appendChild(facetBox('x', 'Content', st.x.filter(function (v) { return v !== 'de'; }).length, [switchRow('text', f.text), switchRow('comp'), switchRow('img'), switchRow('indep'), switchRow('seed')]));
     }
     function histogram(years) {
       var ks = Object.keys(years).map(Number).filter(function (y) { return y >= 1970 && y <= 2100; }).sort(function (a, b) { return a - b; });
@@ -349,10 +349,10 @@
       if (ks.length) {
         var lo = ks[0], hi = ks[ks.length - 1], max = 0, y;
         ks.forEach(function (k) { if (years[k] > max) max = years[k]; });
-        var bars = h('div.hist', { role: 'group', 'aria-label': 'Treffer je Veröffentlichungsjahr' });
+        var bars = h('div.hist', { role: 'group', 'aria-label': 'Results per publication year' });
         for (y = lo; y <= hi; y++) (function (y) {
           var n = years[y] || 0;
-          bars.appendChild(h('button' + (from && y >= from && y <= to ? '.in' : ''), { type: 'button', title: y + ': ' + U.num(n), 'aria-label': y + ', ' + n + ' Treffer', style: { height: (n ? Math.max(4, Math.round(n / max * 100)) : 1) + '%' },
+          bars.appendChild(h('button' + (from && y >= from && y <= to ? '.in' : ''), { type: 'button', title: y + ': ' + U.num(n), 'aria-label': y + ', ' + n + ' results', style: { height: (n ? Math.max(4, Math.round(n / max * 100)) : 1) + '%' },
             onclick: function (ev) {
               if (from && (ev.shiftKey || from === to) && y !== from) st.y = [String(Math.min(from, y)), String(Math.max(to, y))];
               else if (from === y && to === y) st.y = [];
@@ -360,10 +360,10 @@
               commit();
             } }));
         })(y);
-        out.push(bars, h('div.hist-ax', null, h('span', { text: String(lo) }), h('span', { text: 'max. ' + U.num(max) + ' / Jahr' }), h('span', { text: String(hi) })));
-      } else out.push(h('p.faint', { style: { padding: '0 6px 6px', 'font-size': '12.5px' }, text: 'Keine Jahresverteilung' }));
-      var a = h('input.input', { id: 'y-from', type: 'number', min: '1970', max: '2100', placeholder: 'von', value: st.y[0] || '', 'aria-label': 'Jahr von' });
-      var b = h('input.input', { id: 'y-to', type: 'number', min: '1970', max: '2100', placeholder: 'bis', value: st.y[1] || st.y[0] || '', 'aria-label': 'Jahr bis' });
+        out.push(bars, h('div.hist-ax', null, h('span', { text: String(lo) }), h('span', { text: 'max. ' + U.num(max) + ' / year' }), h('span', { text: String(hi) })));
+      } else out.push(h('p.faint', { style: { padding: '0 6px 6px', 'font-size': '12.5px' }, text: 'No year distribution' }));
+      var a = h('input.input', { id: 'y-from', type: 'number', min: '1970', max: '2100', placeholder: 'from', value: st.y[0] || '', 'aria-label': 'Year from' });
+      var b = h('input.input', { id: 'y-to', type: 'number', min: '1970', max: '2100', placeholder: 'to', value: st.y[1] || st.y[0] || '', 'aria-label': 'Year to' });
       function apply() {
         var va = /^\d{4}$/.test(a.value) ? a.value : '', vb = /^\d{4}$/.test(b.value) ? b.value : '';
         if (!va && !vb) st.y = []; else st.y = [va || vb, vb || va];
@@ -385,10 +385,10 @@
     function drawSel() {
       selbar.hidden = !selected.size;
       if (!selected.size) return;
-      U.set(selbar, h('span.grow', null, h('b', { text: String(selected.size) }), selected.size === 1 ? ' Patent ausgewählt' : ' Patente ausgewählt'),
-        h('button.btn.sm', { type: 'button', onclick: function () { Array.from(selected.keys()).forEach(function (pn) { select(pn, null, false); }); } }, 'Auswahl aufheben'),
-        h('button.btn.sm', { type: 'button', onclick: function () { selected.forEach(function (v, pn) { if (!App.marks.isStar(pn)) App.marks.save(pn, { star: true, title: v.title || '' }); }); U.toast(selected.size + ' gemerkt'); } }, U.icon('star'), 'Merken'),
-        h('button.btn.sm.primary', { type: 'button', id: 'fto-go', onclick: function () { App.handToFto(Array.from(selected.keys()), { q: st.q }); } }, U.icon('fto'), 'FTO prüfen'));
+      U.set(selbar, h('span.grow', null, h('b', { text: String(selected.size) }), selected.size === 1 ? ' patent selected' : ' patents selected'),
+        h('button.btn.sm', { type: 'button', onclick: function () { Array.from(selected.keys()).forEach(function (pn) { select(pn, null, false); }); } }, 'Clear selection'),
+        h('button.btn.sm', { type: 'button', onclick: function () { selected.forEach(function (v, pn) { if (!App.marks.isStar(pn)) App.marks.save(pn, { star: true, title: v.title || '' }); }); U.toast(selected.size + ' added to watchlist'); } }, U.icon('star'), 'Watch'),
+        h('button.btn.sm.primary', { type: 'button', id: 'fto-go', onclick: function () { App.handToFto(Array.from(selected.keys()), { q: st.q }); } }, U.icon('fto'), 'Check FTO'));
     }
     function hitEls() { return results.querySelectorAll('.hrow'); }
     function focusHit(i) {
@@ -429,48 +429,48 @@
     function showHelp() {
       var t = h('table');
       HELP.forEach(function (r) { t.appendChild(h('tr', null, h('td', { text: r[0] }), h('td', { text: r[1] }))); });
-      U.popover(helpBtn, [h('h3', { text: 'Suchsyntax' }), t, h('p.faint', { style: { 'margin-top': '8px', 'font-size': '12.5px' }, text: 'AND, OR und NOT verknüpfen auf Ebene des Patents; Wortfolgen und NEAR gelten innerhalb eines Claims. Gesucht wird in englischen und deutschen Claims, Titel und Abstract.' })], { align: 'right' });
+      U.popover(helpBtn, [h('h3', { text: 'Search syntax' }), t, h('p.faint', { style: { 'margin-top': '8px', 'font-size': '12.5px' }, text: 'AND, OR and NOT combine at patent level; phrases and NEAR apply within a single claim. English and German claims, title and abstract are searched.' })], { align: 'right' });
     }
 
     /* ---------------- saved searches */
     function saveSearch() {
-      var name = h('input.input', { id: 'save-name', type: 'text', value: st.q || 'Filter ohne Suchbegriff', 'aria-label': 'Name der Suche' });
+      var name = h('input.input', { id: 'save-name', type: 'text', value: st.q || 'Filters without search terms', 'aria-label': 'Search name' });
       var pop;
       function doSave() {
         var id = 's' + Date.now().toString(36);
-        g.LnpStore.put('searches', id, { name: name.value.trim() || st.q || 'Suche', q: st.q, hash: R.build(toRoute()), filters: filters(), sort: st.s, total: res ? res.total : null, ts: new Date().toISOString() })
-          .then(function () { U.toast('Suche gespeichert'); }, function (e) { U.toast('Speichern gescheitert: ' + U.errText(e), { error: true }); });
+        g.LnpStore.put('searches', id, { name: name.value.trim() || st.q || 'Search', q: st.q, hash: R.build(toRoute()), filters: filters(), sort: st.s, total: res ? res.total : null, ts: new Date().toISOString() })
+          .then(function () { U.toast('Search saved'); }, function (e) { U.toast('Save failed: ' + U.errText(e), { error: true }); });
         U.closePopover();
       }
       name.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') doSave(); });
-      pop = U.popover(saveBtn, [h('h3', { text: 'Suche speichern' }), h('div', { style: { display: 'flex', gap: '8px' } }, name, h('button.btn.primary', { type: 'button', onclick: doSave }, 'Speichern'))], { align: 'right' });
+      pop = U.popover(saveBtn, [h('h3', { text: 'Save search' }), h('div', { style: { display: 'flex', gap: '8px' } }, name, h('button.btn.primary', { type: 'button', onclick: doSave }, 'Save'))], { align: 'right' });
       if (pop) { name.focus(); name.select(); }
     }
     function showSaved() {
-      var box = h('div', null, h('p.faint', { text: 'Lädt …' }));
-      if (!U.popover(savedBtn, [h('h3', { text: 'Gespeicherte Suchen' }), box], { align: 'right' })) return;
+      var box = h('div', null, h('p.faint', { text: 'Loading …' }));
+      if (!U.popover(savedBtn, [h('h3', { text: 'Saved searches' }), box], { align: 'right' })) return;
       g.LnpStore.entries('searches').then(function (rows) {
         U.clear(box);
-        if (!rows.length) { box.appendChild(h('p.faint', { text: 'Noch nichts gespeichert. Das Diskettensymbol legt die aktuelle Suche mit ihren Filtern ab.' })); return; }
+        if (!rows.length) { box.appendChild(h('p.faint', { text: 'Nothing saved yet. The disk icon stores the current search with its filters.' })); return; }
         rows.forEach(function (r) {
           var v = r.value || {};
           var line = h('div', { style: { display: 'flex', gap: '4px', 'align-items': 'center' } },
             h('button.menu-item', { type: 'button', onclick: function () { U.closePopover(); R.go(v.hash || { view: 'suche', arg: v.q || '' }); } }, h('span', { text: v.name || v.q || r.id }), h('span.s', { text: U.date((r.updated || '').slice(0, 10)) })),
-            h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Löschen', title: 'Löschen', onclick: function () { g.LnpStore.remove('searches', r.id).then(function () { line.parentNode.removeChild(line); }); } }, U.icon('x')));
+            h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Delete', title: 'Delete', onclick: function () { g.LnpStore.remove('searches', r.id).then(function () { line.parentNode.removeChild(line); }); } }, U.icon('x')));
           box.appendChild(line);
         });
-      }, function (e) { U.set(box, h('p.faint', { text: 'Nicht lesbar: ' + U.errText(e) })); });
+      }, function (e) { U.set(box, h('p.faint', { text: 'Could not be read: ' + U.errText(e) })); });
     }
 
     /* ---------------- CSV export */
     function exportCsv() {
-      if (!res || !res.total) { U.toast('Keine Treffer zum Exportieren'); return; }
+      if (!res || !res.total) { U.toast('No results to export'); return; }
       csvBtn.disabled = true;
-      var t = U.toast('Export wird vorbereitet …', { ms: 60000 });
+      var t = U.toast('Preparing export …', { ms: 60000 });
       var getAll = res.ai ? Promise.resolve(res.hits.map(function (x) { return x.p; })) : S.search(st.q, { filters: filters(), limit: 1, facets: false, snippets: false, all: true, sort: st.s || 'score' }).then(function (r) { return r.all ? Array.prototype.slice.call(r.all) : r.hits.map(function (x) { return x.p; }); });
       getAll.then(function (ps) {
         var cut = ps.length > EXPORT_MAX; if (cut) ps = ps.slice(0, EXPORT_MAX);
-        var rows = [['Nummer', 'Titel', 'Anmelder', 'Akteur', 'Amt', 'Art', 'Veroeffentlicht', 'Prioritaet', 'Ablauf (Schaetzung)', 'Rechtsstand', 'DE in Kraft', 'Stufe', 'Schluesselfamilie', 'Familie', 'Volltext', 'CPC', 'Espacenet']];
+        var rows = [['Number', 'Title', 'Applicant', 'Player', 'Office', 'Kind', 'Published', 'Priority', 'Expiry (estimate)', 'Legal status', 'DE in force', 'Tier', 'Key family', 'Family', 'Full text', 'CPC', 'Espacenet']];
         function d(x) { return x ? String(x).replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3') : ''; }
         var i = 0;
         function step() {
@@ -478,53 +478,53 @@
           return D.patents(part).then(function (pats) {
             pats.forEach(function (p) {
               var l = D.linksOf ? D.linksOf(p) : {};
-              rows.push([p.pn, p.title, p.assignee, p.player || '', p.auth, p.kind, d(p.pub), d(p.prio), d(p.exp), p.status || '', p.deIn === 1 ? 'ja' : p.deIn === 0 ? 'nein' : '', p.tier, p.seedFam || '', p.fam, p.text ? 'ja' : 'nein', (p.cpc || []).join(' '), l.espacenet || '']);
+              rows.push([p.pn, p.title, p.assignee, p.player || '', p.auth, p.kind, d(p.pub), d(p.prio), d(p.exp), p.status || '', p.deIn === 1 ? 'yes' : p.deIn === 0 ? 'no' : '', p.tier, p.seedFam || '', p.fam, p.text ? 'yes' : 'no', (p.cpc || []).join(' '), l.espacenet || '']);
             });
-            t.update('Export: ' + U.num(Math.min(i, ps.length)) + ' von ' + U.num(ps.length));
+            t.update('Export: ' + U.num(Math.min(i, ps.length)) + ' of ' + U.num(ps.length));
             return i < ps.length ? step() : null;
           });
         }
         return step().then(function () {
           t.close();
-          var name = 'lnp-suche-' + new Date().toISOString().slice(0, 10) + '.csv';
-          if (cut) U.toast('Export auf ' + U.num(EXPORT_MAX) + ' Patente begrenzt');
+          var name = 'lnp-search-' + new Date().toISOString().slice(0, 10) + '.csv';
+          if (cut) U.toast('Export limited to ' + U.num(EXPORT_MAX) + ' patents');
           return U.saveFile(name, U.csv(rows), 'text/csv;charset=utf-8');
         });
-      }).catch(function (e) { t.close(); U.toast('Export gescheitert: ' + U.errText(e), { error: true }); }).then(function () { csvBtn.disabled = false; });
+      }).catch(function (e) { t.close(); U.toast('Export failed: ' + U.errText(e), { error: true }); }).then(function () { csvBtn.disabled = false; });
     }
 
-    /* ---------------- KI-Suche (engine/ai.js of another part; absent -> explained, never faked) */
+    /* ---------------- AI search (engine/ai.js of another part; absent -> explained, never faked) */
     function aiFn() { var A = App.ai(); return A && typeof A.semanticSearch === 'function' ? A : null; }
     function drawAi() {
       var ok = !!aiFn();
       aiBtn.setAttribute('aria-pressed', String(st.m === 'ai'));
       aiBtn.setAttribute('aria-disabled', String(!ok));
-      aiBtn.title = ok ? 'Claude erweitert die Anfrage und bewertet die besten Claims. Läuft erst mit der Eingabetaste.' : 'KI-Suche ist in dieser Ansicht nicht verfügbar (Claude-Zugriff fehlt oder wurde nicht erteilt).';
+      aiBtn.title = ok ? 'Claude expands the query and rates the best claims. Runs only when you press Enter.' : 'AI search is not available in this view (Claude access is missing or was not granted).';
     }
     function toggleAi() {
-      if (!aiFn()) { U.toast('KI-Suche ist hier nicht verfügbar. Die Volltextsuche läuft vollständig im Browser.'); return; }
+      if (!aiFn()) { U.toast('AI search is not available here. Full-text search runs entirely in the browser.'); return; }
       st.m = st.m === 'ai' ? '' : 'ai';
       commit();
       if (st.m === 'ai') qInput.focus();
     }
     function drawAiIdle() {
       seq++; teardownBlocks(); res = null;
-      U.set(count, 'KI-Suche');
-      U.set(results, h('div.empty', null, h('p.overline', { text: 'KI-Suche' }), h('h3', { text: 'Anfrage in eigenen Worten beschreiben' }),
-        h('p', { text: 'Claude erweitert die Anfrage um Fachbegriffe, durchsucht die unabhängigen Claims und ordnet die besten Treffer. Dabei werden Anfrage und Claim-Auszüge an Claude gesendet. Start mit der Eingabetaste.' }),
-        h('p', null, h('button.btn.primary', { type: 'button', onclick: function () { st.q = qInput.value.trim(); runAi(); } }, U.icon('spark'), 'KI-Suche starten'))));
+      U.set(count, 'AI search');
+      U.set(results, h('div.empty', null, h('p.overline', { text: 'AI search' }), h('h3', { text: 'Describe your query in your own words' }),
+        h('p', { text: 'Claude expands the query with technical terms, searches the independent claims and ranks the best results. The query and claim excerpts are sent to Claude. Press Enter to start.' }),
+        h('p', null, h('button.btn.primary', { type: 'button', onclick: function () { st.q = qInput.value.trim(); runAi(); } }, U.icon('spark'), 'Start AI search'))));
     }
     function runAi() {
       var A = aiFn(); if (!A) { drawAi(); return; }
-      if (!st.q) { U.toast('Bitte zuerst eine Anfrage eingeben'); return; }
+      if (!st.q) { U.toast('Please enter a query first'); return; }
       var my = ++seq; teardownBlocks();
       if (aiCtl) { try { aiCtl.abort(); } catch (e) { /* ignore */ } }
       aiCtl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      var status = h('span', { text: 'Claude arbeitet …' });
-      U.set(count, h('span.spin'), ' ', status, ' ', h('button.btn.sm', { type: 'button', onclick: function () { if (aiCtl) aiCtl.abort(); seq++; drawAiIdle(); } }, 'Abbrechen'));
+      var status = h('span', { text: 'Claude is working …' });
+      U.set(count, h('span.spin'), ' ', status, ' ', h('button.btn.sm', { type: 'button', onclick: function () { if (aiCtl) aiCtl.abort(); seq++; drawAiIdle(); } }, 'Cancel'));
       Promise.resolve().then(function () {
-        var STAGE = { expand: 'Anfrage wird erweitert', search: 'Claims werden durchsucht', rerank: 'Claims werden bewertet', done: 'fertig' };
-        function onStage(s) { var k = typeof s === 'string' ? s : s && (s.stage || s.text); status.textContent = (STAGE[k] || k || 'Claude arbeitet') + (s && s.done != null && s.total ? ' (' + s.done + ' von ' + s.total + ')' : '') + ' \u2026'; }
+        var STAGE = { expand: 'Expanding query', search: 'Searching claims', rerank: 'Rating claims', done: 'done' };
+        function onStage(s) { var k = typeof s === 'string' ? s : s && (s.stage || s.text); status.textContent = (STAGE[k] || k || 'Claude is working') + (s && s.done != null && s.total ? ' (' + s.done + ' of ' + s.total + ')' : '') + ' \u2026'; }
         return A.semanticSearch(st.q, { filters: filters(), n: 60, signal: aiCtl ? aiCtl.signal : undefined, onStage: onStage, onStatus: onStage });
       }).then(function (out) {
         if (my !== seq || destroyed) return;
@@ -540,22 +540,22 @@
         res = { total: hits.length, totalFamilies: hits.length, hits: hits, facets: {}, ai: true, ms: null, wall: 0 };
         var used = out && typeof out.query === 'string' ? out.query : '';
         var degraded = out && out.degraded && out.degraded.length;
-        U.set(count, h('b', { text: String(hits.length) }), ' Patente aus der KI-Suche', used ? h('span.faint', { text: '  \u00b7 gesucht mit: ' + used }) : null,
-          degraded ? h('span', { style: { color: 'var(--warn)' }, text: '  \u00b7 ohne vollst\u00e4ndige Bewertung durch Claude, Reihenfolge teils nach Volltextrang' }) : null);
+        U.set(count, h('b', { text: String(hits.length) }), ' patents from AI search', used ? h('span.faint', { text: '  \u00b7 searched with: ' + used }) : null,
+          degraded ? h('span', { style: { color: 'var(--warn)' }, text: '  \u00b7 without complete rating by Claude; order partly by full-text rank' }) : null);
         U.clear(results);
         if (!hits.length) { results.appendChild(emptyState()); return; }
         var el = h('div.res-block'); results.appendChild(el);
         blocks = [{ i: 0, el: el, n: hits.length, state: 'empty', data: { hits: hits } }];
         fill(blocks[0]);
-        U.set(facets, h('p.faint', { style: { padding: '14px 18px', 'font-size': '13px' }, text: 'Die Filter gelten für die KI-Suche beim Start. Zählungen gibt es nur in der Volltextsuche.' }));
+        U.set(facets, h('p.faint', { style: { padding: '14px 18px', 'font-size': '13px' }, text: 'Filters apply to AI search when it starts. Counts are available only in full-text search.' }));
       }, function (e) {
         if (my !== seq || destroyed) return;
         if (e && e.code === 'cancelled') { drawAiIdle(); return; }
         var msg = U.errText(e);
-        try { if (typeof A.message === 'function' && e && e.code) msg = A.message(e, 'de') || msg; } catch (e2) { /* keep the raw message */ }
-        U.set(count, 'KI-Suche gescheitert');
-        U.set(results, h('div.empty', null, h('p.overline', { text: 'KI-Suche' }), h('h3', { text: 'Claude hat nicht geantwortet' }), h('p', { text: String(msg) }),
-          h('p', null, h('button.btn', { type: 'button', onclick: function () { st.m = ''; commit(); } }, 'Zur Volltextsuche'))));
+        try { if (typeof A.message === 'function' && e && e.code) msg = A.message(e, 'en') || msg; } catch (e2) { /* keep the raw message */ }
+        U.set(count, 'AI search failed');
+        U.set(results, h('div.empty', null, h('p.overline', { text: 'AI search' }), h('h3', { text: 'Claude did not respond' }), h('p', { text: String(msg) }),
+          h('p', null, h('button.btn', { type: 'button', onclick: function () { st.m = ''; commit(); } }, 'Back to full-text search'))));
       });
     }
 
@@ -571,5 +571,5 @@
     };
   }
 
-  g.LnpApp.registerView({ id: 'suche', title: 'Suche', icon: 'search', mount: mount });
+  g.LnpApp.registerView({ id: 'suche', title: 'Search', icon: 'search', mount: mount });
 })(window);

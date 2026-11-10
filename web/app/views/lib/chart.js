@@ -20,7 +20,7 @@
   }
   function ticks(max) { var n = 4; if (max % 5 === 0 && (max / 5) % 1 === 0 && isFive(max)) n = 5; var out = []; for (var i = 0; i <= n; i++) out.push(max * i / n); return out; }
   function isFive(max) { var q = max / 5, e = Math.pow(10, Math.floor(Math.log10(q))), m = Math.round(q / e * 100) / 100; return m === 1 || m === 2 || m === 2.5 || m === 5; }
-  function tickText(v) { return v >= 10000 ? (v / 1000).toLocaleString('de-DE') + ' Tsd.' : U.num(Math.round(v * 10) / 10); }
+  function tickText(v) { return v >= 10000 ? (v / 1000).toLocaleString('en-GB') + 'k' : U.num(Math.round(v * 10) / 10); }
   function legend(series) {
     return h('div.k-legend', null, series.map(function (x) { return h('span', null, h('i', { style: { background: x.color } }), x.name); }));
   }
@@ -39,8 +39,8 @@
       var rows = [];
       o.series.forEach(function (x, j) { if (x.values[ci]) rows.push([x.name, U.num(x.values[ci]), x.color, j === si]); });
       rows.reverse();
-      if (o.series.length > 1) rows.push(['Summe', U.num(totals[ci]), null]);
-      K.tip.show(ev, (o.catTitle ? o.catTitle(o.cats[ci]) : String(o.cats[ci])), rows.length ? rows : [[o.unit || 'Anzahl', '0', null]], o.onClick ? 'Klick öffnet die Auswahl in der Suche' : null);
+      if (o.series.length > 1) rows.push(['Total', U.num(totals[ci]), null]);
+      K.tip.show(ev, (o.catTitle ? o.catTitle(o.cats[ci]) : String(o.cats[ci])), rows.length ? rows : [[o.unit || 'Count', '0', null]], o.onClick ? 'Click to open the selection in Search' : null);
     }
     function draw(W) {
       U.clear(plot);
@@ -91,7 +91,7 @@
     o.rows.forEach(function (r) {
       var bar = h('span.k-hbar-bar', { style: { width: Math.max(.5, r.value / max * 100) + '%', background: r.color || o.color || C.color(0) } });
       var a = h(r.href ? 'a.k-hbar' : 'div.k-hbar', { href: r.href || null, title: r.title || null }, h('span.k-hbar-l', { text: r.label }), h('span.k-hbar-t', null, bar), h('span.k-hbar-v', { text: U.num(r.value) }));
-      a.addEventListener('mousemove', function (ev) { K.tip.show(ev, r.label, [[o.unit || 'Anzahl', U.num(r.value), r.color || o.color || C.color(0)]].concat(r.sub ? [[r.sub[0], r.sub[1], null]] : []), r.href ? 'Klick öffnet die Auswahl in der Suche' : null); });
+      a.addEventListener('mousemove', function (ev) { K.tip.show(ev, r.label, [[o.unit || 'Count', U.num(r.value), r.color || o.color || C.color(0)]].concat(r.sub ? [[r.sub[0], r.sub[1], null]] : []), r.href ? 'Click to open the selection in Search' : null); });
       a.addEventListener('mouseleave', K.tip.hide);
       box.appendChild(a);
     });
@@ -105,9 +105,9 @@
     var bar = h('div.k-segbar', { role: 'img', 'aria-label': o.label || '' }), leg = h('div.k-legend.k-legend-v');
     o.parts.forEach(function (p) {
       if (!p.value) return;
-      var pct = p.value / total * 100, txt = pct.toFixed(pct < 10 ? 1 : 0).replace('.', ',') + ' %';
+      var pct = p.value / total * 100, txt = pct.toFixed(pct < 10 ? 1 : 0) + '%';
       var seg = h(p.href ? 'a' : 'span', { href: p.href || null, style: { 'flex-grow': String(p.value), background: p.color }, 'aria-label': p.name + ': ' + U.num(p.value) });
-      seg.addEventListener('mousemove', function (ev) { K.tip.show(ev, p.name, [[o.unit || 'Anzahl', U.num(p.value), p.color], ['Anteil', txt, null]], p.href ? 'Klick öffnet die Auswahl in der Suche' : null); });
+      seg.addEventListener('mousemove', function (ev) { K.tip.show(ev, p.name, [[o.unit || 'Count', U.num(p.value), p.color], ['Share', txt, null]], p.href ? 'Click to open the selection in Search' : null); });
       seg.addEventListener('mouseleave', K.tip.hide);
       bar.appendChild(seg);
       leg.appendChild(h(p.href ? 'a' : 'span', { href: p.href || null }, h('i', { style: { background: p.color } }), p.name, h('b', { text: U.num(p.value) }), h('em', { text: txt })));
@@ -127,14 +127,14 @@
       var tr = h('tr', null, h('th', { scope: 'row' }, o.rowHref ? h('a', { href: o.rowHref(ri), text: r }) : r));
       o.cols.forEach(function (c, ci) {
         var x = o.v[ri][ci] || 0, cell = h(x && o.href ? 'a' : 'span', { href: x && o.href ? o.href(ri, ci) : null, 'class': 'k-hm' + step(x), text: x ? U.num(x) : '·', 'aria-label': r + ', ' + c + ': ' + U.num(x) });
-        cell.addEventListener('mousemove', function (ev) { K.tip.show(ev, r + ' × ' + c, [[o.unit || 'Anzahl', U.num(x), null]].concat(o.colTitle ? [[o.colTitle(ci), '', null]] : []), x && o.href ? 'Klick öffnet die Auswahl in der Suche' : null); });
+        cell.addEventListener('mousemove', function (ev) { K.tip.show(ev, r + ' × ' + c, [[o.unit || 'Count', U.num(x), null]].concat(o.colTitle ? [[o.colTitle(ci), '', null]] : []), x && o.href ? 'Click to open the selection in Search' : null); });
         cell.addEventListener('mouseleave', K.tip.hide);
         tr.appendChild(h('td', null, cell));
       });
       tb.appendChild(tr);
     });
     t.appendChild(tb);
-    var sc = h('div.k-heat-scale', null, h('span', { text: 'wenige' }), [1, 2, 3, 4, 5].map(function (i) { return h('i.k-hm' + i, { title: 'bis ' + U.num(Math.round(max * Math.pow(i / 5, 2))) }); }), h('span', { text: 'viele (max. ' + U.num(max) + ')' }));
+    var sc = h('div.k-heat-scale', null, h('span', { text: 'few' }), [1, 2, 3, 4, 5].map(function (i) { return h('i.k-hm' + i, { title: 'up to ' + U.num(Math.round(max * Math.pow(i / 5, 2))) }); }), h('span', { text: 'many (max. ' + U.num(max) + ')' }));
     host.appendChild(h('div.k-chart', null, h('div.k-heat-wrap', null, t), sc));
   };
 
@@ -144,7 +144,7 @@
     var y1 = Math.max(y0 + 5, Math.max.apply(null, ends.concat([0]))); if (y1 - y0 > 26) y1 = y0 + 26;
     var span = y1 - y0, stepY = span > 16 ? 5 : span > 8 ? 2 : 1;
     function pos(iso) { var t = Date.parse(iso), a = Date.parse(y0 + '-01-01'), b = Date.parse(y1 + '-01-01'); return Math.max(0, Math.min(100, (t - a) / (b - a) * 100)); }
-    var box = h('div.k-tl', { role: 'img', 'aria-label': o.label || 'Zeitachse der geschätzten Abläufe' }), ax = h('div.k-tl-ax', null, h('span'));
+    var box = h('div.k-tl', { role: 'img', 'aria-label': o.label || 'Timeline of estimated expiry dates' }), ax = h('div.k-tl-ax', null, h('span'));
     var track = h('div.k-tl-years');
     for (var y = y0; y <= y1; y += stepY) track.appendChild(h('span', { style: { left: (y - y0) / span * 100 + '%' }, text: String(y) }));
     ax.appendChild(track); box.appendChild(ax);
@@ -156,9 +156,9 @@
         var e = pos(r.end);
         if (e > now) line.appendChild(h('span.k-tl-bar' + (r.pending ? '.pending' : ''), { data: { lv: String(r.lv) }, style: { left: now + '%', width: (e - now) + '%' } }));
         line.appendChild(h('span.k-tl-end', { style: { left: Math.min(e, 99) + '%' }, text: r.end.slice(0, 4) }));
-      } else line.appendChild(h('span.k-tl-none', { style: { left: now + '%' }, text: r.dead ? 'nicht mehr in Kraft' : 'Ablauf unbekannt' }));
+      } else line.appendChild(h('span.k-tl-none', { style: { left: now + '%' }, text: r.dead ? 'no longer in force' : 'expiry unknown' }));
       var row = h('div.k-tl-row', null, r.href ? h('a.mono', { href: r.href, text: r.label }) : h('span.mono', { text: r.label }), line);
-      row.addEventListener('mousemove', function (ev) { K.tip.show(ev, r.label, [['Ablauf (Schätzung)', r.end ? U.date(r.end) : 'unbekannt', null], ['Risiko', r.risk || '–', null]].concat(r.note ? [[r.note, '', null]] : [])); });
+      row.addEventListener('mousemove', function (ev) { K.tip.show(ev, r.label, [['Expiry (estimate)', r.end ? U.date(r.end) : 'unknown', null], ['Risk', r.risk || '–', null]].concat(r.note ? [[r.note, '', null]] : [])); });
       row.addEventListener('mouseleave', K.tip.hide);
       box.appendChild(row);
     });
@@ -171,7 +171,7 @@
     t.appendChild(h('thead', null, h('tr', null, o.head.map(function (x) { return h('th', { text: x }); }))));
     o.rows.forEach(function (r) { tb.appendChild(h('tr', null, r.map(function (c, i) { return h('td' + (i ? '.num' : ''), { text: typeof c === 'number' ? U.num(c) : String(c) }); }))); });
     t.appendChild(tb);
-    host.appendChild(h('details.k-tablefold', null, h('summary', { text: 'Als Tabelle' }), h('div.table-wrap', null, t)));
+    host.appendChild(h('details.k-tablefold', null, h('summary', { text: 'As table' }), h('div.table-wrap', null, t)));
   };
 
   g.LnpChart = C;
