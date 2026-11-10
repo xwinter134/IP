@@ -37,7 +37,7 @@ the EP/US family member supplies the claims.
 data/seed/                 committed: seed families, CPC field, assignee variants, reference lipids
 data/probe/                probe output incl. SureChEMBL subset (data/probe/surechembl/out/*.parquet)
 data/cache/ep/<ID>.xml     raw EPO XML, ID like EP3532103NWB1
-data/cache/us/<GUID>.json  raw ppubs full-text JSON, GUID like US-8058069-B2
+data/cache/us/<GUID>.json.gz  raw ppubs full-text JSON (gzip), GUID like US-8058069-B2
 data/cache/disc/           raw discovery responses (SPARQL, ppubs search pages)
 data/work/targets.parquet  one row per publication known to the tool (see below)
 data/work/fetch_ep.jsonl   fetch log (append-only): {id, ok, bytes, ts, err}
@@ -119,10 +119,34 @@ text), sorted by (main CPC, family, pn) so related patents sit in the same shard
 }
 ```
 
-`defs` selection: description paragraphs that define claim terms ("as used herein", "the
-term", "refers to", "means", "is defined", "im Sinne der", "bezeichnet", "mol %",
-"molar ratio", "based on the total lipid", "pKa", "N/P", "alkyl", "cationic lipid",
-"ionizable"), shortest-first, capped at 8000 characters per patent.
+`defs` selection (implemented in `pipeline/lib/norm_text.py`): description paragraphs (a paragraph = one
+line of the flattened description, leading "(31)" / "[0031]" numbers removed) that look like prose (letters >= 55%)
+and contain a trigger. Tier A = defining phrases ("as used herein", "the term", "refers to", "is defined",
+"im Sinne der", "bezeichnet", "bedeutet" ...), tier B = field vocabulary ("pKa", "mol %", "molar ratio",
+"N/P", "cationic lipid", "ionizable"), tier C = weak words ("means", "alkyl"; paragraphs <= 600 chars).
+Tiers are taken in that order, shortest first inside a tier, paragraphs cut at 1500 chars, until 8000 characters
+are reached; the selection is written in document order. Biblio-only records have `defs: []`.
+
+Notes on the record (stage 2 as built):
+- One record per row of `targets.parquet`, plus one per cached document whose publication number has no row
+  (none so far) and per seed member without a row (none so far). Sorted by (main CPC, family, pn).
+- A patent table row exists per publication kind. When the fetched text is the B9/B2 of an application whose
+  B1 is also a row (e.g. seed EP2350043B1 -> fetched EP2350043B9), the text sits on the B9/B2 record and the
+  B1 record stays biblio-only (the claims may differ after opposition).
+- `claims[lang][i]` = `{n, t, dep, img?}`; `img` (EP only) lists the image ids behind the `[chem]` placeholders
+  of that claim (`imgb0095` for `imgb0095.tif`). `dep` for EP uses the cross-language consensus where
+  en/de/fr agree in length. A claim that merely refers to another claim of a different category ("A composition
+  comprising the compound of claim 1") has `dep` = [1], i.e. "independent" means "refers to no claim".
+  `has_chem_img` = such an independent claim contains `[chem]` or `[STR]`. Cancelled US claims ("4-15.
+  (canceled)") are dropped, numbers of the others are kept. French claims are dropped; an A document with
+  French claims only has text = true and empty claims.
+- `family` < 0 = synthetic (no DOCDB family): crc32 of the WO number when the record is linked to a WO through its
+  PCT publication, else of the application number. `wo` = WO of the PCT publication when known, else the earliest
+  WO row of the same DOCDB family; `A1` is assumed when the PCT publication has no row.
+- `priority_date` = earliest priority claim, else filing date; `app_number` EP = 8 digits without check digit.
+- Parse cache: `data/work/norm/{ep,us}/<file stem>.json.gz` + `data/work/norm/index.json` (file name, mtime,
+  size, parser version `PARSER_VERSION` in `pipeline/lib/norm_doc.py`; bump it to force a reparse).
+- `status` is taken from `data/work/status.jsonl.gz` when that file exists at normalize time, else null.
 
 ### `data/work/status.jsonl.gz` (written by `pipeline/status.py`)
 
