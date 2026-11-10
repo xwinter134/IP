@@ -175,7 +175,7 @@
       var fam = res.totalFamilies != null ? res.totalFamilies : res.total;
       U.set(count, h('b', { text: U.num(fam) }), ' ' + (fam === 1 ? 'family' : 'families') + ' · ', h('b', { text: U.num(res.total) }), ' ' + (res.total === 1 ? 'patent' : 'patents'),
         h('span.faint.mono', { text: '  ' + (res.ms != null ? Math.round(res.ms) : res.wall) + ' ms' }),
-        isStart() ? h('span.faint', { text: '  \u00b7 Start view: key families. Any input searches all ' + U.num(M.counts.patents) + ' patents.' }) : null);
+        isStart() ? h('span.faint', { text: '  \u00b7 No query yet: showing the curated key families as a starting point. Type a query to search all ' + U.num(M.counts.patents) + ' patents.' }) : null);
     }
     function drawBar() {
       var bs = sortSeg.querySelectorAll('button');
