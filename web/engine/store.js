@@ -67,12 +67,44 @@
       return mem.list(col).then(function (m) { m.forEach(function (x) { if (!seen[x.id]) out.push(x); }); return out; });
     }
   };
+  // Personal data lives under data/users/<viewer id>/lnp/<kind>: private to each viewer, so sharing the page
+  // never shows one person's profiles, notes, watchlist or opinions to another. Only "diag" stays shared.
+  function rpath(col) {
+    if (col === 'diag' || col === 'diag-parts') return col;
+    return 'data/users/' + S.uid + '/lnp/' + col;
+  }
+  function rcol(col) { return S.db.collection(rpath(col)); }
   var remote = {
-    get: function (col, id) { return S.db.collection(col).doc(id).get().then(function (s) { return s && s.exists ? s.data() : null; }); },
-    set: function (col, id, doc) { return S.db.collection(col).doc(id).set(doc); },
-    del: function (col, id) { return S.db.collection(col).doc(id).delete(); },
-    list: function (col) { return S.db.collection(col).get().then(function (q) { return (q.docs || []).map(function (d) { return { id: d.id, doc: d.data() }; }); }); }
+    get: function (col, id) { return rcol(col).doc(id).get().then(function (s) { return s && s.exists ? s.data() : null; }); },
+    set: function (col, id, doc) { return rcol(col).doc(id).set(doc); },
+    del: function (col, id) { return rcol(col).doc(id).delete(); },
+    list: function (col) { return rcol(col).get().then(function (q) { return (q.docs || []).map(function (d) { return { id: d.id, doc: d.data() }; }); }); }
   };
+  // One-time move of documents an earlier version kept in the shared area into the owner's private area.
+  function migrate(user) {
+    var flag = rcol('settings').doc('_private');
+    return flag.get().then(function (s) {
+      if (s && s.exists) return null;
+      return Promise.resolve(user && user.isOwner ? user.isOwner() : false).then(function (owner) {
+        if (!owner) return flag.set({ u: new Date().toISOString(), moved: 0 });
+        var cols = [], moved = 0;
+        ['profiles', 'opinions', 'marks', 'searches', 'settings'].forEach(function (k) { cols.push(k); cols.push(k + '-parts'); });
+        var chain = Promise.resolve();
+        cols.forEach(function (col) {
+          chain = chain.then(function () { return S.db.collection(col).get(); }).then(function (q) {
+            var inner = Promise.resolve();
+            (q.docs || []).forEach(function (d) {
+              inner = inner.then(function () { return rcol(col).doc(d.id).set(d.data()); })
+                .then(function () { return S.db.collection(col).doc(d.id).delete(); })
+                .then(function () { moved++; });
+            });
+            return inner;
+          });
+        });
+        return chain.then(function () { return flag.set({ u: new Date().toISOString(), moved: moved }); });
+      });
+    }).catch(function (e) { note('migrate', e); });
+  }
   function be() { return S.backend === 'db' ? remote : S.backend === 'local' ? local : mem; }
   // one retry for a transient db error, then the write/read falls back to the local backend for this visit
   function run(op, args) {
@@ -104,8 +136,16 @@
     S.ready = getDb(o.timeoutMs || 5000).then(function (db) {
       if (!db) return null;
       S.db = db;
-      // the first real call decides (consent, grant and rules arrive on calls, never on use())
-      return withTimeout(db.collection('settings').doc('app').get().then(function () { return true; }), 8000, false);
+      // the viewer id decides where personal data goes; without one nothing is written to the database
+      return withTimeout(Promise.resolve(g.claude.use('user')).then(function (user) {
+        if (!user || typeof user.id !== 'function') return false;
+        return Promise.resolve(user.id()).then(function (id) {
+          if (!id || !/^[A-Za-z0-9_\-.~:@+]{1,200}$/.test(String(id))) return false;
+          S.uid = String(id);
+          // the first real call decides (consent, grant and rules arrive on calls, never on use())
+          return rcol('settings').doc('app').get().then(function () { return migrate(user); }).then(function () { return true; });
+        });
+      }), 15000, false);
     }).then(function (ok) {
       S.backend = ok ? 'db' : localWorks() ? 'local' : 'memory';
       if (!ok) S.db = null;

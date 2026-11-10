@@ -518,8 +518,10 @@ async function partMain() {
       profileId = mine && mine.id;
       const pic = await S.page.evaluate(() => ({ svg: document.querySelectorAll('.k-lip-pic svg').length, info: (document.querySelector('.k-lip-info') || {}).textContent }));
       ok(pic.svg > 0, 'named lipids are resolved and drawn in the profile (' + pic.svg + ' drawings)', pic);
-      const dbKeys = await S.page.evaluate(() => Object.keys(window.__e2e.db).filter((k) => /^profiles\//.test(k)).length);
-      ok(dbKeys > 0, 'the profile document reached the db capability (' + dbKeys + ' document)');
+      const dbKeys = await S.page.evaluate(() => Object.keys(window.__e2e.db).filter((k) => /^data\/users\/e2e-user\/lnp\/profiles\//.test(k)).length);
+      ok(dbKeys > 0, 'the profile document reached the viewer\'s private area of the db capability (' + dbKeys + ' document)');
+      const sharedKeys = await S.page.evaluate(() => Object.keys(window.__e2e.db).filter((k) => !/^data\/users\//.test(k) && !/^diag/.test(k)));
+      ok(sharedKeys.length === 0, 'no personal document is written to the shared area (' + sharedKeys.length + ')', sharedKeys);
       await S.shot('main-produkte');
       const hs = await S.hscroll(); ok(hs.length === 0, 'profile editor: no horizontal scroll', hs);
     });
