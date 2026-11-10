@@ -91,7 +91,7 @@
         tb.appendChild(h('tr', null, h('td', null, cb), h('td', null, K.patentLink(m.pn, App), m.star ? null : h('div.faint.k-small', { text: 'note only' })),
           h('td.t', null, h('span', { text: (pt && pt.title) || m.title || '' }), h('br'), h('span.faint', { text: (pt && (pt.player || pt.assignee)) || m.player || '' })),
           h('td', null, pt ? U.statusPill(pt.status) : h('span.faint', { text: pt === null ? 'not in dataset' : '…' }), pt ? U.dePill(pt.deIn) : null),
-          h('td.mono', { text: pt ? K.expiryText(pt) : '' }), h('td', null, tagIn), h('td.k-note-cell', null, noteIn, state), h('td.mono', { text: U.date(String(m.ts || '').slice(0, 10)) }),
+          h('td.mono', { text: pt ? K.expiryText(pt) : '' }), h('td', null, tagIn), h('td.k-note-cell', null, noteIn, state), h('td.mono', { style: { 'white-space': 'nowrap' }, text: U.date(String(m.ts || '').slice(0, 10)) }),
           h('td', null, h('button.btn.quiet.icon.sm', { type: 'button', 'aria-label': 'Remove ' + m.pn + ' from the watchlist', title: 'Remove', onclick: function () { App.marks.save(m.pn, { star: false, note: '', tag: '' }); } }, U.icon('x')))));
       });
       listBox.appendChild(h('div.k-row.k-between', null, chips, h('span.k-row', null, sortSel,
@@ -155,7 +155,7 @@
           if (x.mode === 'date') res.appendChild(h('p.k-hint', { text: 'This search has no stored result snapshot yet. Publications published after the search was saved therefore count as new. "Save snapshot" records today\'s result list; after that the comparison is exact.' }));
           if (x.fresh.length) {
             var tb = h('tbody');
-            x.fresh.slice(0, 25).forEach(function (p) { tb.appendChild(h('tr', null, h('td', null, h('span.tag.seed', { text: 'new' })), h('td', null, K.patentLink(p.pn, App)), h('td.t', { text: p.title || '' }), h('td.mono', { text: U.date(p.pub) }), h('td', null, U.statusPill(p.status)))); });
+            x.fresh.slice(0, 25).forEach(function (p) { tb.appendChild(h('tr', null, h('td', null, h('span.tag.seed', { text: 'new' })), h('td', null, K.patentLink(p.pn, App)), h('td.t', { text: p.title || '' }), h('td.mono', { style: { 'white-space': 'nowrap' }, text: U.date(p.pub) }), h('td', null, U.statusPill(p.status)))); });
             res.appendChild(h('div.table-wrap', null, h('table.data', null, h('thead', null, h('tr', null, ['', 'Number', 'Title', 'Published', 'Legal status'].map(function (t) { return h('th', { text: t }); }))), tb)));
             if (x.fresh.length > 25) res.appendChild(h('p.k-hint', { text: 'Showing 25 of ' + x.fresh.length + ' new publications.' }));
           }
