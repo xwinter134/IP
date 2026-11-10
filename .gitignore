@@ -1,0 +1,9 @@
+# local data, caches and build output (rebuilt by the pipeline)
+/data/*
+!/data/seed/
+/dist/
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+*.log
