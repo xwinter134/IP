@@ -25,6 +25,7 @@ const ONLY = arg('only', '') ? arg('only').split(',') : null;
 const SHOTS = arg('shots', null);
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lnp-e2e-'));
 const want = (name) => !ONLY || ONLY.indexOf(name) >= 0;
+let DIST_ENC = 'b64'; try { DIST_ENC = JSON.parse(fs.readFileSync(path.join(DIST, 'data/manifest.json'), 'utf8')).enc || 'bin'; } catch (e) { /* checked in main */ }
 
 function loadPlaywright() {
   for (const c of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { return require(c); } catch (e) { /* next */ } }
@@ -45,6 +46,8 @@ async function step(name, fn) {
   try { await fn(); } catch (e) { ok(false, name + ' (step threw)', (e && e.stack ? e.stack.split('\n').slice(0, 4).join(' | ') : String(e))); }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// routes are written in the alphabet of app/router.js: a hyphen inside a value travels as "-2d" (LnpRouter.build)
+const STRUKTUR_ALC = '#struktur-ALC-2d0315', STRUKTUR_SM = '#struktur-SM-2d102';
 
 /* ------------------------------------------------------------------------------------------------ canned model output */
 const feat = (id, quote, verdict, extra = {}) => ({ feature_id: id, claim_quote: quote, paraphrase: 'p', auslegung: { definition_quote: null, definition_para: null, weite_auslegung: 'weit', enge_auslegung: null, ergebnis_abhaengig_von_auslegung: false },
@@ -144,7 +147,7 @@ function initScript(cfg) {
 let browser = null, pw = null;
 async function session(o = {}) {
   const faults = Object.assign({}, o.faults || {});
-  const srv = await serve({ dist: o.dist || DIST, mode: o.mode || 'host', faults });
+  const srv = await serve({ dist: o.dist || DIST, mode: o.mode === 'bin' ? 'host' : (o.mode || 'host'), faults, bin: !!o.bin });
   const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, acceptDownloads: true, colorScheme: o.colorScheme || 'light', locale: 'de-DE' });
   const page = await ctx.newPage();
   const st = { console: [], pageErrors: [], offOrigin: [], fonts: 0, failed: [], requests: 0, downloads: [], sample: makeSample(o.plan || {}) };
@@ -280,6 +283,70 @@ async function openPatent(S, pt, label) {
   return d;
 }
 
+/* Defects found by the other parts, pinned here so they stay fixed. */
+async function knownItems(S) {
+  // (4) the search core takes manifest and meta columns from LnpData: one download each at boot
+  const n = (re) => S.srv.log.filter((l) => re.test(l.path) && l.status === 200).length;
+  ok(n(/^data\/meta\.gz\./) === 1 && n(/^data\/manifest\.json$/) === 1, 'boot downloads manifest.json and the meta columns once (meta ' + n(/^data\/meta\.gz\./) + ', manifest ' + n(/^data\/manifest\.json$/) + ')');
+  ok(!S.srv.log.some((l) => /\.bin$/.test(l.path)), 'no *.bin file is requested (the host refuses them; enc ' + DIST_ENC + ')', S.srv.log.filter((l) => /\.bin$/.test(l.path)).slice(0, 3));
+  // (1) legal status reaches the table and the UI
+  const st = await S.page.evaluate(async () => {
+    const m = await window.LnpData.meta(), M = window.LnpData.manifest, by = {}; let withSt = 0;
+    for (let i = 0; i < m.P; i++) { const c = M.statusCodes[m.st[i]] || ''; by[c] = (by[c] || 0) + 1; if (c) withSt++; }
+    const r = await window.LnpSearch.search('', { filters: { status: ['granted'], auth: ['EP'], textOnly: true, seedOnly: true }, limit: 1, facets: false, snippets: false });
+    const pt = r.hits.length ? await window.LnpData.patent(r.hits[0].p) : null, det = pt ? await window.LnpData.status(pt.p) : null;
+    return { by, withSt, P: m.P, pt: pt && { pn: pt.pn, status: pt.status, exp: pt.exp, deIn: pt.deIn }, det: det && { code: det.code, text: det.text, src: det.src, asof: det.asof } };
+  });
+  ok(st.withSt > 30000 && st.by.granted > 5000 && st.by.pending > 1000, 'status codes in the table: ' + JSON.stringify(st.by));
+  ok(st.pt && st.pt.status === 'granted' && st.det && st.det.code === 'granted' && st.det.text, 'status detail carries code and text (' + JSON.stringify(st.det) + ')', st);
+  if (st.pt) {
+    await S.go('#patent-' + st.pt.pn);
+    await S.wait(() => !!document.querySelector('.pt-id .pill') && !!document.querySelector('.pt-side') && !document.querySelector('.pt-side .spin'), null, 30000);
+    const ui = await S.page.evaluate(() => ({ pill: document.querySelector('.pt-id .pill').textContent, side: document.querySelector('.pt-side').innerText.replace(/\s+/g, ' ').slice(0, 200) }));
+    ok(/erteilt/i.test(ui.pill) && ui.side.length > 60, 'patent view of ' + st.pt.pn + ' shows the status pill "' + ui.pill + '" and the status block', ui);
+  }
+  // (2) seed B1 numbers whose text sits on the B9 / B2 record lead to the record with the claims
+  for (const pn of ['EP2449114B1', 'EP2350043B1', 'EP3394030B1']) {
+    const r = await S.page.evaluate(async (pn) => {
+      const D = window.LnpData, p = await D.byPn(pn), ex = await D.byPn(pn, { exact: true });
+      if (p < 0) return { p };
+      const a = await D.patent(p), b = ex >= 0 ? await D.patent(ex) : null, cl = a.text ? await window.LnpSearch.claims(p) : [];
+      return { p, pn: a.pn, text: a.text, claims: cl.length, exact: b && b.pn, exactText: b && b.text, twin: ex >= 0 ? await D.textSibling(ex) : -2 };
+    }, pn);
+    if (r.p < 0) { info(pn + ' is not in this corpus'); continue; }
+    ok(r.text && r.claims > 0 && r.exact === pn, pn + ' -> ' + r.pn + ' with ' + r.claims + ' claims (exact record ' + r.exact + (r.exactText ? ' has text' : ' is biblio-only') + ')', r);
+    await S.go('#patent-' + pn);
+    await S.wait(() => document.querySelectorAll('.claims article.claim').length > 0, null, 30000);
+    const v = await S.page.evaluate(() => ({ pn: document.querySelector('.pt-pn').textContent.replace(/\s/g, ''), note: (document.querySelector('[data-redirect]') || {}).textContent || '' }));
+    ok(r.pn === pn ? !v.note : (v.pn === r.pn && v.note.length > 40), '#patent-' + pn + ' shows ' + v.pn + (r.pn === pn ? '' : ' and says why ("' + v.note.slice(0, 70) + '...")'), v);
+  }
+  // (3) the chunk cache holds the whole table: all() loads every chunk once, later row reads fetch nothing
+  const ch = await S.page.evaluate(async () => {
+    const D = window.LnpData, M = D.manifest, a = await D.all(), d1 = await D.diag();
+    const ps = []; for (let i = 0; i < M.pat.files.length; i++) ps.push(i * M.pat.chunk);
+    await D.patents(ps); const d2 = await D.diag();
+    return { files: M.pat.files.length, n: a.n, cached: d2.chunksCached, f1: d1.fetches, f2: d2.fetches };
+  });
+  const patReq = S.srv.log.filter((l) => /^data\/pat-\d+\./.test(l.path)), dup = patReq.length - new Set(patReq.map((l) => l.path)).size;
+  ok(ch.cached === ch.files && ch.f1 === ch.f2 && dup === 0, 'patent table: ' + ch.files + ' chunks, all cached, none downloaded twice (' + patReq.length + ' requests)', { ch, dup });
+  // (5) broad university names do not flood the landscape
+  const pl = await S.page.evaluate(async () => { const a = await window.LnpData.all(), c = {}, t5 = {}; for (let i = 0; i < a.n; i++) if (a.player[i] >= 0) { const k = a.players[a.player[i]]; c[k] = (c[k] || 0) + 1; if (a.tier[i] === 5 && !a.seedTier[i]) t5[k] = (t5[k] || 0) + 1; } return { c, t5 }; });
+  const ut = Object.keys(pl.c).find((k) => /^UT /.test(k)), ubc = Object.keys(pl.c).find((k) => /^UBC/.test(k));
+  ok(ut && ubc && pl.c[ut] < 900 && pl.c[ubc] < 450 && pl.c[ut] < pl.c.Moderna, 'players: ' + ut + ' ' + pl.c[ut] + ', ' + ubc + ' ' + pl.c[ubc] + ', Moderna ' + pl.c.Moderna + ' (university systems count only inside the LNP field)', pl.c);
+  // (6) every reference lipid name resolves to a structure
+  const nm = await S.page.evaluate(async () => {
+    const C = window.LnpChem, names = await C.names(), bad = [];
+    for (const x of names) for (const q of [x.name].concat(x.synonyms.slice(0, 2))) { const r = await C.parse(q).catch((e) => ({ ok: false, error: String(e && e.message || e) })); if (!r || !r.ok || !r.smiles) bad.push(q); }
+    const one = async (q) => { const r = await C.parse(q); const svg = r.ok ? await C.svg(q, 120, 80) : ''; return { ok: r.ok, kind: r.kind, c: r.c, mw: r.mw, svg: svg.length }; };
+    return { n: names.length, bad, alc: await one('ALC-0159'), alc2: await one('alc 0159'), chol: await one('cholesterol'), chol2: await one('Cholesterin') };
+  });
+  ok(nm.bad.length === 0 && nm.alc.ok && nm.alc2.ok && nm.chol.ok && nm.chol2.ok && nm.alc.svg > 200 && nm.chol.svg > 200, nm.n + ' reference lipids resolve by name and synonym; ALC-0159 ' + JSON.stringify(nm.alc) + ', cholesterol ' + JSON.stringify(nm.chol), nm);
+  // (7) both names of the claim explanation exist
+  const ai = await S.page.evaluate(() => ({ a: typeof window.LnpAI.explain, b: typeof window.LnpAI.explainClaim, msg: window.LnpAI.explain({ code: 'rate_limited' }, 'de') }));
+  ok(ai.a === 'function' && ai.b === 'function' && typeof ai.msg === 'string' && ai.msg.length > 10, 'LnpAI.explain and LnpAI.explainClaim both exist (explain(err) -> "' + String(ai.msg).slice(0, 50) + '")', ai);
+  await S.go('#suche');
+}
+
 /* ------------------------------------------------------------------------------------------------ part: main */
 async function partMain() {
   section('main: mocked window.claude (sample, db, downloads, user), host CSP');
@@ -299,6 +366,7 @@ async function partMain() {
     await S.shot('main-start');
     await S.clean('start view');
 
+    await step('known items', async () => { await knownItems(S); });
     await step('search operators', async () => { await operatorChecks(S, 'search'); });
     await step('search UI', async () => {
       const r1 = await searchUi(S, 'lipid nanoparticle');
@@ -611,7 +679,7 @@ async function partMain() {
       const dark = seen.find((x) => x.t === 'dark'), light = seen.find((x) => x.t === 'light');
       ok(dark && light && dark.bg !== light.bg && dark.fg !== light.fg && seen.some((x) => x.t === 'auto'), 'theme cycles auto / light / dark and the colours change (' + (light && light.bg) + ' vs ' + (dark && dark.bg) + ')', seen);
       while ((await S.page.evaluate(() => window.LnpApp.theme)) !== 'dark') { await S.page.click('#theme-btn'); await sleep(100); }
-      for (const h of ['#landschaft', '#patent-' + (seeds[0] ? seeds[0].pn : 'EP3532103B1'), '#struktur-ALC-0315']) { await S.go(h); await sleep(1500); }
+      for (const h of ['#landschaft', '#patent-' + (seeds[0] ? seeds[0].pn : 'EP3532103B1'), STRUKTUR_ALC]) { await S.go(h); await sleep(1500); }
       const lum = await S.page.evaluate(() => { const c = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number); return (c[0] + c[1] + c[2]) / 3; });
       ok(lum < 60, 'dark theme: page background is dark in the work views (mean channel ' + Math.round(lum) + ')');
       await S.shot('main-dark');
@@ -633,7 +701,7 @@ async function partMobile() {
     const seeds = await pickSeeds(S);
     const pages = [['#suche', () => document.querySelectorAll('.results .hrow').length > 0], [await S.hashOf({ view: 'suche', arg: '"lipid nanoparticle" cholesterol' }), () => document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.s-count .spin')],
       ['#patent-' + seeds[0].pn, () => document.querySelectorAll('.claims article.claim').length > 0], ['#patent-' + seeds[1].pn, () => document.querySelectorAll('.claims article.claim').length > 0], ['#familie-' + seeds[0].pn, () => document.getElementById('view').innerText.length > 200],
-      ['#struktur-ALC-0315', () => document.querySelectorAll('.k-card').length > 0 && !document.querySelector('.k-status .spin')], ['#produkte-beispiel', () => !!document.getElementById('pf-name')], ['#fto', () => document.getElementById('view').innerText.length > 300],
+      [STRUKTUR_ALC, () => document.querySelectorAll('.k-card').length > 0 && !document.querySelector('.k-status .spin')], ['#produkte-beispiel', () => !!document.getElementById('pf-name')], ['#fto', () => document.getElementById('view').innerText.length > 300],
       ['#landschaft', () => document.querySelectorAll('.k-chartbox svg').length > 0], ['#merkliste', () => document.getElementById('view').innerText.length > 50], ['#system', () => !!document.getElementById('sys-test')]];
     for (const [h, cond] of pages) {
       await S.go(h);
@@ -663,7 +731,7 @@ async function partNoClaude(kind) {
     ok(d.store === 'local' && !d.caps.sample && !d.caps.db && !d.caps.downloads && d.caps.claude === (kind === 'null'), 'store falls back to localStorage, no capability is reported', d);
     const r = await searchUi(S, 'lipid nanoparticle'); ok(r.rows > 0, 'search works (' + r.rows + ' rows)');
     await sleep(800);
-    const ai = await S.page.evaluate(() => { const b = document.getElementById('ai-toggle'); return { there: !!b, disabled: b ? b.disabled : null, title: b ? (b.title || b.getAttribute('aria-label')) : null, avail: !!(window.LnpAI && window.LnpAI.available()) }; });
+    const ai = await S.page.evaluate(() => { const b = document.getElementById('ai-toggle'); return { there: !!b, disabled: b ? (b.disabled || b.getAttribute('aria-disabled') === 'true') : null, title: b ? (b.title || b.getAttribute('aria-label')) : null, avail: !!(window.LnpAI && window.LnpAI.available()) }; });
     ok(!ai.avail && (!ai.there || ai.disabled), 'AI search is off (button ' + (ai.there ? 'disabled' : 'absent') + ')', ai);
     const seeds = await pickSeeds(S); await openPatent(S, seeds[0], 'patent');
     ok(!(await S.page.$('.claims button:has-text("Mit Claude erklären")')), 'no "explain with Claude" button');
@@ -723,7 +791,7 @@ async function partFallback(mode, dist) {
     const chem = await S.page.evaluate(async () => { const ex = await window.LnpChem.search({ query: 'DLin-MC3-DMA', mode: 'exact', limit: 3 }); const sub = await window.LnpChem.search({ query: 'CN(C)CCCC(=O)OC', mode: 'sub', limit: 5 }); const sim = await window.LnpChem.search({ query: 'ALC-0315', mode: 'sim', minSim: 0.7, limit: 5 }); const dg = await window.LnpChem.diag(); return { ex: ex.length, sub: sub.total, sim: sim.total, mode: dg.mode, workers: dg.workers, ms: dg.ms }; });
     ok(chem.ex > 0 && chem.sub > 0 && chem.sim > 0 && chem.mode === wantMode, 'structure search works in mode "' + chem.mode + '" (exact ' + chem.ex + ', substructure ' + chem.sub + ', similar ' + chem.sim + '; ' + (Date.now() - t0) + ' ms incl. load)', chem);
     report.parts[mode].chem = chem;
-    await S.go('#struktur-SM-102'); await S.wait(() => document.querySelectorAll('.k-card').length > 0 && !document.querySelector('.k-status .spin'), null, 120000);
+    await S.go(STRUKTUR_SM); await S.wait(() => document.querySelectorAll('.k-card').length > 0 && !document.querySelector('.k-status .spin'), null, 120000);
     ok((await count(S, '.k-card svg')) > 0, 'structure view draws results');
     await S.go('#landschaft'); await S.wait(() => document.querySelectorAll('.k-chartbox svg rect').length > 10, null, 60000);
     ok(true, 'landscape renders');
@@ -734,6 +802,30 @@ async function partFallback(mode, dist) {
     await S.shot(mode + '-system');
     await S.clean(mode, allow);
   } finally { await S.close(); }
+}
+
+/* The raw-binary build (--enc bin) behind a server that serves *.bin: boot, search, claims, structure search. */
+async function partBin(dist) {
+  section('bin: raw-binary build served locally (not publishable: the host refuses *.bin)');
+  const S = await session({ claude: 'absent', dist, bin: true });
+  try {
+    const b = await S.boot('', { timeout: 120000 });
+    ok(b.ready, 'boots (' + b.wallMs + ' ms)', await S.page.evaluate(() => document.getElementById('boot').innerText).catch(() => ''));
+    const enc = await S.page.evaluate(() => window.LnpApp.manifest.enc);
+    ok(enc === 'bin' && !S.srv.log.some((l) => /\.b64\.txt$/.test(l.path)), 'only raw binary files are read (enc ' + enc + ')');
+    const r = await searchUi(S, '"lipid nanoparticle" AND cholesterol'); ok(r.rows > 0 && r.marks > 0, 'UI search works (' + r.rows + ' rows)');
+    const seeds = await pickSeeds(S); await openPatent(S, seeds[0], 'patent');
+    const chem = await S.page.evaluate(async () => (await window.LnpChem.search({ query: 'ALC-0315', mode: 'exact', limit: 3 })).length);
+    ok(chem > 0, 'structure search works (' + chem + ' exact hits)');
+    await S.clean('bin');
+  } finally { await S.close(); }
+  // and the other way round: the same build behind the real host rules must fail readably, not blank
+  const H = await session({ claude: 'absent', dist });
+  try {
+    const b = await H.boot('', { timeout: 60000 });
+    const txt = await H.page.evaluate(() => document.body.innerText);
+    ok(!b.ready && txt.replace(/\s+/g, ' ').length > 80, 'the bin build behind the host rules (*.bin = 404) shows a readable boot error', txt.slice(0, 300));
+  } finally { await H.close(); }
 }
 
 /* ------------------------------------------------------------------------------------------------ part: faults */
@@ -804,10 +896,12 @@ async function partFaults() {
       delete S.faults[pfile];
       // 4. chemistry file corrupt
       S.faults['data/chem/fp.gz.bin'] = 'corrupt';
-      await S.go('#struktur-ALC-0315');
-      await S.wait(() => !!document.querySelector('#view .notice.err, #view .empty') && !document.querySelector('.k-status .spin'), null, 60000).catch(() => {});
+      await S.go(STRUKTUR_ALC);
+      await S.wait(() => !!document.querySelector('#view .notice.err') && !document.querySelector('.k-status .spin'), null, 90000).catch(() => {});
       const c = await S.page.evaluate(() => ({ err: (document.querySelector('#view .notice.err') || {}).textContent, text: document.getElementById('view').innerText.length }));
-      ok(c.err && c.text > 100, 'corrupt chemistry file: the structure view shows an error, not a blank page ("' + String(c.err).slice(0, 100) + '")', c);
+      ok(c.err && /fp\.gz\./.test(c.err) && !/atob/.test(c.err) && c.text > 100, 'corrupt chemistry file: the structure view names the file and the reason, not a blank page ("' + String(c.err).slice(0, 130) + '")', c);
+      const fpReq = S.srv.log.filter((l) => /chem\/fp\.gz\./.test(l.path)).length;
+      ok(fpReq === 1, 'the failed start is not repeated by every call of the view (fp file requested ' + fpReq + ' time)');
       await S.shot('fault-chem');
       // the rest of the app is unaffected
       const r2 = await searchUi(S, 'cholesterol'); ok(r2.rows > 0, 'text search is unaffected by the chemistry failure');
@@ -911,7 +1005,7 @@ async function partFixture() {
     await S.go('#familie-EP9999991B1'); await sleep(1500); await noXss('family view');
     // explain + FTO over the hostile claim: where does the text land in the prompt?
     const calls = S.st.sample.calls;
-    await S.go('#patent-EP9999991B1'); await S.wait(() => !!document.querySelector('.claims button:has-text("Mit Claude erklären")'), null, 30000);
+    await S.go('#patent-EP9999991B1'); await S.page.waitForSelector('.claims button:has-text("Mit Claude erklären")', { timeout: 30000 });
     await S.page.click('.claims button:has-text("Mit Claude erklären")');
     await S.wait(() => /keine Rechtsberatung/.test((document.querySelector('.ai-box') || { textContent: '' }).textContent), null, 20000);
     const q = calls[calls.length - 1];
@@ -1059,6 +1153,7 @@ async function partPerf() {
   await run('blob', () => partFallback('blob', DIST));
   await run('strict', async () => {
     let b64 = arg('b64', null);
+    if (!b64 && DIST_ENC === 'b64') b64 = DIST;          // the default build is the base64 one
     if (!b64) {
       b64 = path.join(TMP, 'dist-b64'); section('building the base64 variant for the strict run');
       const t = Date.now();
@@ -1066,6 +1161,17 @@ async function partPerf() {
       catch (e) { ok(false, 'base64 build', String(e.stdout || '').slice(-600) + String(e.stderr || '').slice(-600)); return; }
     }
     await partFallback('strict', path.resolve(b64));
+  });
+  // the raw-binary build is only an option for local use: checked when a directory is given (--bin DIR) or asked for (--only bin)
+  if (arg('bin', null) || (ONLY && want('bin'))) await run('bin', async () => {
+    let dir = arg('bin', null);
+    if (!dir) {
+      dir = path.join(TMP, 'dist-bin'); section('building the raw-binary variant (--enc bin)');
+      const t = Date.now();
+      try { execFileSync('python3', [path.join(ROOT, 'pipeline/build_dist.py'), '--enc', 'bin', '--out', dir], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', maxBuffer: 1 << 26 }); info('built in ' + ((Date.now() - t) / 1000).toFixed(0) + ' s: ' + dir); }
+      catch (e) { ok(false, 'bin build', String(e.stdout || '').slice(-600) + String(e.stderr || '').slice(-600)); return; }
+    }
+    await partBin(path.resolve(dir));
   });
   await run('faults', partFaults);
   if (!flag('no-fixture')) await run('fixture', partFixture);

@@ -27,5 +27,12 @@ module.exports = {
   '98N12-5': { role: 'ionizable', synonyms: ['98N12-5(1)', '98N12 5', 'ND98'], note: 'lipidoid' },
   'cKK-E12': { role: 'ionizable', synonyms: ['cKKE12', 'cKK E12', 'MD-1', 'CAS 1432494-65-9', '1432494-65-9'], note: 'lipidoid' },
   'L319': { role: 'ionizable', synonyms: ['L-319', 'L 319', 'di((Z)-non-2-en-1-yl) 9-((4-(dimethylamino)butanoyl)oxy)heptadecanedioate', 'CAS 1351586-50-9', '1351586-50-9'] },
-  'ATX-100': { role: 'ionizable', synonyms: ['ATX100', 'ATX 100'], note: 'Arcturus lipid family' }
+  'ATX-100': { role: 'ionizable', synonyms: ['ATX100', 'ATX 100'], note: 'Arcturus lipid family' },
+  // Reference lipids that are not in data/seed/ref_lipids_pubchem.json: the entry carries its own structure (`smiles`,
+  // written from the published chemical name, not fetched from a registry).
+  'ALC-0159': { role: 'peg', smiles: 'CCCCCCCCCCCCCCN(CCCCCCCCCCCCCC)C(=O)COCCOC',
+    synonyms: ['ALC0159', 'ALC 0159', '2-[(polyethylene glycol)-2000]-N,N-ditetradecylacetamide', 'PEG2000-N,N-ditetradecylacetamide', 'CAS 1849616-42-7', '1849616-42-7'],
+    note: 'Comirnaty PEG lipid; structure is a surrogate with the PEG chain cut to one unit; polymers have no discrete structure in the compound set' },
+  'DOPC': { role: 'helper', smiles: 'CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC/C=C\\CCCCCCCC',
+    synonyms: ['1,2-dioleoyl-sn-glycero-3-phosphocholine', 'dioleoylphosphatidylcholine', 'dioleoyl phosphatidylcholine', 'CAS 4235-95-4', '4235-95-4'] }
 };

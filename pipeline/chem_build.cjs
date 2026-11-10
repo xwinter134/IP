@@ -186,6 +186,8 @@ async function main() {
   const refs = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'seed', 'ref_lipids_pubchem.json'), 'utf8'));
   const extra = require('./chem_names.cjs');
   const nsIndex = new Map(); for (let c = 0; c < N; c++) { const a = nsIndex.get(cols.ns[c]); if (a) a.push(c); else nsIndex.set(cols.ns[c], [c]); }
+  // entries of chem_names.cjs that bring their own structure (not in the seed file), e.g. ALC-0159
+  for (const [name, x] of Object.entries(extra)) if (x.smiles && !refs.some((r) => r.name === name)) refs.push({ name, SMILES: x.smiles, CID: null, InChIKey: null });
   const names = refs.map((r) => {
     const x = extra[r.name] || {}; const m = OCL.Molecule.fromSmiles(r.SMILES); const idc = m.getIDCode();
     const hit = byIdc.get(idc); const flat = F.flatIdcode(OCL, m);

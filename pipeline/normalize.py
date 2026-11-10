@@ -403,7 +403,10 @@ def main():
                     title = {"en": t}
             raw_asg = (doc or {}).get("assignees") or (r.get("assignees") if p["row"] else None) or sb.get("assignees") or sm.get("assignees") or []
             assignees = nt.clean_assignees(raw_asg, noise)
-            player = matcher.match(assignees) or matcher.match(raw_asg) or matcher.match((r.get("assignees") if p["row"] else None) or [])
+            # broad institution names (whole university systems) only count inside the LNP field (tier 0-4 or seed)
+            in_field = bool((r.get("seed_family") if r else None) or sm.get("family")) or (r["tier"] if r else (0 if sm else 5)) <= 4
+            player = (matcher.match(assignees, in_field) or matcher.match(raw_asg, in_field)
+                      or matcher.match((r.get("assignees") if p["row"] else None) or [], in_field))
             cpc = norm_cpc((r.get("cpc") if p["row"] else None) or sb.get("cpc"))
             for c in norm_cpc((doc or {}).get("cpc")):
                 if c not in cpc:

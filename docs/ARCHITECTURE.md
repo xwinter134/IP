@@ -146,7 +146,14 @@ Notes on the record (stage 2 as built):
 - `priority_date` = earliest priority claim, else filing date; `app_number` EP = 8 digits without check digit.
 - Parse cache: `data/work/norm/{ep,us}/<file stem>.json.gz` + `data/work/norm/index.json` (file name, mtime,
   size, parser version `PARSER_VERSION` in `pipeline/lib/norm_doc.py`; bump it to force a reparse).
-- `status` is taken from `data/work/status.jsonl.gz` when that file exists at normalize time, else null.
+- `status` is taken from `data/work/status.jsonl.gz` when that file exists at normalize time, else null
+  (`build_dist.py` prefers the status file over this copy). The fields are `code` and `text` (not `status_code`).
+- `player`: the regex of `data/seed/assignee_variants.json`, with one restriction (`PlayerMatcher` in
+  `pipeline/lib/norm_text.py`): the patterns that name a whole university system (`university of texas`,
+  `british columbia`, also in the DOCDB forms `UNIV TEXAS`, `UNIV BRITISH COLUMBIA`) only count for publications inside
+  the LNP field (tier 0-4 or a seed family), not for tier 5 context publications; the company names of the same player
+  (Precision NanoSystems, ReCode Therapeutics) always count. Effect: "UT Southwestern / ReCode" 1,697 -> 707
+  publications, "UBC (Cullis) / Precision NanoSystems" 494 -> 335. The UT label still covers every campus of the system.
 
 ### `data/work/status.jsonl.gz` (written by `pipeline/status.py`)
 
@@ -199,7 +206,7 @@ newest first. Options: `--limit` (documents per run, default 150), `--max-hours`
 ## Stage 3: `dist/` (written by `pipeline/build_dist.py`, text index by `pipeline/build_index.mjs`)
 
 ```
-python3 pipeline/build_dist.py [--out dist] [--budget-mb 215] [--enc bin|b64] [--max-files 500] [--limit N]
+python3 pipeline/build_dist.py [--out dist] [--budget-mb 215] [--enc b64|bin] [--max-files 500] [--limit N]
                                [--defs-reserve-mb 10] [--img-budget-mb 25] [--img-dir DIR] [--no-chem] [--no-web] [--force]
                                [--corpus FILE] [--build-dir data/work/dist_build]
 node tests/search_test.mjs [--work DIR] [--no-browser] [--perf DIST_DIR]      # builds its own dist copies in a temp dir
@@ -212,6 +219,10 @@ rewrites a file in `dist/` only when its content changed. `data/work/status.json
 `data/work/chem/` are optional. Work files: `data/work/dist_build/{keep.bin, cut.jsonl, model.json, dist_report_<enc>.json, idx_<enc>/}`.
 
 ```
+File names below are the logical names. The Artifact host refuses `*.bin` files (learned from the first publish), so
+the default build (`--enc b64`) writes every `x.bin` as base64 text `x.b64.txt`; `--enc bin` writes the raw files and is
+for local tests only (`node tests/artifact_server.cjs --dist DIR --bin`).
+
 dist/index.html                the page (web/ is copied as it is: index.html, app/, engine/, vendor/)
 dist/app/*.js  dist/app/app.css  dist/app/views/*.js
 dist/engine/*.js               engines (tok.js, loader.js, data.js, search.js, search-worker.js, chem*.js, ...)
@@ -236,14 +247,16 @@ dist/publish_batches.json      [{files:[...], bytes}] each <= 240 files and <= 6
 ```
 
 Limits of the host: each file <= 15 MB, at most 500 files and 240 MB in total (checked by the builder, which exits
-non-zero when one is broken). `.gz.bin` files are gzip streams of the described payload; with `--enc b64` every
-`*.bin` is written as base64 text `*.b64.txt` instead and `manifest.enc = "b64"` (the dist grows by a third, so the
-budget cut bites earlier). The engines read `manifest.enc` and handle both. No file name contains anything but
+non-zero when one is broken). `.gz.bin` files are gzip streams of the described payload; with `--enc b64` (the default)
+every `*.bin` is written as base64 text `*.b64.txt` instead and `manifest.enc = "b64"` (a third larger than `--enc bin`,
+so the budget cut bites earlier; current build: 164.6 MB in 337 files, no cut). The status detail is taken from
+`data/work/status.jsonl.gz` when it has a record for the publication (it is written after the corpus), else from the
+corpus record. The engines read `manifest.enc` and handle both. No file name contains anything but
 `[a-z0-9._-/]`.
 
 `manifest.json`:
 ```
-{"v":1,"built":"2026-11-10T12:00:00Z","enc":"bin",
+{"v":1,"built":"2026-11-10T12:00:00Z","enc":"b64",
  "snapshots":{"surechembl":"2026-11-03","ep_register":"2026-08-23","ep_text":"2026-11-10","us_text":"2026-11-10","corpus":"…Z"},
  "counts":{"patents":N,"fulltext":N,"fulltextAvailable":N,"claims":N,"compounds":N,"ep":N,"us":N,"wo":N,"families":N,
            "withStatus":N,"withDefs":N,"seed_expected":126,"seed_present":N,"seed_fulltext":N},
@@ -323,7 +336,9 @@ publications, 50,000 full texts, 1.34 M claims): 214.7 MB in 474 files, 150 byte
    `data/work/chem/_cache/calc-v<ChemFP.VERSION>.jsonl` by compound id + SMILES hash: a re-run computes only new or
    changed compounds (cold 85k compounds: about 6 min on 3 threads; cached: 7 s). Output is deterministic.
 3. Compounds with the same idcode are merged; rows are ordered by scaffold key, then MW. `names.json` is built from
-   `data/seed/ref_lipids_pubchem.json` plus `pipeline/chem_names.cjs` (synonyms, roles).
+   `data/seed/ref_lipids_pubchem.json` plus `pipeline/chem_names.cjs` (synonyms, roles; an entry with its own `smiles`
+   adds a reference lipid that is not in the seed file: ALC-0159 as a surrogate with the PEG chain cut to one unit, DOPC).
+   20 reference lipids; cholesterol resolves by name to its structure but is not in the compound set (`c: -1`).
 
 Files (`*.gz.bin` = gzip of the payload, little endian; `_in/` and `_cache/` are not published):
 
@@ -374,11 +389,16 @@ names are untrusted input: the UI inserts them with `textContent`, never as HTML
 - `LnpData.byPn("EP3532103B1" | "EP 3 532 103 B1" | "US 8,058,069" | "US 2017/0210697 A1" | "WO2017/075531" | "WO 17/075531")` -> p | -1.
   Tolerant of blanks, commas, dots, slashes, dashes, lower case, a missing kind code and a missing country (EP and US
   are tried). Without a kind code the best publication of that number is returned: full text first, then B kinds, then
-  the newest. `LnpData.allPn(input)` -> p[] (every kind of the number). The parser is `LnpTok.pn(input)`.
+  the newest. A B / C / E kind that has no claim text of its own leads to the later publication of the same number that
+  has it (seed EP2350043B1 -> EP2350043B9, EP3394030B1 -> EP3394030B2; the patent view says so); `byPn(input, {exact: true})`
+  returns the record that was asked for. `LnpData.textSibling(p)` -> p of that publication | -1.
+  `LnpData.allPn(input)` -> p[] (every kind of the number). The parser is `LnpTok.pn(input)`.
 - `LnpData.family(p)` -> p[] (all members in the table)
 - `LnpData.status(p)` -> status detail object | null
 - `LnpData.all()` -> columnar view of the whole table `{n, pn[], auth[], kind[], title[], assignee[], cpc[] ("A|B"), wo[], appNo[], seedFam[], pub, app, prio, grant, exp, fam (Int32Array), player (Int16Array), tier, seedTier, flags, st, deIn (Uint8Array), players[], statusCodes[]}` (loads every chunk; used by landscape and filters)
-- `LnpData.meta()` -> the binary columns only (one 2.8 MB file instead of every chunk)
+- `LnpData.meta()` -> the binary columns only (one 2.8 MB file instead of every chunk); `LnpData.metaBuffer()` -> the
+  inflated file itself. The parsed-chunk cache holds the whole table (32 chunks now), so `all()` and row reads never
+  download a chunk twice.
 - `LnpData.links(p | patentObject)` -> `{espacenet, google, register|null, uspto|null}` URLs; `LnpData.linksOf(patentObject)` is synchronous
 - `LnpData.diag()` -> `{mode: "worker"|"blob"|"main", gzip: "native"|"fflate", enc, tried[], patents, fetches, bytes}`
 - `LnpData.onProgress(fn)`, `LnpData.reset()`
@@ -388,7 +408,9 @@ names are untrusted input: the UI inserts them with `textContent`, never as HTML
 `blob:` Worker (tok.js + loader.js + search-worker.js concatenated) or on the main thread; it also loads in Node
 (tests). It reads `meta.gz.bin` itself, so it does not depend on `LnpData`.
 - `LnpSearch.init({base = "data/", mode: "auto"|"worker"|"blob"|"main", gzip, engineBase, vendorUrl, timeoutMs})`
-  -> `{mode, D, P, terms, claims, ms, gzip, enc, tried[]}` (lazy: every call below runs it on first use)
+  -> `{mode, D, P, terms, claims, ms, gzip, enc, tried[]}` (lazy: every call below runs it on first use). When `LnpData`
+  is already initialised on the same `base`, the manifest and the meta file are taken from it (`share: false` switches
+  that off), so the boot downloads each once.
 - `LnpSearch.search(query, opts)` -> `{total, hits, facets, parsed, ms, timing, totalFamilies?, all?}`
   - `query`: implicit AND, `AND`, `OR`, `NOT` / `-x`, parentheses, `"exact phrase"` (stop words inside keep their
     place), `prefix*` (2 characters at least), `a NEAR/n b` (default n = 5; operands: words, phrases, prefixes, OR groups,
@@ -665,3 +687,25 @@ long claim sets are named but not counted.
 all but the last waiter now receive a copy, the last takes the buffer by transfer. Before, the second transfer threw
 inside the worker and the caller never got an answer (seen when `LnpData.patents()` touched more chunks than the
 chunk LRU holds, e.g. in `LnpFto.candidates`).
+
+## Build and test entry points
+
+```
+pipeline/run_all.sh                 normalize -> status --no-fetch -> chemistry (if an input is newer) -> build_dist (b64)
+pipeline/run_all.sh batches [-v]    the publish batches of dist/ (reads dist/publish_batches.json)
+pipeline/run_all.sh check           the three engine tests and the end-to-end test
+make dist | batches | test | e2e | serve
+```
+Measured on the build machine (4 cores), 125,104 publications, 15,148 full texts, 381,533 claims: normalize 36-41 s,
+status 58 s, chemistry 10 s (cached), build_dist 59 s (25-28 s when the text index is unchanged).
+
+`tests/artifact_server.cjs` serves a dist the way the host does: `index.html` wrapped in a document skeleton, the
+host's Content-Security-Policy on every response, `*.bin` answered with 404 (unless `--bin`). Modes: `host`; `blob`
+(file workers 404, so `blob:` workers take over); `strict` (`worker-src 'none'`, engines on the main thread). Faults
+per path: `404`, `corrupt`, `truncate`, `slow`.
+
+`tests/e2e.cjs` (Playwright, Chromium) drives the published form of the page: `node tests/e2e.cjs [--dist dist]
+[--only main,mobile,noclaude,nullcaps,blob,strict,bin,faults,fixture,perf] [--shots DIR] [--report FILE] [--bin DIR]`.
+`window.claude` is mocked in the page (sample with canned JSON per FTO step, db, downloads); requests leaving the
+origin are aborted and counted, Google Fonts are answered locally. `bin` (only on request) checks the raw-binary build.
+

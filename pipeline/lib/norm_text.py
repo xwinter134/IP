@@ -222,6 +222,12 @@ def clean_assignees(names, extra_noise=()):
     return out
 
 
+# broad seed patterns -> the forms they take in the data (DOCDB abbreviates: "UNIV TEXAS", "UNIV BRITISH COLUMBIA")
+_BROAD = {"university of texas": r"university of texas|\buniv texas\b",
+          "british columbia": r"university of british columbia|\buniv british columbia\b"}
+_EXTRA = {"UT Southwestern / ReCode": [r"recode therapeutics"]}
+
+
 class PlayerMatcher:
     def __init__(self, variants):
         self.items = []
@@ -231,17 +237,25 @@ class PlayerMatcher:
                 continue
             # seed regex 'tron\\b' (TRON gGmbH) also hits Vectron, Cenetron, BioElectron: anchor it at a word start
             rx = rx.replace("tron\\b", "(?<![a-z])tron\\b").replace("|tron -", "|(?<![a-z])tron -")
-            self.items.append((v["player"], re.compile(rx, re.I)))
+            # A whole university system is not one research group: "university of texas" and "british columbia" also
+            # sit on thousands of context publications (transgenic animals, oncology). Their pattern is split off as
+            # "broad" and only counts for publications inside the LNP field (match(names, in_field=True)); the
+            # company names of the same player (Precision NanoSystems, ReCode) always count.
+            parts = [x for x in rx.split("|")]
+            broad = [x for x in parts if x in _BROAD]
+            narrow = [x for x in parts if x not in _BROAD] + _EXTRA.get(v["player"], [])
+            self.items.append((v["player"], re.compile("|".join(narrow), re.I) if narrow else None,
+                               re.compile("|".join(_BROAD[x] for x in broad), re.I) if broad else None))
         self.noise = []
         for v in variants:
             if v.get("player", "").startswith("_"):
                 self.noise += [x for x in v.get("variants_observed_on_fetched_pages", []) if _NOT_ASSIGNEE.search(x)]
 
-    def match(self, names):
+    def match(self, names, in_field=True):
         blob = " | ".join(n for n in names or [] if n)
         if not blob:
             return None
-        for player, rx in self.items:
-            if rx.search(blob):
+        for player, rx, broad in self.items:
+            if (rx and rx.search(blob)) or (broad and in_field and broad.search(blob)):
                 return player
         return None

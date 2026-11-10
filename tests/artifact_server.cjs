@@ -1,12 +1,15 @@
 /* Static server that mimics the Artifact host as strictly as it can be done locally. Used by tests/e2e.cjs and
-   usable on its own:   node tests/artifact_server.cjs [--dist dist] [--port 8787] [--mode host|blob|strict]
+   usable on its own:   node tests/artifact_server.cjs [--dist dist] [--port 8787] [--mode host|blob|strict] [--bin]
    - index.html is a body fragment (no doctype / html / head): it is wrapped in a document skeleton like the host does.
    - Every response carries the Content-Security-Policy of the host (no inline script, no eval, no wasm, connect 'self').
+   - The real host refuses *.bin files (learned from the first publish), so every *.bin answers 404 here too and the
+     dist must be the base64 build (the default of pipeline/build_dist.py). opts.bin / --bin serves them, for a local
+     dist built with --enc bin.
    - mode "host":   worker-src 'self' blob:
      mode "blob":   requests with Sec-Fetch-Dest: worker get 404 (file workers fail, blob: workers must take over)
-     mode "strict": worker-src 'none' and every *.bin answers 404 (main-thread engines + base64 files; needs a dist
-                    built with --enc b64)
-   - faults: {"<path>": "404" | "corrupt" | "truncate" | "slow"} can be set per server (opts.faults, mutable). */
+     mode "strict": worker-src 'none' (engines on the main thread)
+   - faults: {"<path>": "404" | "corrupt" | "truncate" | "slow"} can be set per server (opts.faults, mutable); a fault
+     on "data/x.gz.bin" also hits "data/x.gz.b64.txt". */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 
@@ -32,9 +35,9 @@ function serve(opts) {
     const send = (code, type, body) => { log.push({ path: key, status: code, bytes: body ? body.length : 0, dest: req.headers['sec-fetch-dest'] || '' }); res.writeHead(code, Object.assign({ 'Content-Type': type }, head)); res.end(body); };
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(405, 'text/plain', 'method');
     if (file !== root && !file.startsWith(root + path.sep)) return send(403, 'text/plain', 'forbidden');
-    const fault = faults[key];
+    const fault = faults[key] || faults[key.replace(/\.b64\.txt$/, '.bin')];   // faults are keyed by the logical name (x.gz.bin) or the physical one
     if (fault === '404') return send(404, 'text/plain', 'not found');
-    if (mode === 'strict' && /\.bin$/.test(key)) return send(404, 'text/plain', 'not found');
+    if (!opts.bin && /\.bin$/.test(key)) return send(404, 'text/plain', 'not found');
     if (mode === 'blob' && req.headers['sec-fetch-dest'] === 'worker') return send(404, 'text/plain', 'not found');
     fs.readFile(file, (err, buf) => {
       if (err) return send(404, 'text/plain', 'not found');
@@ -55,7 +58,7 @@ module.exports = { serve, skeleton, CSP_BASE };
 
 if (require.main === module) {
   const a = process.argv.slice(2), arg = (n, d) => { const i = a.indexOf('--' + n); return i >= 0 ? a[i + 1] : d; };
-  serve({ dist: arg('dist', path.join(__dirname, '..', 'dist')), port: +arg('port', 8787), mode: arg('mode', 'host') }).then((s) => {
+  serve({ dist: arg('dist', path.join(__dirname, '..', 'dist')), port: +arg('port', 8787), mode: arg('mode', 'host'), bin: a.indexOf('--bin') >= 0 }).then((s) => {
     console.log('serving ' + arg('dist', 'dist') + ' at ' + s.origin + '  (mode ' + arg('mode', 'host') + ')');
   });
 }

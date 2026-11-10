@@ -21,6 +21,7 @@
     var eb = abs(o.engineBase || here || 'engine/'), base = abs(o.base || 'data/'), vendorUrl = abs(o.vendorUrl || eb + '../vendor/fflate.js');
     var want = o.mode && o.mode !== 'auto' ? [o.mode] : ['worker', 'blob', 'main'];
     var lopts = { base: base, enc: o.enc || 'auto', vendorUrl: vendorUrl, gzip: o.gzip };
+    S.base = base;
     S.tried = [];
     S.ready = need('LnpLoader', eb + 'loader.js').then(function () { return need('LnpTok', eb + 'tok.js'); }).then(function () {
       var L = g.LnpLoader;
@@ -65,6 +66,8 @@
       return chain;
     }).then(function (t) {
       S.get = t.get; S.gzip = t.gzip; S.ldiag = t.diag; S.h = t.h || null; D.manifest = t.man; S.enc = t.man.enc || 'bin';
+      // every chunk of the table fits the cache (all() and the FTO candidate search touch all of them): no reloads
+      if (!o.cacheBytes && t.man.pat && t.man.pat.files) S.chunks.max = Math.max(S.chunks.max, (t.man.pat.files.length + 2) * 3e6);
       return S.get(t.man.seed || 'seed.json', 'json').then(function (seed) { D.seed = seed; return t.man; }, function () { D.seed = null; return t.man; });
     });
     S.ready.catch(function () { S.ready = null; });
@@ -111,9 +114,16 @@
   }
 
   // ---------------------------------------------------------------- meta (binary columns) and numbers
+  // the inflated meta file itself (kept: LnpSearch takes it from here instead of downloading it again)
+  function metaBuffer() {
+    if (S.metaBufP) return S.metaBufP;
+    S.metaBufP = ready().then(function (M) { return S.get(M.meta.file, 'bin'); });
+    S.metaBufP.catch(function () { S.metaBufP = null; });
+    return S.metaBufP;
+  }
   function meta() {
     if (S.metaP) return S.metaP;
-    S.metaP = ready().then(function (M) { return S.get(M.meta.file, 'bin'); }).then(function (buf) {
+    S.metaP = metaBuffer().then(function (buf) {
       var dv = new DataView(buf), jl = dv.getUint32(0, true), h = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, jl)));
       var base = (4 + jl + 3) & ~3, m = { P: h.P, h: h }, T = { i32: Int32Array, u32: Uint32Array, u16: Uint16Array, u8: Uint8Array };
       h.cols.forEach(function (c) { var A = T[c.type]; m[c.name] = new A(buf.slice(base + c.off, base + c.off + c.n * A.BYTES_PER_ELEMENT)); });
@@ -135,11 +145,32 @@
   // "EP3532103B1" | "EP 3 532 103" | "US8,058,069" | "WO2017/075531" -> p | -1.
   // Without a kind code (or with one that is not in the table) the best publication of that number is returned:
   // one with full text first, then granted (B, later kinds first), then the newest.
-  function byPn(input) {
+  // A granted publication without claim text whose corrected / amended version (B9, B2, B3 of the same number) carries
+  // the text: -> p of that version, else -1. The fetch takes the latest B publication of an application, so the claims
+  // of EP2350043B1 sit on EP2350043B9.
+  function textTwin(ix, m, p) {
+    if (m.flags[p] & 1) return -1;
+    var kinds = m.h.kinds, k = kinds[m.kind[p]] || '';
+    if (k.charAt(0) !== 'B' && k.charAt(0) !== 'C' && k.charAt(0) !== 'E') return -1;
+    var l = ix.map.get('#' + g.LnpTok.pnBase(ix.list[p])), best = -1;
+    for (var j = 0; l && j < l.length; j++) {
+      var x = l[j], kx = kinds[m.kind[x]] || '';
+      if (x !== p && (m.flags[x] & 1) && kx.charAt(0) !== 'A' && (best < 0 || m.pub[x] > m.pub[best])) best = x;
+    }
+    return best;
+  }
+  function textSibling(p) { return Promise.all([pnIndex(), meta()]).then(function (r) { return (p >= 0 && p < r[1].P) ? textTwin(r[0], r[1], p) : -1; }); }
+  function byPn(input, opt) {
     return Promise.all([pnIndex(), meta()]).then(function (r) {
       var ix = r[0], m = r[1], q = g.LnpTok.pn(input), i;
       if (!q) return -1;
-      for (i = 0; i < q.full.length; i++) { var p = ix.map.get(q.full[i]); if (p !== undefined) return p; }
+      for (i = 0; i < q.full.length; i++) {
+        var p = ix.map.get(q.full[i]);
+        if (p === undefined) continue;
+        if (opt && opt.exact) return p;
+        var t = textTwin(ix, m, p);
+        return t >= 0 ? t : p;
+      }
       for (i = 0; i < q.bases.length; i++) {
         var l = ix.map.get('#' + q.bases[i]);
         if (l && l.length) {
@@ -169,7 +200,7 @@
     if (S.allP) return S.allP;
     S.allP = ready().then(function (M) {
       var n = M.pat.files.length, parts = new Array(n), next = 0;
-      function worker() { if (next >= n) return Promise.resolve(); var i = next++; return S.get(M.pat.files[i], 'json').then(function (c) { parts[i] = c; return worker(); }); }
+      function worker() { if (next >= n) return Promise.resolve(); var i = next++; return chunk(i).then(function (c) { parts[i] = c; return worker(); }); }
       return Promise.all([worker(), worker(), worker(), worker()]).then(function () {
         var P = M.counts.patents, o = { n: P, pn: new Array(P), auth: new Array(P), kind: new Array(P), title: new Array(P), assignee: new Array(P), cpc: new Array(P), wo: new Array(P), appNo: new Array(P), seedFam: new Array(P),
           pub: new Int32Array(P), app: new Int32Array(P), prio: new Int32Array(P), grant: new Int32Array(P), exp: new Int32Array(P), fam: new Int32Array(P), player: new Int16Array(P), tier: new Uint8Array(P), seedTier: new Uint8Array(P), flags: new Uint8Array(P), st: new Uint8Array(P), deIn: new Uint8Array(P) };
@@ -205,8 +236,8 @@
     });
   }
   D.init = init; D.patent = patent; D.patents = patents; D.byPn = byPn; D.allPn = allPn; D.family = family; D.status = status; D.all = all;
-  D.links = links; D.linksOf = linksOf; D.diag = diag; D.meta = meta;
+  D.textSibling = textSibling; D.metaBuffer = metaBuffer; D.base = function () { return S.base; }; D.links = links; D.linksOf = linksOf; D.diag = diag; D.meta = meta;
   D.onProgress = function (fn) { S.listeners.push(fn); return function () { var i = S.listeners.indexOf(fn); if (i >= 0) S.listeners.splice(i, 1); }; };
-  D.reset = function () { if (S.h) { S.h.terminate(); S.h = null; } if (S.chunks) S.chunks.clear(); if (S.st) S.st.clear(); S.pn = null; S.meta = null; D.manifest = null; D.seed = null; S.ready = null; S.metaP = null; S.pnP = null; S.allP = null; S.famMap = null; S.mode = null; };
+  D.reset = function () { if (S.h) { S.h.terminate(); S.h = null; } if (S.chunks) S.chunks.clear(); if (S.st) S.st.clear(); S.pn = null; S.meta = null; D.manifest = null; D.seed = null; S.ready = null; S.metaP = null; S.metaBufP = null; S.pnP = null; S.allP = null; S.famMap = null; S.mode = null; };
   g.LnpData = D;
 })(typeof self !== 'undefined' ? self : this);

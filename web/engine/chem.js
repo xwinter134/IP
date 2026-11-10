@@ -22,6 +22,7 @@
   var CHUNK = 1024;
   var S = null;        // state after init
   var starting = null; // init promise
+  var lastFail = null; // {t, e} of the last failed init
 
   function now() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
   function err(code, message) { var e = new Error(message); e.code = code; return e; }
@@ -47,7 +48,15 @@
     function bin() { return fetch(base + name).then(function (r) { if (!r.ok) throw err('http', name + ': HTTP ' + r.status); return r.arrayBuffer(); }).then(function (b) { return new Uint8Array(b); }); }
     function b64() { var n2 = name.replace(/\.bin$/, '.b64.txt'); return fetch(base + n2).then(function (r) { if (!r.ok) throw err('http', n2 + ': HTTP ' + r.status); return r.text(); }).then(b64ToBytes); }
     var p = enc === 'b64' ? b64() : enc === 'bin' ? bin() : bin().catch(function () { return b64(); });
-    return p.then(gunzip);
+    // a damaged file is named with a readable reason (not "Failed to execute 'atob'") and marked as a data error
+    return p.then(gunzip).catch(function (e) {
+      if (e && e.code === 'http') { e.data = true; throw e; }
+      var phys = enc === 'b64' ? name.replace(/\.bin$/, '.b64.txt') : name, x;
+      if (e && typeof e.code === 'string') x = e;
+      else if (e && e.name === 'InvalidCharacterError') x = err('b64', phys + ': die Datei ist besch\u00e4digt oder unvollst\u00e4ndig (kein g\u00fcltiges Base64)');
+      else x = err('gzip', phys + ': die Datei ist besch\u00e4digt oder unvollst\u00e4ndig (gzip-Daten nicht lesbar)');
+      x.data = true; x.file = phys; throw x;
+    });
   }
   function loadScript(url) {
     return new Promise(function (resolve, reject) {
@@ -122,10 +131,13 @@
   /* ------------------------------------------------------------------ init */
   function init(a, b) {
     if (starting) return starting;
+    // A failed start is remembered for a few seconds: a view asks names(), parse() and search() in a row, and each
+    // would otherwise start again and download all structure files again (25 MB) only to fail the same way.
+    if (lastFail && now() - lastFail.t < 8000) return Promise.reject(lastFail.e);
     var o = (a && a.files) ? { manifest: a } : (a || {});
     if (typeof b === 'function') o.loader = b;
-    starting = doInit(o).then(function () { return diagSync(); });
-    starting.catch(function () { starting = null; S = null; });
+    starting = doInit(o).then(function () { lastFail = null; return diagSync(); });
+    starting.catch(function (e) { starting = null; S = null; lastFail = { t: now(), e: e }; });
     return starting;
   }
   function ready() { return starting ? starting : init(); }
@@ -135,6 +147,10 @@
     var base = o.base || 'data/chem/';
     var enc = o.enc || (g.LnpData && g.LnpData.manifest && g.LnpData.manifest.enc) || null;
     var U = urls(o);
+    // a build without the chemistry set (build_dist.py --no-chem) says so in its manifest: no request, a clear error
+    if (!o.manifest && !o.loader && !o.base && g.LnpData && g.LnpData.manifest && g.LnpData.manifest.chem === null) {
+      var ne = err('no_chem', 'Dieser Datenstand enth\u00e4lt keine Strukturdaten.'); ne.data = true; return Promise.reject(ne);
+    }
     var manifestP = o.manifest ? Promise.resolve(o.manifest) :
       fetch(base + 'chem.json').then(function (r) { if (!r.ok) throw err('http', 'chem.json: HTTP ' + r.status); return r.json(); });
     return manifestP.then(function (man) {
@@ -153,7 +169,9 @@
       }
       var primaryP = start(0);
       var keys = ['idc', 'ffp', 'fp', 'desc', 'scaf', 'map', 'pat'];
-      return Promise.all([primaryP, namesP.catch(function () { return []; })].concat(keys.map(load))).then(function (r) {
+      var filesP = Promise.all([primaryP, namesP.catch(function () { return []; })].concat(keys.map(load)));
+      filesP.catch(function () { primaryP.then(function (w) { try { w.close(); } catch (e) { /* ignore */ } }, function () { }); });   // no orphan worker
+      return filesP.then(function (r) {
         st.ms.fetch = Math.round(now() - t0);
         var primary = r[0], names = r[1], f = {};
         keys.forEach(function (k, i) { f[k] = r[i + 2]; });
@@ -538,7 +556,7 @@
     });
   }
 
-  function reset() { if (S) S.pool.forEach(function (w) { w.close(); }); S = null; starting = null; idMap = null; pnIdx = null; }
+  function reset() { if (S) S.pool.forEach(function (w) { w.close(); }); S = null; starting = null; lastFail = null; idMap = null; pnIdx = null; }
 
   var api = { init: init, parse: parse, search: search, patentsOf: patentsOf, compoundsOf: compoundsOf, compound: compound, byId: byId, svg: svg, descriptors: descriptors, names: names, editor: editor, diag: diag, WHERE: WHERE, _reset: reset };
   if (isNode) module.exports = api; else g.LnpChem = api;

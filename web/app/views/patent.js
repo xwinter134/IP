@@ -70,7 +70,13 @@
       if (P.grant) stat('Erteilt', U.date(P.grant));
 
       var main = h('div.pt-main'), side = h('div.pt-side');
-      U.set(page, backLink(), head, stats, h('div.pt-grid', null, main, side));
+      // the number asked for has no claim text of its own: LnpData.byPn leads to the version that carries the claims
+      var redir = null, asked = g.LnpTok && g.LnpTok.pn(st.pn);
+      if (asked && asked.full && asked.full.length && asked.full.indexOf(pn) < 0 && asked.full.some(function (f) { return /[A-Z]\d?$/.test(f) && g.LnpTok.pnBase(f) === g.LnpTok.pnBase(pn) && f !== g.LnpTok.pnBase(f); })) {
+        var KIND = { B9: 'die berichtigte Patentschrift', B2: 'die im Einspruch geänderte Fassung', B3: 'die im Beschränkungsverfahren geänderte Fassung' };
+        redir = h('p.notice', { 'data-redirect': pn, text: 'Angezeigt wird ' + U.pnPretty(pn) + (KIND[P.kind] ? ', ' + KIND[P.kind] : '') + ': Für ' + U.pnPretty(asked.full[0]) + ' selbst liegt kein Claim-Text im Bestand, die Claims dieser Nummer stehen in dieser Schrift. Der Wortlaut kann von der ursprünglich erteilten Fassung abweichen.' });
+      }
+      U.set(page, backLink(), redir, head, stats, h('div.pt-grid', null, main, side));
 
       /* claims */
       var cs = sec('Schutzbereich', 'Claims');

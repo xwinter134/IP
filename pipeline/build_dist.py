@@ -189,9 +189,8 @@ def read_corpus(path, limit, players, status_extra, st_sink):
             if limit and len(rows) >= limit:
                 break
             r = json.loads(line)
-            st = r.get("status")
-            if st is None and r["pn"] in status_extra:
-                st = json.loads(status_extra[r["pn"]])
+            # status.jsonl.gz is written after the corpus (normalize -> status -> build_dist), so it wins
+            st = json.loads(status_extra[r["pn"]]) if r["pn"] in status_extra else r.get("status")
             cl = r.get("claims") or {}
             ncl = len(cl.get("en") or []) + len(cl.get("de") or [])
             cchars = sum(len(c["t"]) for c in (cl.get("en") or [])) + sum(len(c["t"]) for c in (cl.get("de") or []))
@@ -521,7 +520,9 @@ def main():
     ap.add_argument("--web", default=os.path.join(C.ROOT, "web"))
     ap.add_argument("--build-dir", default=None, help="work files (default <work>/dist_build)")
     ap.add_argument("--budget-mb", type=float, default=215.0)
-    ap.add_argument("--enc", choices=["bin", "b64"], default="bin")
+    ap.add_argument("--enc", choices=["bin", "b64"], default="b64",
+                    help="b64 (default): binaries as base64 text x.b64.txt, the only form the Artifact host serves; "
+                         "bin: raw x.bin files for local tests (a third smaller)")
     ap.add_argument("--max-files", type=int, default=500)
     ap.add_argument("--reserve-files", type=int, default=12, help="files kept free for parts that are added later (page, app scripts)")
     ap.add_argument("--img-budget-mb", type=float, default=25.0)

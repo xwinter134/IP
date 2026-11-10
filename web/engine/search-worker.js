@@ -245,7 +245,8 @@
         if (IX.tok !== TOK.VERSION) throw mkErr('tok_version', 'the index was built with tokenizer version ' + IX.tok + ', this page has ' + TOK.VERSION);
         if (man.enc && !o.enc) loader.setEnc(man.enc);
         if (man.files) { var sz = {}; for (var k in man.files) sz[k.replace(/^data\//, '')] = man.files[k][0]; loader.setSizes(sz); }
-        return Promise.all([loader.get('idx/' + IX.docs, { as: 'bin', cache: false }), loader.get(man.meta.file, { as: 'bin', cache: false })]);
+        // o.meta = the inflated meta file when the page already holds it (LnpData): one download instead of two
+        return Promise.all([loader.get('idx/' + IX.docs, { as: 'bin', cache: false }), (o.meta && o.meta.byteLength) ? o.meta : loader.get(man.meta.file, { as: 'bin', cache: false })]);
       }).then(function (r) {
         var b = r[0], dv = new DataView(b); D = dv.getUint32(0, true); P = dv.getUint32(4, true);
         var o2 = 8;

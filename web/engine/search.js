@@ -22,6 +22,13 @@
     var want = o.mode && o.mode !== 'auto' ? [o.mode] : ['worker', 'blob', 'main'];
     var coreOpts = { base: base, enc: o.enc || (g.LnpData && g.LnpData.manifest && g.LnpData.manifest.enc) || undefined, vendorUrl: vendorUrl, gzip: o.gzip };
     S.opts = o; S.tried = [];
+    // The manifest and the meta columns are taken from LnpData when it is already initialised, so the search core does
+    // not download them a second time (meta is 1.5 MB as base64). Any failure there falls back to the core's own fetch.
+    var LD0 = g.LnpData, shared = Promise.resolve();
+    if (o.share !== false && LD0 && LD0.manifest && LD0.metaBuffer && abs((LD0.base && LD0.base()) || 'data/') === base) {
+      coreOpts.manifest = LD0.manifest;
+      shared = LD0.metaBuffer().then(function (buf) { coreOpts.meta = buf; }, function () { });
+    }
     function startWorker(mode) {
       var srcs = [eb + 'tok.js', eb + 'loader.js', eb + 'search-worker.js'];
       if (typeof DecompressionStream === 'undefined' || o.gzip === 'fflate') srcs.splice(0, 0, vendorUrl);
@@ -36,7 +43,7 @@
         return core.init(coreOpts).then(function (info) { S.core = core; S.mode = 'main'; return info; });
       });
     }
-    var chain = Promise.reject(mkErr('no_mode', 'no engine mode'));
+    var chain = shared.then(function () { throw mkErr('no_mode', 'no engine mode'); });
     want.forEach(function (mode) {
       chain = chain.catch(function () {
         var p = mode === 'main' ? startMain() : need('LnpLoader', eb + 'loader.js').then(function () { return startWorker(mode); });
