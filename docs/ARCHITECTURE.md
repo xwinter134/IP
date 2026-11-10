@@ -173,6 +173,15 @@ One object per publication that has status information:
 }
 ```
 
+Implementation notes (as built; `src` additionally takes `"pct"` for WO):
+
+- WO records: `src:"pct"`, `code:"unknown"`, `text:"PCT publication (no rights; see national/regional members)"`, `in_force_de:false`, `expiry_est:null`.
+- Extra optional fields (readers must ignore what they do not know): EP `filing`, `grant` (date of the B publication), `app`, `wo`, `applicant`, `status_code_num` (register code), `children` (divisional application numbers), `appeal_detail[{num,result,result_date}]`, `opposition.date_first_filed`, `opposition.note` (e.g. "all opponents withdrawn"; `outcome` is then null), `estimate` (text); US `filing`, `term_base` (earliest effective non-provisional filing date), `term_base_from_chain`, `terminal_disclaimer` (true | null: not visible in ppubs data), `chain`, `not_checked` (what the US estimate does not cover), `estimate`; any record with seed data: `seed:{family, gp_status, gp_expiry_event, gp_litigation[], gp_legal_events[], fetched}`.
+- EP `code`: derived from the register status text; `expired` = granted and `expiry_est` before `asof`; `lapsed` = granted but every designated state is in `lapsed_in`. `in_force_de` is `true` only for granted patents with unitary effect registered, or DE designated and not in `lapsed_in`, and not expired; `false` for pending/revoked/refused/withdrawn; `null` for unknown status. `opposition.outcome`: `revoked` (revocation date / status), `maintained_amended` (B2 / maintained-as-amended date / interlocutory decision), `rejected`, `pending`.
+- The register is a snapshot (`asof`, currently 2026-08-23): later events, and renewal fees that fell due after it, are not seen. `lapsed_in` lists contracting states recorded as lapsed in the register, not states where a fee is merely overdue.
+- US `code`: `granted` for B/E/C kinds (text says maintenance fees are not checked), `expired` when the estimated term has ended, `pending` for A kinds without a granted sibling; an A publication whose application is known to be granted gets `granted` with "granted as USxxxB2". Seed Google-Patents statuses that show expiry/revocation override a computed `granted`/`pending` (`src:"seed"`), since maintenance-fee lapses are invisible to the calculation.
+- Cache layout: `data/cache/register/index.json` (central directory of the 14.8 GB ZIP), `data/cache/register/rec/<chunk>.jsonl.gz` (extracted register records of target applications), `data/cache/register/manifest.json` (application numbers already looked up per chunk), `data/cache/status/us_meta.json` (per-file US metadata cache), `data/work/status_register.jsonl` (per-chunk fetch log), `data/work/status_summary.json` (coverage numbers of the last build).
+
 ### Claim formula images (`pipeline/fetch_ep_images.py`)
 
 EP claims carry structure formulae only as TIFF images. For EP full-text documents whose
@@ -187,13 +196,16 @@ order, `--limit`), the referenced TIFFs are converted to 1-bit PNG (longest side
 dist/index.html                the page (copied from web/index.html)
 dist/app/*.js  dist/app/app.css
 dist/engine/*.js               engines + vendor (openchemlib-full.js 8.21.0, fflate)
+                               (LnpChem looks for OpenChemLib at engine/../vendor/openchemlib-full.js as in web/,
+                               then at engine/openchemlib-full.js; either place works)
 dist/data/manifest.json
 dist/data/pat-NNN.gz.bin       patent table, columnar JSON chunks of 4000 patents
 dist/data/st-NNN.gz.bin        status detail, JSON array per 4000 patents (null where none)
 dist/data/idx/…                text index (see pipeline/build_index.mjs)
 dist/data/df-NNN.gz.bin        definition paragraphs, aligned with the text shards
 dist/data/img-NNN.bin          claim image packs + dist/data/img.json index
-dist/data/chem/…               compounds, fingerprints, compound<->patent map
+dist/data/chem/…               compounds, fingerprints, compound<->patent map: the files named in
+                               data/work/chem/chem.json `publish` (see "Chemistry shards")
 dist/data/seed.json            seed families, players, CPC definitions, reference lipids
 dist/publish_batches.json      [{files:[...], bytes}] each <= 240 files and <= 60 MB
 ```
@@ -218,6 +230,40 @@ player (index into seed.players | -1), cpc ("A|B|C"), tier, seedTier (0 = none),
 flags (bit0 text, bit1 defs, bit2 chem image in independent claim, bit3 has compounds,
 bit4 has status), st (status code index), exp (yyyymmdd int|0), deIn (1 in force in DE,
 0 not, 2 unknown), wo`.
+
+## Chemistry shards (`pipeline/chem_build.cjs` -> `data/work/chem/`, copied to `dist/data/chem/`)
+
+`node pipeline/chem_build.cjs [--threads 3] [--limit N] [--no-export] [--out DIR]`
+1. `pipeline/chem_export.py` (DuckDB) writes TSV under `data/work/chem/_in/`: the `lipid_candidate` rows of
+   `compounds_subset.parquet`, and `lipid_candidate_map.parquet` joined to `targets.parquet` on the publication
+   number without dashes (`WO-2017075531-A1` = `WO2017075531A1`). Publications not in `targets.parquet` are dropped.
+2. Per compound, with the vendored OpenChemLib and `web/engine/chemfp.js`: idcode (parsed with coordinates, so E/Z
+   and R/S are kept), FFP512, count fingerprint, descriptors, scaffold key, stereo-free hash, MW, cLogP. Cached in
+   `data/work/chem/_cache/calc-v<ChemFP.VERSION>.jsonl` by compound id + SMILES hash: a re-run computes only new or
+   changed compounds (cold 85k compounds: about 6 min on 3 threads; cached: 7 s). Output is deterministic.
+3. Compounds with the same idcode are merged; rows are ordered by scaffold key, then MW. `names.json` is built from
+   `data/seed/ref_lipids_pubchem.json` plus `pipeline/chem_names.cjs` (synonyms, roles).
+
+Files (`*.gz.bin` = gzip of the payload, little endian; `_in/` and `_cache/` are not published):
+
+| file | payload |
+|---|---|
+| `chem.json` | `{v, built, snapshot, ocl, fpVersion, n, nPat, nLinks, nScaf, files: {idc|ffp|fp|desc|scaf|map|pat: {file, bytes, raw}}, names, publish: [file names], cols: [{name, type, off}], heads[], where: {clm:1, desc:2, abs:4, ttl:8, img:16, mol:32}, stats}` |
+| `idc.gz.bin` | OCL idcodes, one per line (line number = compound index `c`) |
+| `ffp.gz.bin` | Int32 x 16 per compound (FFP512 substructure pre-screen) |
+| `fp.gz.bin` | `[u32 n][u32 total][u32 off[n+1]][u16 packed[total]]`, packed = feature id (12 bit) << 4 or count (max 15), ascending |
+| `desc.gz.bin` | descriptor columns back to back, each padded to 4 bytes; name, type (`u8 u16 i16 u32 f32`) and offset in `chem.json` `cols`: `id` (SCHEMBL number), `mw`, `logp` (x100), `ns` (hash of the stereo-free idcode), `scaf` (scaffold index), `nPat`, `nFam`, `nClm`, `nPatG`, `wbits`, element and nitrogen-class counts, linker counts, `head`, `nTails`, `nEnds`, `tailC`, `tailDbl`, `nBranched`, `spacer`, `flags`, `t0..t5` (tail carbons), `u0..u5` (bits 0-3 double bonds, 4 branched, 5 ring, 6 acyl, 7 triple), `b0..b5` (branch position) |
+| `scaf.gz.bin` | scaffold idcodes, one per line, sorted (line number = `scaf`) |
+| `map.gz.bin` | compound -> publications: `[u32 n][u32 links][u32 off[n+1]][u32 entry[links]]`, entry = publication index << 8 or where bits |
+| `pat.gz.bin` | JSON `{pn: [...], fam: [...]}`: the publications of the chemistry set (publication index = position), `pn` as in `targets.parquet` |
+| `names.json` | reference lipids `[{name, synonyms[], role, note, smiles, cid, inchikey, idcode, c, variants[]}]` |
+
+The publication -> compounds map is the inverse of `map.gz.bin`; the browser builds it on first use (about 1 M
+entries, a few ms) instead of shipping it twice. The chemistry set carries its own publication numbers, so it does
+not depend on the patent index `p` of `corpus.jsonl.gz`; `LnpChem` maps `pn` to `p` at run time. `build_dist.py`
+copies the `publish` files unchanged (base64 variant: `x.gz.bin` -> `x.gz.b64.txt`, `chem.json` and `names.json`
+stay JSON) and may set patent flag bit3 from `pat.gz.bin`. Current build: 84,691 compounds, 33,258 publications,
+1,061,376 links, 18.8 MB in 9 files (largest `fp.gz.bin` 10.2 MB).
 
 ## Browser engines (all in `web/engine/`, plain scripts, ASCII only, no build step)
 
@@ -255,17 +301,65 @@ names are untrusted input: the UI inserts them with `textContent`, never as HTML
 - `LnpSearch.claimImages(p)` -> `[{claim, id, w, h, blob}]` (PNG blobs; empty if none)
 - `LnpSearch.suggest(prefix)` -> up to 10 index terms with document frequency
 
-### `LnpChem` (`engine/chem.js` + `engine/chem-core.js` + `engine/chemfp.js` + vendor OCL)
-- `LnpChem.init()` (lazy; loads OpenChemLib and the compound files on first use)
-- `LnpChem.parse(input)` -> `{ok, smiles, idcode, formula, mw, error?}`; input is SMILES, molfile, or a known lipid name / synonym
-- `LnpChem.search({smiles, mode: "exact"|"sub"|"sim", k=100, minSim=0.5, onProgress})` -> `[{c, sim, smiles, mw, nPat, nFam, inClaims}]`
-- `LnpChem.patentsOf(c)` -> `[{p, where: {clm, desc, img, abs}}]`
-- `LnpChem.compoundsOf(p, k=200)` -> `[{c, smiles, mw, where}]`
-- `LnpChem.svg(smilesOrC, w, h)` -> SVG string (safe to insert: generated by OCL from a parsed molecule)
-- `LnpChem.descriptors(smiles)` -> lipid descriptors computed, not estimated:
-  `{formula, mw, charge, nN, amine: {class: "tertiary"|"secondary"|"primary"|"quaternary"|"none", count}, headgroup: {smiles, hasOH, nCarbonsToAmine}, linkers: [{type: "ester"|"amide"|"carbamate"|"carbonate"|"ether"|"thioether"|"disulfide"|"ketal", count}], tails: [{smiles, nC, branched, branchPosition, nDoubleBonds, hasCyclopropyl}], nTails, totalCarbons, biodegradable, logPest}`
-- `LnpChem.names()` -> `[{name, synonyms[], smiles, role: "ionizable"|"cationic"|"helper"|"sterol"|"peg"}]` (reference lipids)
-- `LnpChem.editor(el, {smiles, onChange})` -> `{getSmiles(), setSmiles(s), destroy()}` (OCL structure editor)
+### `LnpChem` (`engine/chem.js` + `engine/chem-worker.js` + `engine/chemfp.js` + `vendor/openchemlib-full.js`)
+Pure JS (OpenChemLib 8.21.0 UMD, no wasm, no eval). `chem-worker.js` is the search core: it runs as a dedicated
+Worker, inside a `blob:` Worker (OpenChemLib + chemfp.js + chem-worker.js concatenated) or on the main thread.
+Substructure search is spread over up to 4 workers (`navigator.hardwareConcurrency`), which join in the background
+after `init`. `chemfp.js` (count fingerprint, lipid descriptors, scaffold) is shared with the offline build.
+
+- `LnpChem.init()` (lazy: every call below runs it on first use). Options, all optional:
+  `init({base = "data/chem/", enc, manifest, loader, mode: "auto"|"worker"|"blob"|"main", workers, engineBase, oclUrl, resolvePn, pnOf})`
+  or `init(manifest, loader)`; `loader(fileName, fileInfo)` -> inflated `Uint8Array` (JSON for `names.json`).
+  Without a loader the files are fetched from `base`; `enc` defaults to `LnpData.manifest.enc`; when it is unknown
+  the engine tries `x.gz.bin` and then `x.gz.b64.txt`. Resolves to the `diag()` object.
+- `LnpChem.diag()` -> `{mode: "worker"|"blob"|"main", workers, n, publications, links, scaffolds, ocl, snapshot, built, ms: {fetch, load, init, pool}, tried[], gzip}`
+- `LnpChem.parse(input)` -> `{ok, kind: "name"|"smiles"|"molfile"|"id"|"smarts"|"idcode"|"compound", name?, c?, id?, smiles, idcode, formula, mw}` or `{ok: false, error}`.
+  `input`: SMILES, molfile (V2000/V3000), a reference lipid name or synonym (case, blanks and hyphens ignored:
+  "mc3", "ALC 0315", "Lipid H"), `SCHEMBL<number>`, `smarts:<SMARTS>`, a compound index `c`, or `{smiles|molfile|idcode|smarts|c}`.
+- `LnpChem.search({query | smiles | molfile | idcode | c, mode, limit (or k) = 100, minSim = 0.5, filters, sort, maxPatents = 25, onProgress, signal, all})`
+  -> array of hits, best first, with the extra properties `total` (all matches), `ms`, `mode`, `truncated`, `stats`, `engine`
+  (and `all`: `Uint32Array` of every matching `c` when `all: true`, substructure only).
+  - `mode: "exact"`: same structure (`match: "exact"`) plus its stereo variants (`match: "stereo-variant"`: same
+    connectivity, other or no E/Z and R/S; SureChEMBL splits one lipid over several such entries).
+  - `mode: "sub"`: substructure (FFP512 pre-screen + OpenChemLib SSSearcher, identical to an unscreened search; stereo
+    is ignored). Hits are ranked by count-fingerprint similarity to the query unless `sort` says otherwise.
+  - `mode: "sim"`: count-fingerprint Tanimoto >= `minSim` (ECFP-like radius 2 plus topological pairs between hetero
+    atoms, branch points and chain ends; separates chain-length variants, which OCL's FFP512 does not).
+  - `mode: "scaffold"`: every compound with the same scaffold key (hydrocarbon chains of 6 or more carbons cut to a
+    methyl, stereo removed): same head group, linkers and branching pattern with any tails.
+  - `sort`: `"sim"` (default) | `"claims"` (publications with the compound in the claims) | `"patents"` | `"mw"`.
+  - `filters`: `{mwMin, mwMax, head: name | [names], amine: "tertiary"|"secondary"|"primary"|"quaternary"|"amide", inClaims: bool, where: ["clm","desc","abs","ttl","img","mol"] (any), branched: bool, biodegradable: bool, tailLen: [min, max] (longest tail), unsat: [min, max], pns: [publication numbers] | ps: [patent indexes], <column>: n | [min, max]}`;
+    `<column>` is any descriptor column (`ester`, `nTert`, `nTails`, `nEnds`, `nPat`, ...). Unknown keys reject with `code: "bad_filter"`.
+  - `onProgress({mode, phase: "scan"|"rank"|"done", done, total, found, ms, partial?})`: substructure scans report after
+    every chunk of 1024 compounds; the first event with at least 20 matches carries `partial` (hit objects without
+    `sim`) so the UI can paint before the scan ends. `signal` (AbortSignal) rejects with `code: "cancelled"`.
+  - hit = `{c, id: "SCHEMBL…", sim, match?, smiles, idcode, formula, mw, nPat, nFam, nClaims, inClaims, where: {clm, desc, abs, ttl, img, mol}, nPatGlobal, desc, patents: [{p, pn, fam, where}], morePatents}`.
+    `c` is the row number in this build only; store `id` in saved work. `nPat`/`nFam`/`nClaims` count publications in the
+    tool; `nPatGlobal` is the SureChEMBL-wide publication count (high = commodity compound). `patents` lists at most
+    `maxPatents` publications, claims hits first; `p` is the patent index (`resolvePn(pn)` option, else `LnpData`, else -1).
+    `desc` = `{head, amine: {class, count}, amines: {tertiary, secondary, primary, quaternary, amide, aromatic, other}, linkers: {ester: n, ...}, nTails, nChainEnds, tails: [{nC, nDoubleBonds, branched, branchPosition, ring, acyl}], tailCarbons, tailDoubleBonds, nBranchedTails, heavy, nC, nN, nO, nP, nS, charge, rings, nCarbonsToAmine, hasOH, biodegradable, hasCyclopropyl, stereo, logPest, scaffold}`.
+- `LnpChem.patentsOf(c)` -> `[{p, pn, fam, where: {clm, desc, abs, ttl, img, mol}}]` (all, claims hits first). Where-found
+  flags say in which part of the publication SureChEMBL found the structure; they are not proof of claim coverage.
+- `LnpChem.compoundsOf(pOrPn, k = 200)` -> `[{c, id, smiles, idcode, formula, mw, where (in this publication), whereAll, nPat, nFam, nPatGlobal, desc}]` with `.total`;
+  claims hits first, then drawn structures, then the most specific compounds (lowest `nPatGlobal`).
+- `LnpChem.compound(cOrId)` -> one hit object without `sim`; `LnpChem.byId("SCHEMBL123")` -> `c | -1`
+- `LnpChem.svg(smilesOrNameOrC, w, h)` or `svg(x, {w, h, mono})` -> SVG string generated by OCL from a parsed molecule
+  and re-coloured: bonds and carbon labels use `currentColor` (follows light and dark theme), hetero atoms a mid-tone
+  of their element colour (`mono: true` = everything `currentColor`); no `<style>`, `<script>` or ids inside.
+- `LnpChem.descriptors(input)` -> lipid descriptors computed, not estimated:
+  `{formula, mw, charge, heavy, el: {C, N, O, P, S, hal}, nN, amine: {class: "tertiary"|"secondary"|"primary"|"quaternary"|"none", count}, amines, head, headgroup: {smiles, hasOH, nCarbonsToAmine, nMethylOnN, ringN}, links: {ester, carbonate, carbamate, amide, urea, thioester, ether, thioether, disulfide, ketal, phosphate, acid, hydroxyl, ketone}, linkers: [{type, count}], tails: [{smiles, nC, acyl, branched, branchPosition, arms[], nDoubleBonds, nTripleBonds, nMethylBranches, hasRing, hasCyclopropyl}], nTails, nChainEnds, totalCarbons, tailCarbons, tailDoubleBonds, nBranchedTails, rings, biodegradable, logPest, smiles, idcode, scaffold: {idcode, smiles, index, truncatedChains}}`
+  - a tail is a hydrocarbon group of 6 or more carbons hanging on one hetero atom or carbonyl carbon; `nC` counts the
+    carbonyl carbon for acyl tails (`acyl: true`, stearoyl = 18); `branchPosition` counts from the atom the tail hangs on
+    (2-hexyldecanoate: 2, heptadecan-9-yl: 1); `arms` are the chain lengths after the first branch point
+    (ALC-0315: two tails `16 acyl, arms [8, 6]`; SM-102: `17, arms [8, 8]` and `11`; MC3: one group `37, arms [18, 18]`);
+    `nChainEnds` counts linear tails plus arms of 4 or more carbons (ALC-0315 4, SM-102 3, MC3 2).
+  - `head`: `neutral, polyether, sterol, phosphocholine, phosphoethanolamine, phospho, quaternary, polyamine, dimethylamino, hydroxyalkyl-tert-amine, cyclic-tert-amine, tert-amine, sec-amine, prim-amine, heteroaryl, amide, other-n`.
+  - `headgroup.nCarbonsToAmine`: carbons between the main amine nitrogen and the nearest linker (-1 if none).
+- `LnpChem.names()` -> `[{name, synonyms[], smiles, role: "ionizable"|"cationic"|"helper"|"sterol"|"peg", note, c (-1 if not in the set), variants[] (c of the stereo variants)}]` (reference lipids)
+- `LnpChem.editor(el, {smiles, molfile, fragment, onChange, scale, background})` -> `{getSmiles(), getMolfile(), getIdcode(), getState(), setSmiles(s), setMolfile(m), setFragment(bool), clear(), destroy()}`
+  (OCL `StructureEditor.createSVGEditor`, loaded on the main thread on first use; canvas based, no extra requests, no
+  wasm/eval; it paints dark on transparent, so the element gets a white background unless `background: false`).
+  `onChange({smiles, idcode, molfile, empty})`. Pass `{molfile: ed.getMolfile()}` to `search`.
 
 ### `LnpStore` (`engine/store.js`)
 Persistence on the Artifact `db` capability with a `localStorage` fallback and an in-memory
