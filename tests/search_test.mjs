@@ -42,6 +42,7 @@ const note = (...a) => console.log('  ' + a.join(' '));
 // ------------------------------------------------------------------------------------------------ builds
 function build(name, extra) {
   const out = path.join(WORK, 'dist_' + name), bd = path.join(WORK, 'bd_' + name);
+  if (extra.indexOf('--enc') < 0) extra = ['--enc', 'bin', ...extra];     // the builder's default is b64; these builds are the raw-binary ones
   const cmd = ['-I', path.join(ROOT, 'pipeline', 'build_dist.py'), '--corpus', CORPUS, '--out', out, '--build-dir', bd, ...extra];
   const t = Date.now();
   const log = execFileSync('python3', cmd, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64e6, stdio: ['ignore', 'pipe', 'pipe'] });

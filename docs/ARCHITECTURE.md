@@ -249,7 +249,7 @@ dist/publish_batches.json      [{files:[...], bytes}] each <= 240 files and <= 6
 Limits of the host: each file <= 15 MB, at most 500 files and 240 MB in total (checked by the builder, which exits
 non-zero when one is broken). `.gz.bin` files are gzip streams of the described payload; with `--enc b64` (the default)
 every `*.bin` is written as base64 text `*.b64.txt` instead and `manifest.enc = "b64"` (a third larger than `--enc bin`,
-so the budget cut bites earlier; current build: 164.6 MB in 337 files, no cut). The status detail is taken from
+so the budget cut bites earlier; build of 2026-11-10 18:35 UTC: 182.5 MB in 373 files, 4 publish batches, no cut). The status detail is taken from
 `data/work/status.jsonl.gz` when it has a record for the publication (it is written after the corpus), else from the
 corpus record. The engines read `manifest.enc` and handle both. No file name contains anything but
 `[a-z0-9._-/]`.
@@ -410,7 +410,8 @@ names are untrusted input: the UI inserts them with `textContent`, never as HTML
 - `LnpSearch.init({base = "data/", mode: "auto"|"worker"|"blob"|"main", gzip, engineBase, vendorUrl, timeoutMs})`
   -> `{mode, D, P, terms, claims, ms, gzip, enc, tried[]}` (lazy: every call below runs it on first use). When `LnpData`
   is already initialised on the same `base`, the manifest and the meta file are taken from it (`share: false` switches
-  that off), so the boot downloads each once.
+  that off), so the boot downloads each once. `lowMemory` (default: `navigator.deviceMemory` <= 4 or a phone) halves the
+  caches of the core; `diag().lowMemory` reports it.
 - `LnpSearch.search(query, opts)` -> `{total, hits, facets, parsed, ms, timing, totalFamilies?, all?}`
   - `query`: implicit AND, `AND`, `OR`, `NOT` / `-x`, parentheses, `"exact phrase"` (stop words inside keep their
     place), `prefix*` (2 characters at least), `a NEAR/n b` (default n = 5; operands: words, phrases, prefixes, OR groups,
@@ -451,7 +452,12 @@ after `init`. `chemfp.js` (count fingerprint, lipid descriptors, scaffold) is sh
   `init({base = "data/chem/", enc, manifest, loader, mode: "auto"|"worker"|"blob"|"main", workers, engineBase, oclUrl, resolvePn, pnOf})`
   or `init(manifest, loader)`; `loader(fileName, fileInfo)` -> inflated `Uint8Array` (JSON for `names.json`).
   Without a loader the files are fetched from `base`; `enc` defaults to `LnpData.manifest.enc`; when it is unknown
-  the engine tries `x.gz.bin` and then `x.gz.b64.txt`. Resolves to the `diag()` object.
+  the engine tries `x.gz.bin` and then `x.gz.b64.txt`. Resolves to the `diag()` object. A damaged or missing file
+  rejects with `{code: "http"|"b64"|"gzip", message (names the file), data: true, file}`; a failed start is remembered
+  for 8 s, so the `names()` / `parse()` / `search()` calls of one view do not each download the 25 MB again. A build
+  without the chemistry set (`LnpData.manifest.chem === null`) rejects with `code: "no_chem"` without a request.
+  `LnpChem.reset()` drops the engine. On small devices (`navigator.deviceMemory` <= 4 or a phone) two workers are
+  used instead of four.
 - `LnpChem.diag()` -> `{mode: "worker"|"blob"|"main", workers, n, publications, links, scaffolds, ocl, snapshot, built, ms: {fetch, load, init, pool}, tried[], gzip}`
 - `LnpChem.parse(input)` -> `{ok, kind: "name"|"smiles"|"molfile"|"id"|"smarts"|"idcode"|"compound", name?, c?, id?, smiles, idcode, formula, mw}` or `{ok: false, error}`.
   `input`: SMILES, molfile (V2000/V3000), a reference lipid name or synonym (case, blanks and hyphens ignored:
@@ -696,8 +702,9 @@ pipeline/run_all.sh batches [-v]    the publish batches of dist/ (reads dist/pub
 pipeline/run_all.sh check           the three engine tests and the end-to-end test
 make dist | batches | test | e2e | serve
 ```
-Measured on the build machine (4 cores), 125,104 publications, 15,148 full texts, 381,533 claims: normalize 36-41 s,
-status 58 s, chemistry 10 s (cached), build_dist 59 s (25-28 s when the text index is unchanged).
+Measured on the build machine (4 cores), 125,104 publications, 15,148 to 17,995 full texts, 381,533 to 453,234 claims:
+normalize 36-77 s (depends on how many new cache files have to be parsed), status 15-58 s, chemistry 10 s (cached),
+build_dist 59-60 s (25-30 s when the text index is unchanged); `pipeline/run_all.sh` in all 152 s.
 
 `tests/artifact_server.cjs` serves a dist the way the host does: `index.html` wrapped in a document skeleton, the
 host's Content-Security-Policy on every response, `*.bin` answered with 404 (unless `--bin`). Modes: `host`; `blob`
@@ -708,4 +715,12 @@ per path: `404`, `corrupt`, `truncate`, `slow`.
 [--only main,mobile,noclaude,nullcaps,blob,strict,bin,faults,fixture,perf] [--shots DIR] [--report FILE] [--bin DIR]`.
 `window.claude` is mocked in the page (sample with canned JSON per FTO step, db, downloads); requests leaving the
 origin are aborted and counted, Google Fonts are answered locally. `bin` (only on request) checks the raw-binary build.
+
+Measured by `tests/e2e.cjs --only perf` (headless Chromium, local server, base64 build, 125,104 publications): cold boot
+to ready 220-380 ms, first result list painted about 0.5-0.65 s after 47 requests / 7.8 MB (the first list touches 15 of
+the 32 patent-table chunks); search: first run of a query 20-380 ms, repeated 5-40 ms; patent page to claims 220-320 ms;
+structure set ready 0.5-0.9 s after 25 MB, exact / similarity / scaffold under 1 s, an unselective substructure query
+over all 84,691 compounds 2.5-3.8 s. Page JS heap 28 MB after boot and 89 MB with the structure set and the whole table;
+resident memory of all renderer processes (page and workers) 280 MB after boot, 600 MB after 80 different searches,
+975 MB with the structure set and four workers (550 / 835 MB with the small-device settings).
 

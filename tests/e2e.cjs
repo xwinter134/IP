@@ -1,11 +1,13 @@
 /* End-to-end test of dist/ in headless Chromium behind a server that mimics the Artifact host (tests/artifact_server.cjs).
-     node tests/e2e.cjs [--dist dist] [--b64 DIR] [--only a,b] [--shots DIR] [--report FILE] [--no-fixture] [--headed]
-   Parts (--only): main, noclaude, nullcaps, blob, strict, faults, fixture, perf
+     node tests/e2e.cjs [--dist dist] [--only a,b] [--shots DIR] [--report FILE] [--no-fixture] [--headed] [--bin DIR] [--lowmem]
+   Parts (--only): main, mobile, noclaude, nullcaps, blob, strict, faults, fixture, perf, bin (bin only on request)
+   --lowmem: the page sees navigator.deviceMemory = 2 (small-device cache sizes of the engines)
      main      window.claude mocked (sample with canned JSON, downloads, db, user): the whole tool end to end
      noclaude  window.claude absent            nullcaps  claude.use() resolves null for everything
      blob      file workers answer 404 -> blob: workers
-     strict    worker-src 'none' and *.bin 404 -> main-thread engines on the base64 build (--b64 DIR; built on demand
-               with "python3 pipeline/build_dist.py --enc b64" into a temp dir when the option is missing)
+     strict    worker-src 'none' -> engines on the main thread
+     bin       the raw-binary build (python3 pipeline/build_dist.py --enc bin; --bin DIR or built into a temp dir)
+   The server answers every *.bin with 404 like the real host, so --dist must be the base64 build (the default).
      faults    missing / corrupt data files -> readable error state
      fixture   a small dist built from real records plus hostile ones (script tags, prompt injection, 300,000-character claim)
      perf      cold boot, search latency, memory
@@ -107,6 +109,7 @@ function makeSample(plan = {}) {
 /* Runs in the page before any script of the page (CDP, not subject to the page CSP). */
 function initScript(cfg) {
   window.__e2e = { csp: [], saved: [], db: {} };
+  if (cfg.lowMem) { try { Object.defineProperty(Navigator.prototype, 'deviceMemory', { get: function () { return 2; }, configurable: true }); } catch (e) { /* ignore */ } }
   document.addEventListener('securitypolicyviolation', function (e) { window.__e2e.csp.push({ directive: e.violatedDirective, blocked: e.blockedURI, sample: e.sample }); });
   if (cfg.claude === 'null') window.claude = { use: function () { return Promise.resolve(null); } };
   if (cfg.claude !== 'mock') return;
@@ -163,7 +166,7 @@ async function session(o = {}) {
   page.on('pageerror', (e) => st.pageErrors.push(String(e && e.stack || e).slice(0, 500)));
   page.on('download', (d) => { st.downloads.push(d.suggestedFilename()); d.cancel().catch(() => {}); });
   await page.exposeFunction('__e2eSample', (s) => { const m = JSON.parse(s); return JSON.stringify(st.sample.fn(m.input, m.opt)); });
-  await page.addInitScript(initScript, { claude: o.claude || 'absent' });
+  await page.addInitScript(initScript, { claude: o.claude || 'absent', lowMem: !!o.lowMem || flag('lowmem') });
   const S = {
     page, ctx, srv, st, faults, origin: srv.origin,
     async boot(hash, opt = {}) {
@@ -431,7 +434,11 @@ async function partMain() {
           ok(/--lde/.test(await S.page.evaluate(() => location.hash)), pt.pn + ': language is part of the route');
         }
         if (pt.compounds) {
-          await S.wait(() => document.querySelectorAll('.cmpds .cmpd svg').length > 0 || /keine|nicht/i.test((document.querySelector('.cmpds') || { textContent: '' }).textContent), null, 60000);
+          // the section loads when it comes near the viewport (IntersectionObserver): scroll to it like a reader would
+          await S.page.evaluate(() => { const t = Array.from(document.querySelectorAll('.pt-main .sec')).find((x) => /Verbindungen in dieser Schrift/.test(x.textContent)); if (t) t.scrollIntoView({ block: 'start' }); });
+          await S.wait(() => document.querySelectorAll('.cmpds .cmpd svg').length > 0 || /keine|nicht/i.test((document.querySelector('.cmpds') || { textContent: '' }).textContent), null, 60000).catch(async () => {
+            info('compounds did not appear: ' + JSON.stringify(await S.page.evaluate(() => { const v = document.getElementById('view'), secs = Array.from(document.querySelectorAll('.pt-main .sec')).map((x) => x.innerText.replace(/\s+/g, ' ').slice(0, 160)); return { hash: location.hash, scroll: [v.scrollTop, v.clientHeight, v.scrollHeight], secs, errors: window.LnpApp.errors.slice(0, 3) }; })));
+          });
           const c = await S.page.evaluate(() => ({ n: document.querySelectorAll('.cmpds .cmpd').length, svg: document.querySelectorAll('.cmpds .cmpd svg').length }));
           ok(c.n > 0 && c.svg > 0, pt.pn + ': compounds section shows ' + c.n + ' structures (' + c.svg + ' drawn)', c);
         } else info(pt.pn + ' has no compounds flag');
@@ -896,9 +903,11 @@ async function partFaults() {
       delete S.faults[pfile];
       // 4. chemistry file corrupt
       S.faults['data/chem/fp.gz.bin'] = 'corrupt';
+      S.srv.log.length = 0;
+      await S.page.evaluate(() => { window.LnpChem.reset(); });     // the patent page above has already loaded the set
       await S.go(STRUKTUR_ALC);
       await S.wait(() => !!document.querySelector('#view .notice.err') && !document.querySelector('.k-status .spin'), null, 90000).catch(() => {});
-      const c = await S.page.evaluate(() => ({ err: (document.querySelector('#view .notice.err') || {}).textContent, text: document.getElementById('view').innerText.length }));
+      const c = await S.page.evaluate(() => ({ err: (document.querySelector('#view .notice.err') || {}).textContent, text: document.getElementById('view').innerText.length, status: (document.querySelector('.k-status') || {}).innerText, cards: document.querySelectorAll('.k-card').length }));
       ok(c.err && /fp\.gz\./.test(c.err) && !/atob/.test(c.err) && c.text > 100, 'corrupt chemistry file: the structure view names the file and the reason, not a blank page ("' + String(c.err).slice(0, 130) + '")', c);
       const fpReq = S.srv.log.filter((l) => /chem\/fp\.gz\./.test(l.path)).length;
       ok(fpReq === 1, 'the failed start is not repeated by every call of the view (fp file requested ' + fpReq + ' time)');
@@ -1040,14 +1049,17 @@ async function partFixture() {
 }
 
 /* ------------------------------------------------------------------------------------------------ part: perf */
-function rendererRss(pid) {
-  // resident memory of the renderer processes below the browser process (kB)
+async function rendererRss(cdp) {
+  // resident memory of the renderer processes of this browser (MB): pids from CDP, RSS from /proc
   try {
-    const out = execFileSync('ps', ['-eo', 'pid,ppid,rss,args'], { encoding: 'utf8' }).split('\n').slice(1).map((l) => l.trim().split(/\s+/)).filter((p) => p.length > 3).map((p) => ({ pid: +p[0], ppid: +p[1], rss: +p[2], args: p.slice(3).join(' ') }));
-    const kids = new Set([pid]); let grew = true;
-    while (grew) { grew = false; for (const p of out) if (kids.has(p.ppid) && !kids.has(p.pid)) { kids.add(p.pid); grew = true; } }
-    const mine = out.filter((p) => kids.has(p.pid) && /--type=renderer/.test(p.args));
-    return Math.round(mine.reduce((a, p) => a + p.rss, 0) / 1024);
+    const info = await cdp.send('SystemInfo.getProcessInfo');
+    let kb = 0, n = 0;
+    for (const p of info.processInfo || []) {
+      if (p.type !== 'renderer') continue;
+      const m = /VmRSS:\s+(\d+) kB/.exec(fs.readFileSync('/proc/' + p.id + '/status', 'utf8'));
+      if (m) { kb += +m[1]; n++; }
+    }
+    return n ? Math.round(kb / 1024) : null;
   } catch (e) { return null; }
 }
 async function partPerf() {
@@ -1062,7 +1074,7 @@ async function partPerf() {
       const S = await session({ claude: 'mock' });
       const t0 = Date.now();
       await S.page.goto(S.origin + '/', { waitUntil: 'commit' });
-      await S.wait(() => document.getElementById('app').dataset.state === 'ready', null, 60000); const ready = Date.now() - t0;
+      await S.wait(() => { const a = document.getElementById('app'); return !!a && a.dataset.state === 'ready'; }, null, 60000); const ready = Date.now() - t0;
       await S.wait(() => document.querySelectorAll('.results .hrow').length > 0 && !document.querySelector('.results .res-ph .spin'), null, 60000); const first = Date.now() - t0;
       const t = await S.page.evaluate(() => window.LnpApp.timings);
       const bytes = S.srv.log.reduce((a, l) => a + l.bytes, 0), files = S.srv.log.length;
@@ -1083,8 +1095,8 @@ async function partPerf() {
     const S = await session({ claude: 'mock' });
     const cdp = await S.ctx.newCDPSession(S.page);
     const heap = async () => { await cdp.send('HeapProfiler.collectGarbage').catch(() => {}); const m = await cdp.send('Runtime.getHeapUsage'); return Math.round(m.usedSize / 1048576 * 10) / 10; };
-    const pid = b2.process ? (b2.process() || {}).pid : null;
-    const mem = async (label) => { const h = await heap(); const rss = pid ? rendererRss(pid) : null; P.memory = P.memory || {}; P.memory[label] = { pageHeapMb: h, rendererRssMb: rss }; info('memory ' + label + ': page JS heap ' + h + ' MB, renderer RSS ' + rss + ' MB'); };
+    const pid = await b2.newBrowserCDPSession().catch(() => null);
+    const mem = async (label) => { const h = await heap(); const rss = pid ? await rendererRss(pid) : null; P.memory = P.memory || {}; P.memory[label] = { pageHeapMb: h, rendererRssMb: rss }; info('memory ' + label + ': page JS heap ' + h + ' MB, renderer RSS ' + rss + ' MB'); };
     await S.boot(''); await S.wait(() => document.querySelectorAll('.results .hrow').length > 0, null, 30000); await sleep(1500);
     await mem('after boot');
     const qs = ['lipid nanoparticle', '"lipid nanoparticle" AND cholesterol', 'ioniz* lipid', '(cationic OR ionizable) NEAR/5 lipid', 'same:(cholesterol "mol %")', 'asg:moderna mrna', 'cpc:A61K9/51 year:2018- peg*', 'DLin-MC3-DMA', 'comprising', 'lang:de lipid* wobei', 'a* b* c*'];

@@ -14,6 +14,9 @@
   function emit(ev) { for (var i = 0; i < S.listeners.length; i++) { try { S.listeners[i](ev); } catch (e) { /* ignore */ } } }
   function need(name, url) { return g[name] ? Promise.resolve() : g.LnpLoader && g.LnpLoader.loadScript ? g.LnpLoader.loadScript(url) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = url; s.onload = function () { res(); }; s.onerror = function () { rej(mkErr('script', 'could not load ' + url)); }; document.head.appendChild(s); }); }
 
+  function lowMemory() {
+    try { var n = g.navigator || {}; return (n.deviceMemory > 0 && n.deviceMemory <= 4) || /Mobi|Android|iPhone|iPad/.test(n.userAgent || ''); } catch (e) { return false; }
+  }
   function init(o) {
     if (S.ready) return S.ready;
     o = o || {};
@@ -21,6 +24,11 @@
     var vendorUrl = abs(o.vendorUrl || eb + '../vendor/fflate.js');
     var want = o.mode && o.mode !== 'auto' ? [o.mode] : ['worker', 'blob', 'main'];
     var coreOpts = { base: base, enc: o.enc || (g.LnpData && g.LnpData.manifest && g.LnpData.manifest.enc) || undefined, vendorUrl: vendorUrl, gzip: o.gzip };
+    // Small devices (navigator.deviceMemory <= 4 GB, phones): the caches of the search core are halved, so the worker
+    // stays near 150 MB instead of 300 MB after many different queries. Results are identical, repeats a little slower.
+    var low = o.lowMemory != null ? !!o.lowMemory : lowMemory();
+    if (low) { coreOpts.postCacheBytes = 20e6; coreOpts.posCacheBytes = 16e6; coreOpts.textCacheBytes = 40e6; coreOpts.postingsCacheBytes = 16e6; }
+    S.low = low;
     S.opts = o; S.tried = [];
     // The manifest and the meta columns are taken from LnpData when it is already initialised, so the search core does
     // not download them a second time (meta is 1.5 MB as base64). Any failure there falls back to the core's own fetch.
@@ -68,7 +76,7 @@
     highlight: function (text, parsed) { return call('highlight', [text, parsed]); },
     snippets: function (ps, parsed, o) { return call('snippets', [ps, parsed, o]); },
     parse: function (q) { return call('parse', [q]); },
-    diag: function () { return call('diag', []).then(function (d) { d.mode = S.mode; d.tried = S.tried; d.gzip = S.info && S.info.gzip; d.enc = S.info && S.info.enc; return d; }); },
+    diag: function () { return call('diag', []).then(function (d) { d.mode = S.mode; d.tried = S.tried; d.lowMemory = !!S.low; d.gzip = S.info && S.info.gzip; d.enc = S.info && S.info.enc; return d; }); },
     onProgress: function (fn) { S.listeners.push(fn); return function () { var i = S.listeners.indexOf(fn); if (i >= 0) S.listeners.splice(i, 1); }; },
     reset: function () { if (S.h) S.h.terminate(); S.h = null; S.core = null; S.ready = null; S.mode = null; S.info = null; }
   };

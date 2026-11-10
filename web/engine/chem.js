@@ -195,6 +195,8 @@
           S = st;
           // helper workers for substructure search join in the background
           var want = st.mode === 'main' ? 1 : Math.max(1, Math.min(4, o.workers || (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 2));
+          // each helper holds its own OpenChemLib and a copy of the structures (about 90 MB): two on small devices
+          try { if (!o.workers && typeof navigator !== 'undefined' && ((navigator.deviceMemory > 0 && navigator.deviceMemory <= 4) || /Mobi|Android|iPhone|iPad/.test(navigator.userAgent || ''))) want = Math.min(want, 2); } catch (e) { /* keep */ }
           st.helpers = [];
           for (var i = 1; i < want; i++) {
             st.helpers.push(spawn(st.mode, U).then(function (w) {
@@ -558,6 +560,6 @@
 
   function reset() { if (S) S.pool.forEach(function (w) { w.close(); }); S = null; starting = null; lastFail = null; idMap = null; pnIdx = null; }
 
-  var api = { init: init, parse: parse, search: search, patentsOf: patentsOf, compoundsOf: compoundsOf, compound: compound, byId: byId, svg: svg, descriptors: descriptors, names: names, editor: editor, diag: diag, WHERE: WHERE, _reset: reset };
+  var api = { init: init, parse: parse, search: search, patentsOf: patentsOf, compoundsOf: compoundsOf, compound: compound, byId: byId, svg: svg, descriptors: descriptors, names: names, editor: editor, diag: diag, WHERE: WHERE, reset: reset, _reset: reset };
   if (isNode) module.exports = api; else g.LnpChem = api;
 })(typeof self !== 'undefined' ? self : globalThis);
