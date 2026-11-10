@@ -11,7 +11,7 @@
    L.on(fn) / LnpLoader.on(fn)   progress events {type: 'start'|'progress'|'done'|'error', name, loaded, total, active}
    L.diag() -> {gzip, enc, fetches, bytes, cached, cacheBytes}
    When this file runs inside a Worker that was created with the name "lnp-loader" it serves
-   {id, op: 'init'|'get'|'diag', ...} messages (used by LnpData to keep inflating off the main thread). */
+   {id, op: 'init'|'get'|'enc'|'diag', ...} messages (used by LnpData to keep inflating off the main thread). */
 (function (g) {
   'use strict';
   function mkErr(code, message, extra) { var e = { code: code, message: message }; if (extra) for (var k in extra) e[k] = extra[k]; return e; }
@@ -273,7 +273,7 @@
 
   // ---------------------------------------------------------------- worker service (only for Worker name "lnp-loader")
   if (isWorker && self.name === 'lnp-loader') {
-    var inst = null;
+    var inst = null, waiting = {};
     self.onmessage = function (ev) {
       var m = ev.data || {}, id = m.id;
       function ok(r, tr) { self.postMessage({ id: id, ok: true, r: r }, tr || []); }
@@ -286,8 +286,18 @@
           inst = create(o); ok({ gzip: inst.diag().gzip });
         } else if (m.op === 'get') {
           // never cached here: the page side keeps the cache; ArrayBuffers are transferred
-          inst.get(m.a[0], { as: m.a[1] || 'bin', cache: false }).then(function (v) { ok(v, (v instanceof ArrayBuffer) ? [v] : []); }, fail);
-        } else if (m.op === 'diag') ok(inst ? inst.diag() : null);
+          // Concurrent requests for one file share one fetch and so one ArrayBuffer: only the last waiter may take it
+          // by transfer, the others get a copy (a second transfer of the same buffer throws and the caller would hang).
+          var key = m.a[0] + '|' + (m.a[1] || 'bin');
+          waiting[key] = (waiting[key] || 0) + 1;
+          inst.get(m.a[0], { as: m.a[1] || 'bin', cache: false }).then(function (v) {
+            var shared = waiting[key] > 1; waiting[key]--;
+            if (!(v instanceof ArrayBuffer)) ok(v);
+            else if (shared) ok(v.slice(0), []);
+            else ok(v, [v]);
+          }, function (e) { waiting[key]--; fail(e); }).then(null, fail);
+        } else if (m.op === 'enc') { inst.setEnc(m.a[0]); ok(true); }
+        else if (m.op === 'diag') ok(inst ? inst.diag() : null);
         else fail(mkErr('bad_op', 'unknown op ' + m.op));
       } catch (e) { fail(e); }
     };

@@ -6,7 +6,7 @@
 (function (g) {
   var STOP = new Set(('the of a an and or to in is are be for with by on as at which that said wherein from it its this ' +
     'der die das und oder ein eine einer eines einem einen nach mit von zu in ist sind fur bei auf als den dem des wobei dass sich wird werden im zur zum').split(' '));
-  function fold(s) { return s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ß/g, 'ss'); }
+  function fold(s) { return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\u00df/g, 'ss'); }
   // -> flat array [term, position, term, position, ...]; stop words consume a position but are not emitted
   function tokenize(text, keepStop) {
     var out = [], re = /[a-z0-9]+/g, f = fold(text), m, pos = 0;
@@ -40,7 +40,7 @@
   // Tolerant of blanks, commas, dots, slashes, dashes and a missing kind code or country:
   // "EP 3 532 103 B1", "US 8,058,069", "US 2017/0210697 A1", "WO2017/075531", "WO 17/075531", "EP1765289", "8058069".
   function pn(input) {
-    var s = String(input == null ? '' : input).toUpperCase().replace(/[\s,. '_]/g, '');
+    var s = String(input == null ? '' : input).toUpperCase().replace(/[\s,.\u00a0'_]/g, '');
     if (!s) return null;
     var m = /^([A-Z]{2})?[-\/]?(RE|PP|D|H|T)?[-\/]?(\d[\d\/-]*\d|\d)[-\/]?([A-Z]\d?)?$/.exec(s);
     if (!m) return null;

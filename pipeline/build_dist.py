@@ -2,7 +2,7 @@
 """Stage 3: assemble dist/ (layout and formats: docs/ARCHITECTURE.md, "Stage 3").
 
   python3 pipeline/build_dist.py [--out dist] [--budget-mb 215] [--enc bin|b64] [--max-files 500]
-                                 [--limit N] [--img-budget-mb 25] [--no-chem] [--no-web] [--force]
+                                 [--limit N] [--img-budget-mb 25] [--defs-reserve-mb 10] [--no-chem] [--no-web] [--force]
 
 Input  : data/work/corpus.jsonl.gz (pipeline/normalize.py), optional data/work/status.jsonl.gz,
          data/work/chem/ (files named in chem.json "publish"), optional data/work/img/, data/seed/, web/
@@ -13,7 +13,9 @@ Size budget: everything in dist/ must stay below --budget-mb (host limit 240 MB,
 When the full text does not fit, full text is kept by priority and the rest is degraded, in this order:
   1. seed-family publications keep claims and definition paragraphs,
   2. claims of all other publications by priority (seed tier, then tier 1..5 (0 = seed only first), newest first),
-  3. definition paragraphs in the same priority order with what is left.
+  3. definition paragraphs in the same priority order with what is left; --defs-reserve-mb (default 10) is set
+     aside for them first, so the top publications keep their definitions at the price of the claims of the
+     lowest-priority (oldest tier 5) ones.
 A publication that loses its claims stays in the patent table (biblio, title/abstract/assignee search, status,
 compounds) and gets flag bit5; one that only loses its definitions gets flag bit6. The cut is logged, written to
 data/work/dist_build/cut.jsonl and summarised in manifest.json "cut".
@@ -206,7 +208,7 @@ def read_corpus(path, limit, players, status_extra, st_sink):
                 "pn": r["pn"], "auth": r["auth"], "kind": r.get("kind") or "",
                 "pub": ymd(r.get("pub_date")), "app": ymd(r.get("app_date")), "prio": ymd(r.get("priority_date")),
                 "grant": ymd(r.get("grant_date")), "appNo": r.get("app_number") or "",
-                "fam": int(r["family"]) if r.get("family") is not None else 0,
+                "fam": fam_id(r.get("family")),
                 "title": ti.get("en") or ti.get("de") or "",
                 "asg": "; ".join(r.get("assignees") or []),
                 "player": pidx[player] if player else -1,
@@ -223,6 +225,17 @@ def read_corpus(path, limit, players, status_extra, st_sink):
             if len(rows) % 20000 == 0:
                 log("corpus: %d records" % len(rows))
     return rows
+
+
+def fam_id(v):
+    """Family id as a signed 32-bit number (the browser keeps it in an Int32Array). The few ids outside that range
+    (broken source data) are folded into -1,100,000,000 - (id mod 1,000,000,000), below the synthetic negative ids."""
+    if v is None:
+        return 0
+    v = int(v)
+    if -2**31 <= v < 2**31:
+        return v
+    return -1100000000 - (abs(v) % 1000000000)
 
 
 def priority_key(r):
@@ -292,7 +305,7 @@ def build_patent_files(rows, levels, has_comp, players):
         c4ent.extend(seen)
         c4off.append(len(c4ent))
     cols = [
-        ("fam", "i32", array.array("i", [max(-2**31, min(2**31 - 1, r["fam"])) for r in rows])),
+        ("fam", "i32", array.array("i", [r["fam"] for r in rows])),
         ("pub", "u32", array.array("I", [r["pub"] for r in rows])),
         ("prio", "u32", array.array("I", [r["prio"] for r in rows])),
         ("exp", "u32", array.array("I", [r["exp"] for r in rows])),
@@ -399,8 +412,10 @@ def build_images(img_dir, pn_to_p, rows, budget_bytes, enc):
     return files, index, {"images": n_img, "patents": len(ip), "cut": cut, "packs": packs}
 
 
-def choose_levels(rows, text_budget, model):
-    """Greedy by priority. Returns (levels bytearray, estimate bytes)."""
+def choose_levels(rows, text_budget, model, defs_reserve=0):
+    """Greedy by priority. Returns (levels bytearray, estimate bytes).
+    defs_reserve = bytes set aside for the definition paragraphs of the highest-priority publications before the
+    claims of the lowest-priority ones are admitted (0 = definitions only get what the claims leave over)."""
     P = len(rows)
     levels = bytearray(P)
     a, d, base = model["a"], model["d"], model["base"] * P
@@ -419,25 +434,30 @@ def choose_levels(rows, text_budget, model):
                 est += need
                 continue
         rest.append(i)
-    # 2. claims by priority (prefix: stop at the first one that does not fit)
-    full = False
-    for i in rest:
-        need = a * rows[i]["cchars"]
-        if not full and need <= left:
-            levels[i] = 1
-            left -= need
-            est += need
-        else:
-            full = True
-    # 3. definitions by priority
-    if not full:
-        for i in rest:
-            need = d * rows[i]["dchars"]
-            if need > left:
-                break
-            levels[i] = 2
-            left -= need
-            est += need
+    # 2. claims by priority (prefix: stop at the first one that does not fit); a share stays reserved for definitions
+    reserve = min(max(0.0, float(defs_reserve)), d * sum(rows[i]["dchars"] for i in rest), max(0.0, left) * 0.5)
+    left -= reserve
+    nxt = 0
+    while nxt < len(rest) and a * rows[rest[nxt]]["cchars"] <= left:
+        levels[rest[nxt]] = 1
+        left -= a * rows[rest[nxt]]["cchars"]
+        est += a * rows[rest[nxt]]["cchars"]
+        nxt += 1
+    left += reserve
+    # 3. definitions by priority, only for publications that kept their claims
+    for i in rest[:nxt]:
+        need = d * rows[i]["dchars"]
+        if need > left:
+            break
+        levels[i] = 2
+        left -= need
+        est += need
+    # 4. what the definitions did not use goes back to the claims (the prefix simply continues)
+    while nxt < len(rest) and a * rows[rest[nxt]]["cchars"] <= left:
+        levels[rest[nxt]] = 1
+        left -= a * rows[rest[nxt]]["cchars"]
+        est += a * rows[rest[nxt]]["cchars"]
+        nxt += 1
     for i in range(P):                      # biblio-only records have nothing to cut: mark as complete
         if not r_has(rows[i]):
             levels[i] = 2
@@ -505,6 +525,8 @@ def main():
     ap.add_argument("--max-files", type=int, default=500)
     ap.add_argument("--reserve-files", type=int, default=12, help="files kept free for parts that are added later (page, app scripts)")
     ap.add_argument("--img-budget-mb", type=float, default=25.0)
+    ap.add_argument("--defs-reserve-mb", type=float, default=10.0,
+                    help="when the budget forces a cut: MB kept for definition paragraphs of the highest-priority publications")
     ap.add_argument("--img-dir", default=None)
     ap.add_argument("--limit", type=int, default=0, help="only the first N corpus records (smoke run)")
     ap.add_argument("--no-chem", action="store_true")
@@ -533,7 +555,7 @@ def main():
             return []
     seed_fam, seed_asg, seed_cpc, seed_lip = (seed_json(n) for n in
                                               ("seed_families.json", "assignee_variants.json", "cpc_field.json", "ref_lipids_pubchem.json"))
-    players = [x["player"] for x in seed_asg if isinstance(x, dict) and x.get("player")]
+    players = [x["player"] for x in seed_asg if isinstance(x, dict) and x.get("player") and not x["player"].startswith("_")]
 
     # ------------------------------------------------------------------ corpus pass (status chunks are streamed out)
     st_chunks, st_cur = [], []
@@ -629,7 +651,7 @@ def main():
     scale = 4 / 3 if a.enc == "b64" else 1.0
     for attempt in range(1, 8):
         eff = {"a": model["a"] * scale, "d": model["d"] * scale, "base": model["base"] * scale}
-        levels, est = choose_levels(rows, text_budget, eff)
+        levels, est = choose_levels(rows, text_budget, eff, a.defs_reserve_mb * 1e6)
         info = run_index(snap, snap_stat, levels, idx_dir, idx_max_files, a.limit, a.force, build_dir)
         if info["stats"]["patents"] != P:
             raise SystemExit("text index has %d publications, the patent table %d" % (info["stats"]["patents"], P))
@@ -694,7 +716,8 @@ def main():
                  "claimsCut": sum(c["claims"] for c in cut_rows), "claimCharsCut": sum(c["claimChars"] for c in cut_rows)},
         "defs": {"available": avail_defs, "kept": avail_defs - sum(1 for c in cut_rows if c["defChars"]), "cut": sum(1 for c in cut_rows if c["defChars"]), "cutDefsOnly": n_cut_d},
         "byTier": by_tier,
-        "rule": "seed families keep claims and definitions; then claims by seed tier, tier 0..5, newest first; then definitions in the same order",
+        "rule": "seed families keep claims and definitions; then claims by seed tier, tier 0..5, newest first; then definitions in the same order (%.0f MB reserved for definitions)" % a.defs_reserve_mb,
+        "defsReserveMb": a.defs_reserve_mb,
         "lastKept": ({"pn": max(kept_text, key=priority_key)["pn"], "tier": max(kept_text, key=priority_key)["tier"], "pub": max(kept_text, key=priority_key)["pub"]} if kept_text and cut_text else None),
         "firstCut": ({"pn": min(cut_text, key=priority_key)["pn"], "tier": min(cut_text, key=priority_key)["tier"], "pub": min(cut_text, key=priority_key)["pub"]} if cut_text else None),
         "examples": [c["pn"] for c in sorted(cut_rows, key=lambda c: (c["lost"] == "defs", c["seedTier"] or 9, c["tier"], -c["pub"]))[:25]],

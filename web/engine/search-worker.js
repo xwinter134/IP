@@ -150,7 +150,7 @@
   function matchTokens(sp, ast) {
     var nTok = sp.length / 4, byTerm = new Map(), i;
     for (i = 0; i < nTok; i++) { var t = sp[i * 4]; var a = byTerm.get(t); if (a) a.push(i); else byTerm.set(t, [i]); }
-    var mark = new Uint8Array(nTok);
+    var mark = new Int32Array(nTok), gid = 0;     // 0 = no match, else the number of the occurrence the token belongs to
     function occ(n) {                   // -> array of occurrences [start, end] (token indexes, inclusive)
       var out = [], k, x;
       if (!n) return out;
@@ -178,7 +178,7 @@
       if (n.op === 'and' || n.op === 'or' && !n.xs.every(function (c) { return c.op === 'term' || c.op === 'prefix' || c.op === 'phrase' || c.op === 'near'; })) { n.xs.forEach(walk); return; }
       if (n.op === 'field' || n.op === 'same') { walk(n.a); return; }
       if (n.op === 'not' || n.op === 'meta') return;
-      occ(n).forEach(function (o) { for (var k = o[0]; k <= o[1]; k++) mark[k] = 1; });
+      occ(n).forEach(function (o) { gid++; for (var k = o[0]; k <= o[1]; k++) mark[k] = gid; });
     }
     walk(ast);
     return mark;
@@ -190,7 +190,7 @@
     var sp = TOK.spans(text), mark = matchTokens(sp, ast), out = [], pos = 0, n = sp.length / 4, i = 0;
     while (i < n) {
       if (!mark[i]) { i++; continue; }
-      var j = i; while (j + 1 < n && mark[j + 1]) j++;
+      var j = i; while (j + 1 < n && mark[j + 1] === mark[i]) j++;      // one span per occurrence (a phrase is one span)
       var s = sp[i * 4 + 2], e = sp[j * 4 + 3];
       if (s > pos) out.push([text.slice(pos, s), false]);
       out.push([text.slice(s, e), true]); pos = e; i = j + 1;
@@ -774,6 +774,14 @@
     var KIND = ['claim', 'title', 'abstract', 'assignee'];
     function unitInfo(d, score) { var fl = uFlag[d]; return { n: uNo[d], lang: fl & 2 ? 'de' : 'en', indep: (fl & 1) === 1, field: KIND[(fl >> 2) & 3], score: +score.toFixed(3) }; }
 
+    // filters.asg behaves like the inline asg: field: a bare word matches the beginning of a name token
+    function asgPrefix(n) {
+      if (!n) return n;
+      if (n.op === 'term') return n.t.length >= 3 ? { op: 'prefix', t: n.t } : n;
+      if (n.op === 'and' || n.op === 'or') return { op: n.op, xs: n.xs.map(asgPrefix) };
+      if (n.op === 'not') return { op: 'not', a: asgPrefix(n.a) };
+      return n;
+    }
     // ---------------------------------------------------------------- search
     function search(query, opts) {
       return need().then(function () {
@@ -784,7 +792,7 @@
           indepOnly: !!(f.indepOnly || parsed.unit.indep), lang: f.lang || parsed.unit.lang || null };
         var scope = opts.scope || parsed.unit.scope || 'patent';
         var base = tableFor('all', null, ctx), ast = parsed.ast, ub = null;
-        if (f.asg) { var an = parseQuery(String(f.asg), TOK).ast; if (an) ast = ast ? { op: 'and', xs: [ast, { op: 'field', f: 'asg', a: an }] } : { op: 'field', f: 'asg', a: an }; }
+        if (f.asg) { var an = asgPrefix(parseQuery(String(f.asg), TOK).ast); if (an) ast = ast ? { op: 'and', xs: [ast, { op: 'field', f: 'asg', a: an }] } : { op: 'field', f: 'asg', a: an }; }
         var ev;
         if (!ast) ev = Promise.resolve(new Uint8Array(P).fill(1));
         else if (scope === 'claim') ev = evalUnit(ast, base, ctx, false).then(function (u) { ub = u; var bm = new Uint8Array(P); for (var i = 0; i < D; i++) if (u[i]) bm[uPat[i]] = 1; return bm; });

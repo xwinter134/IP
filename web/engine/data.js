@@ -41,7 +41,11 @@
               });
             };
             // the first real request decides whether this mode works (a worker may be unable to fetch)
-            return get('manifest.json', 'json').then(function (man) { return { get: get, man: man, gzip: info.gzip, diag: function () { return h.call('diag'); } }; }, function (e) { h.terminate(); throw e; });
+            return get('manifest.json', 'json').then(function (man) {
+              var t = { get: get, man: man, gzip: info.gzip, h: h, diag: function () { return h.call('diag'); } };
+              // the manifest says how binaries are encoded: no probing of x.bin before x.b64.txt
+              return (man.enc && !o.enc) ? h.call('enc', [man.enc]).then(function () { return t; }) : t;
+            }, function (e) { h.terminate(); throw e; });
           }, function (e) { h.terminate(); throw e; });
         }, function (e) { throw (e && e.tried && e.tried[0]) ? mkErr('no_worker', e.tried[0].error) : e; });
       }
@@ -49,7 +53,7 @@
         lopts.onProgress = emit;
         var ld = L.create(lopts);
         var get = function (name, as) { return ld.get(name, { as: as, cache: false }); };
-        return get('manifest.json', 'json').then(function (man) { return { get: get, man: man, gzip: ld.diag().gzip, diag: function () { return Promise.resolve(ld.diag()); } }; });
+        return get('manifest.json', 'json').then(function (man) { if (man.enc && !o.enc) ld.setEnc(man.enc); return { get: get, man: man, gzip: ld.diag().gzip, diag: function () { return Promise.resolve(ld.diag()); } }; });
       }
       var chain = Promise.reject(mkErr('no_mode', 'no mode'));
       want.forEach(function (mode) {
@@ -60,7 +64,7 @@
       });
       return chain;
     }).then(function (t) {
-      S.get = t.get; S.gzip = t.gzip; S.ldiag = t.diag; D.manifest = t.man; S.enc = t.man.enc || 'bin';
+      S.get = t.get; S.gzip = t.gzip; S.ldiag = t.diag; S.h = t.h || null; D.manifest = t.man; S.enc = t.man.enc || 'bin';
       return S.get(t.man.seed || 'seed.json', 'json').then(function (seed) { D.seed = seed; return t.man; }, function () { D.seed = null; return t.man; });
     });
     S.ready.catch(function () { S.ready = null; });
@@ -203,6 +207,6 @@
   D.init = init; D.patent = patent; D.patents = patents; D.byPn = byPn; D.allPn = allPn; D.family = family; D.status = status; D.all = all;
   D.links = links; D.linksOf = linksOf; D.diag = diag; D.meta = meta;
   D.onProgress = function (fn) { S.listeners.push(fn); return function () { var i = S.listeners.indexOf(fn); if (i >= 0) S.listeners.splice(i, 1); }; };
-  D.reset = function () { S.ready = null; S.metaP = null; S.pnP = null; S.allP = null; S.famMap = null; S.mode = null; };
+  D.reset = function () { if (S.h) { S.h.terminate(); S.h = null; } if (S.chunks) S.chunks.clear(); if (S.st) S.st.clear(); S.pn = null; S.meta = null; D.manifest = null; D.seed = null; S.ready = null; S.metaP = null; S.pnP = null; S.allP = null; S.famMap = null; S.mode = null; };
   g.LnpData = D;
 })(typeof self !== 'undefined' ? self : this);

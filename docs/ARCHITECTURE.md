@@ -185,51 +185,132 @@ Implementation notes (as built; `src` additionally takes `"pct"` for WO):
 ### Claim formula images (`pipeline/fetch_ep_images.py`)
 
 EP claims carry structure formulae only as TIFF images. For EP full-text documents whose
-independent claims contain `[chem:imgbNNNN.tif]`, the `document.zip` is fetched (priority
-order, `--limit`), the referenced TIFFs are converted to 1-bit PNG (longest side at most
-1400 px) and stored as `data/work/img/<pn>/<imgid>.png` with `data/work/img/index.jsonl`
-(`{pn, img, claim, w, h, bytes}`). US documents get no images in this version.
+claims contain `[chem]` placeholders (corpus `claims[].img`, only publications with a cached XML), the
+script reads `document.zip` by HTTP range requests (central directory + the referenced TIFF members; if the
+server ignores Range and answers 200 with the whole file, that body is used; measured: about 1 in 4 zips is
+served ranged, mean transfer 4 MB per document, zips are 1 to 49 MB, median 2.5 MB), converts the TIFFs to
+PNG (trimmed, at most 900 px wide; 1-bit when no downscale is needed, else 2-bit grey; mean 3.8 kB) and stores
+`data/work/img/<pn>/<imgid>.png`, `data/work/img/index.jsonl` (`{pn, img, claim, w, h, bytes}`, claim = first claim
+citing the image) and `data/work/img/done.jsonl` (one line per processed document). Order: seed tier, tier,
+newest first. Options: `--limit` (documents per run, default 150), `--max-hours`, `--budget-mb` (default 25),
+`--max-per-doc` (default 60, lowest claim numbers first), `--interval` (default 3 s, sequential),
+`--retry-failed`, `--pn`, `--dry-run`. Resumable (done.jsonl). US documents get no images in this version.
 
-## Stage 3: `dist/` (written by `pipeline/build_dist.py`)
+## Stage 3: `dist/` (written by `pipeline/build_dist.py`, text index by `pipeline/build_index.mjs`)
 
 ```
-dist/index.html                the page (copied from web/index.html)
-dist/app/*.js  dist/app/app.css
-dist/engine/*.js               engines + vendor (openchemlib-full.js 8.21.0, fflate)
-                               (LnpChem looks for OpenChemLib at engine/../vendor/openchemlib-full.js as in web/,
-                               then at engine/openchemlib-full.js; either place works)
+python3 pipeline/build_dist.py [--out dist] [--budget-mb 215] [--enc bin|b64] [--max-files 500] [--limit N]
+                               [--defs-reserve-mb 10] [--img-budget-mb 25] [--img-dir DIR] [--no-chem] [--no-web] [--force]
+                               [--corpus FILE] [--build-dir data/work/dist_build]
+node tests/search_test.mjs [--work DIR] [--no-browser] [--perf DIST_DIR]      # builds its own dist copies in a temp dir
+```
+
+`build_dist.py` is safe to run at any time, also while the downloads and `normalize.py` are running: it reads the
+corpus through a hard link taken at start (`data/work/dist_build/corpus.snap.jsonl.gz`), calls `build_index.mjs`
+(streaming, two passes, about 1.5 GB RAM and 80 s for 1.1 M claims) only when corpus, keep list or builder changed, and
+rewrites a file in `dist/` only when its content changed. `data/work/status.jsonl.gz`, `data/work/img/` and
+`data/work/chem/` are optional. Work files: `data/work/dist_build/{keep.bin, cut.jsonl, model.json, dist_report_<enc>.json, idx_<enc>/}`.
+
+```
+dist/index.html                the page (web/ is copied as it is: index.html, app/, engine/, vendor/)
+dist/app/*.js  dist/app/app.css  dist/app/views/*.js
+dist/engine/*.js               engines (tok.js, loader.js, data.js, search.js, search-worker.js, chem*.js, ...)
+dist/vendor/*.js               openchemlib-full.js 8.21.0, fflate.js 0.8.2 (gunzip fallback)
 dist/data/manifest.json
 dist/data/pat-NNN.gz.bin       patent table, columnar JSON chunks of 4000 patents
 dist/data/st-NNN.gz.bin        status detail, JSON array per 4000 patents (null where none)
-dist/data/idx/…                text index (see pipeline/build_index.mjs)
-dist/data/df-NNN.gz.bin        definition paragraphs, aligned with the text shards
-dist/data/img-NNN.bin          claim image packs + dist/data/img.json index
+dist/data/meta.gz.bin          binary columns of the whole table for filters, facets, sorting (see below)
+dist/data/pn.gz.bin            all publication numbers, one per line (line number = p)
+dist/data/cpc.gz.bin           full CPC codes per patent for the cpc: filter
+dist/data/idx/docs.gz.bin      unit table of the text index
+dist/data/idx/p-NNN.gz.bin     postings shards (terms sorted, shard chosen by first term)
+dist/data/idx/q-NNN.gz.bin     position shards (phrases, NEAR)
+dist/data/idx/t-NNN.gz.bin     claim text shards (also abstract and German title)
+dist/data/idx/lex.gz.bin       most frequent terms with document frequency (suggestions)
+dist/data/df-NNN.gz.bin        definition paragraphs (own patent ranges, `manifest.df.start`)
+dist/data/img-NNN.bin          claim image packs (PNG files back to back) + dist/data/img.json index
 dist/data/chem/…               compounds, fingerprints, compound<->patent map: the files named in
                                data/work/chem/chem.json `publish` (see "Chemistry shards")
-dist/data/seed.json            seed families, players, CPC definitions, reference lipids
-dist/publish_batches.json      [{files:[...], bytes}] each <= 240 files and <= 60 MB
+dist/data/seed.json            {families, players: [{name}], assignees, cpc, lipids} from data/seed/
+dist/publish_batches.json      [{files:[...], bytes}] each <= 240 files and <= 60 MB, page and engines first
 ```
 
-Limits of the host: each file <= 15 MB, at most 500 files and 240 MB in total. `.gz.bin`
-files are gzip streams of the described payload; with `--enc b64` every binary is written
-as base64 text `*.b64.txt` instead and `manifest.enc = "b64"`. The engines read
-`manifest.enc` and handle both. No file name contains anything but `[a-z0-9._-/]`.
+Limits of the host: each file <= 15 MB, at most 500 files and 240 MB in total (checked by the builder, which exits
+non-zero when one is broken). `.gz.bin` files are gzip streams of the described payload; with `--enc b64` every
+`*.bin` is written as base64 text `*.b64.txt` instead and `manifest.enc = "b64"` (the dist grows by a third, so the
+budget cut bites earlier). The engines read `manifest.enc` and handle both. No file name contains anything but
+`[a-z0-9._-/]`.
 
 `manifest.json`:
 ```
 {"v":1,"built":"2026-11-10T12:00:00Z","enc":"bin",
- "snapshots":{"surechembl":"2026-11-03","ep_register":"2026-08-23","ep_text":"2026-11-10","us_text":"2026-11-10"},
- "counts":{"patents":N,"fulltext":N,"claims":N,"compounds":N,"ep":N,"us":N,"wo":N,"seed_expected":126,"seed_present":N},
- "pat":{"chunk":4000,"files":[...]}, "st":{...}, "idx":{...}, "df":{...}, "img":{...}, "chem":{...}}
+ "snapshots":{"surechembl":"2026-11-03","ep_register":"2026-08-23","ep_text":"2026-11-10","us_text":"2026-11-10","corpus":"…Z"},
+ "counts":{"patents":N,"fulltext":N,"fulltextAvailable":N,"claims":N,"compounds":N,"ep":N,"us":N,"wo":N,"families":N,
+           "withStatus":N,"withDefs":N,"seed_expected":126,"seed_present":N,"seed_fulltext":N},
+ "players":[names], "statusCodes":["","granted","pending","lapsed","revoked","withdrawn","refused","expired","unknown"], "kinds":[...],
+ "pat":{"chunk":4000,"files":[...]}, "st":{"chunk":4000,"files":[...]},
+ "meta":{"file":"meta.gz.bin"}, "pn":{"file":"pn.gz.bin"}, "cpc":{"file":"cpc.gz.bin"},
+ "idx":{"v":3,"tok":1,"D":units,"P":patents,"nTerms":N,"k1":1.2,"b":0.75,"avg":{"claim","title","abstract","asg"},
+        "docs":"docs.gz.bin","lex":"lex.gz.bin","post":[[file, firstTerm, bytes],...],"pos":[[file, firstTerm, bytes],...],
+        "text":{"start":[first p per shard],"files":[[file, bytes],...]},"counts":{units, claims, claimsEn, claimsDe, indep, textPatents, abstracts, titleDe}},
+ "df":{"start":[...],"files":[[file, bytes],...],"patents":N},
+ "img":{"index":"img.json","packs":[...],"images":N,"patents":N,"cut":N} | null,
+ "chem":{"dir":"chem/","files":[...],"n":N,"nPat":N,"snapshot":"…"} | null, "seed":"seed.json",
+ "cut":{"applied":bool,"budgetMb":215,"defsReserveMb":10,"rule":"…","attempts":[…],
+        "text":{"available","kept","cut","claimsCut","claimCharsCut"},"defs":{"available","kept","cut","cutDefsOnly"},
+        "byTier":{"tier5":{"claims":n,"defs":n},…},"lastKept":{pn,tier,pub},"firstCut":{pn,tier,pub},"examples":[pn,…]},
+ "flagBits":{"text":1,"defs":2,"chemImg":4,"compounds":8,"status":16,"textCut":32,"defsCut":64},
+ "sizes":{"claim text":bytes,"postings":…,…}, "bytesPerClaim":n, "nFiles":n, "totalBytes":n,
+ "files":{"data/pat-000.gz.bin":[bytes,"sha256"],…}}        // every file of dist except manifest.json and publish_batches.json
 ```
+File names inside `pat`, `st`, `idx`, `df`, `img`, `chem` are relative to `data/` (`idx` files to `data/idx/`).
 
 Patent table columns (per chunk, arrays of equal length; the patent index `p` is the
-global row number): `pn, auth, kind, pub (yyyymmdd int), app (int|0), prio (int|0),
-fam (int), title, asg (index into manifest-level name table chunk-local array asgNames),
-player (index into seed.players | -1), cpc ("A|B|C"), tier, seedTier (0 = none),
-flags (bit0 text, bit1 defs, bit2 chem image in independent claim, bit3 has compounds,
-bit4 has status), st (status code index), exp (yyyymmdd int|0), deIn (1 in force in DE,
-0 not, 2 unknown), wo`.
+global row number = line number of `corpus.jsonl.gz`): `pn, auth, kind, pub (yyyymmdd int), app (int|0), prio (int|0),
+grant (int|0), appNo, fam (int32; ids outside the int32 range are folded to -1,100,000,000 - id mod 1e9), title
+(English, else German), asg (index into the chunk-local array asgNames; assignees joined with "; "),
+player (index into manifest.players | -1), cpc ("A|B|C"), tier, seedTier (0 = none), seedFam,
+flags (bit0 claims present, bit1 definitions, bit2 chem image in independent claim, bit3 has compounds,
+bit4 has status, bit5 claims cut by the budget, bit6 definitions cut by the budget), st (index into
+manifest.statusCodes), exp (yyyymmdd int|0), deIn (1 in force in DE, 0 not, 2 unknown), wo`.
+
+Binary files (little endian):
+- `meta.gz.bin`: `[u32 jsonLen][JSON {v, P, cols: [{name, type: i32|u32|u16|u8, off, n}], auth[], kinds[], st[], c4[]}][pad to 4][columns]`;
+  columns `fam pub prio exp c4off c4 auth kind player(255 = none) tier seedTier flags st deIn`; `c4off/c4` = CPC subclass
+  (4 characters) indexes per patent for the facet.
+- `cpc.gz.bin`: `[u32 jsonLen][JSON {codes[] sorted, n, width}][pad][u32 off[P+1]][u16|u32 code index[n]]`.
+- `idx/docs.gz.bin`: `[u32 D][u32 P][u32 first[P+1]][u16 len[D]][u16 claimNo[D]][u8 flag[D]]`. A unit is one searchable
+  text; flag bit0 independent claim, bit1 German, bits 2-3 kind (0 claim, 1 title, 2 abstract, 3 assignee). Every patent
+  has a title unit and an assignee unit, an abstract unit when there is one, a second title unit when a German title
+  exists next to the English one, and one unit per claim and language.
+- `idx/p-NNN.gz.bin`: `[u32 dictLen][JSON {t: terms, d: df, o: offsets}][varint (unit delta - 1, tf) ...]`;
+  `idx/q-NNN.gz.bin`: `[u32 dictLen][JSON {t, o}][per posting: tf position deltas as varints]`.
+- `idx/t-NNN.gz.bin`, `df-NNN.gz.bin`: block container `[u32 n][u32 p[n]][u32 off[n+1]][n JSON blocks]`; text block =
+  `{"c": [[n, flags, dep[], text, img[]?], ...], "a": abstract|0, "td": German title|0}`, definition block = array of
+  paragraphs. The browser keeps the inflated bytes and parses one block on demand.
+- `img.json`: `{v, p: [patent indexes], e: [[[claim, imgId, w, h, pack, offset, bytes], ...], ...]}`.
+
+Tokenizer (`web/engine/tok.js`, shared by build and browser, `idx.tok` = its version): NFKD, combining marks removed,
+lower case, sharp s -> ss, tokens `[a-z0-9]+`; English and German stop words and tokens over 40 characters are not
+indexed but keep their position. Ranking: BM25 (k1 1.2, b 0.75, average length per field) per unit, weight 1.3 for
+independent claims, 1.6 title, 0.9 abstract; patent score = best unit + 0.1 x the other matching units (capped at
+2 x best).
+
+Size budget (`--budget-mb`, default 215, hard limit 240): the fixed parts (page, chemistry, patent table, status,
+images) are measured first; the rest goes to the text index. When the available full text does not fit, publications
+are ranked by (seed tier, tier 0..5, newest first) and
+1. seed-family publications keep claims and definitions,
+2. claims are kept along that order as far as the budget minus `--defs-reserve-mb` reaches,
+3. definition paragraphs are kept along the same order (only for publications that kept their claims),
+4. what is left goes back to the claims.
+A publication that loses its claims stays in the patent table (title / abstract / assignee search, status, compounds)
+with flag bit5; one that loses only its definitions gets bit6. The builder fits a small size model (bytes per claim
+character / definition character), rebuilds the index until it lands within 3 % under the budget (usually 2 runs),
+logs the cut per tier, writes `data/work/dist_build/cut.jsonl` and records it in `manifest.cut` for the UI.
+Measured (tests/search_test.mjs, 2026-11-10): real corpus 4,116 full texts / 110,546 claims: 58 MB, 166 files,
+170 bytes per claim (postings 52 + positions 46 + text 66 + docs 6), no cut. Synthetic full scale (125,104
+publications, 50,000 full texts, 1.34 M claims): 214.7 MB in 474 files, 150 bytes per claim, 42,678 full texts kept
+(7,322 oldest tier 5 cut), definitions for 5,248 publications.
 
 ## Chemistry shards (`pipeline/chem_build.cjs` -> `data/work/chem/`, copied to `dist/data/chem/`)
 
@@ -273,33 +354,70 @@ inflated with `DecompressionStream` when present, else with the bundled fflate. 
 is fetched from another origin. All functions return promises. Claim text, titles and
 names are untrusted input: the UI inserts them with `textContent`, never as HTML.
 
-### `LnpData` (`engine/data.js`)
-- `LnpData.init(base = "data/")` -> manifest; loads `seed.json`; patent chunks load lazily.
+### `LnpLoader` (`engine/loader.js`)
+- `LnpLoader.create({base, enc: "auto"|"bin"|"b64", gzip: "auto"|"fflate", vendorUrl, cacheBytes, sizes, onProgress, fetch})`
+  -> `{get(name, {as: "bin"|"json"|"text", cache}), bin, json, text, on(fn), setEnc, setSizes, url(name), diag()}`.
+  `get("x.gz.bin")` fetches `x.gz.bin` (or `x.gz.b64.txt`), inflates it and resolves to an `ArrayBuffer`; results sit in
+  an LRU cache (by bytes); concurrent requests for one file share one fetch. Progress events
+  `{type: "start"|"progress"|"done"|"error", name, loaded, total, active}`. Errors are plain objects
+  `{code: "http"|"network"|"gzip"|"no_gzip"|"b64"|"parse", message, name, url, status}`.
+- `LnpLoader.spawn({name, file, sources, timeoutMs, modes})` starts a Worker from a file or from a `blob:` URL and
+  checks that it answers; `LnpLoader.gunzip(bytes)`.
+
+### `LnpData` (`engine/data.js`; needs `loader.js`, `tok.js`)
+- `LnpData.init(base = "data/")` or `init({base, mode: "auto"|"worker"|"blob"|"main", gzip, engineBase, vendorUrl, timeoutMs})`
+  -> manifest; loads `seed.json`; patent chunks load lazily. Fetch + inflate run in a loader Worker when possible.
 - `LnpData.manifest`, `LnpData.seed`
-- `LnpData.patent(p)` -> `{p, pn, auth, kind, pub, app, prio, fam, title, assignee, player, cpc[], tier, seedTier, text, hasDefs, hasImg, hasCompounds, status, exp, deIn, wo}`
+- `LnpData.patent(p)` -> `{p, pn, auth, kind, pub, app, prio, grant, appNo, fam, title, assignee, player, playerIdx, cpc[], tier, seedTier, seedFam, text, hasDefs, hasImg, hasCompounds, hasStatus, textCut, defsCut, status, exp, deIn, wo}`
+  (`status` = status code string; `textCut` / `defsCut` = removed by the size budget); rejects with `{code: "range"}`.
 - `LnpData.patents(ps[])` -> array of the same
-- `LnpData.byPn("EP3532103B1" | "EP 3 532 103" | "US8,058,069")` -> p | -1 (tolerant of separators and missing kind)
+- `LnpData.byPn("EP3532103B1" | "EP 3 532 103 B1" | "US 8,058,069" | "US 2017/0210697 A1" | "WO2017/075531" | "WO 17/075531")` -> p | -1.
+  Tolerant of blanks, commas, dots, slashes, dashes, lower case, a missing kind code and a missing country (EP and US
+  are tried). Without a kind code the best publication of that number is returned: full text first, then B kinds, then
+  the newest. `LnpData.allPn(input)` -> p[] (every kind of the number). The parser is `LnpTok.pn(input)`.
 - `LnpData.family(p)` -> p[] (all members in the table)
 - `LnpData.status(p)` -> status detail object | null
-- `LnpData.all()` -> columnar view of the whole table (loads every chunk; used by landscape and filters)
-- `LnpData.links(p)` -> `{espacenet, google, register|null, uspto|null}` URLs
-- `LnpData.diag()` -> `{mode: "worker"|"blob"|"main", gzip: "native"|"fflate", enc}`
+- `LnpData.all()` -> columnar view of the whole table `{n, pn[], auth[], kind[], title[], assignee[], cpc[] ("A|B"), wo[], appNo[], seedFam[], pub, app, prio, grant, exp, fam (Int32Array), player (Int16Array), tier, seedTier, flags, st, deIn (Uint8Array), players[], statusCodes[]}` (loads every chunk; used by landscape and filters)
+- `LnpData.meta()` -> the binary columns only (one 2.8 MB file instead of every chunk)
+- `LnpData.links(p | patentObject)` -> `{espacenet, google, register|null, uspto|null}` URLs; `LnpData.linksOf(patentObject)` is synchronous
+- `LnpData.diag()` -> `{mode: "worker"|"blob"|"main", gzip: "native"|"fflate", enc, tried[], patents, fetches, bytes}`
+- `LnpData.onProgress(fn)`, `LnpData.reset()`
 
-### `LnpSearch` (`engine/search.js` + `engine/search-core.js` + `engine/tok.js`)
-- `LnpSearch.init()`
-- `LnpSearch.search(query, opts)` -> `{total, hits, facets, parsed, ms}`
-  - `query`: implicit AND, `OR`, `NOT`/`-x`, parentheses, `"phrase"`, `prefix*`,
-    `NEAR/n` between two terms, inline fields `cpc:` `asg:` `player:` `auth:` `year:2015-2022`
-    `indep:1` `lang:de` `pn:`
-  - `opts`: `{filters: {auth[], yearFrom, yearTo, cpc[], players[], status[], tiers[], indepOnly, textOnly, deInForce, expAfter (yyyymmdd), seedOnly, ps (restrict to patent indexes)}, limit=25, offset=0, sort: "score"|"date"|"expiry", facets: true}`
-  - `hits[i]` = `{p, score, n (matching claims), best: {n, lang, indep, snippet: [[text, isMatch], ...]}}`
-  - `facets` = `{auth:{EP:n,..}, year:{2019:n,..}, player:{..}, status:{..}, tier:{..}, cpc4:{A61K:n,..}}` over the full result set
+### `LnpSearch` (`engine/search.js` page side + `engine/search-worker.js` core + `engine/tok.js` + `engine/loader.js`)
+`search-worker.js` is the search core (`LnpSearchCore`): it runs as a dedicated Worker from its own file, inside a
+`blob:` Worker (tok.js + loader.js + search-worker.js concatenated) or on the main thread; it also loads in Node
+(tests). It reads `meta.gz.bin` itself, so it does not depend on `LnpData`.
+- `LnpSearch.init({base = "data/", mode: "auto"|"worker"|"blob"|"main", gzip, engineBase, vendorUrl, timeoutMs})`
+  -> `{mode, D, P, terms, claims, ms, gzip, enc, tried[]}` (lazy: every call below runs it on first use)
+- `LnpSearch.search(query, opts)` -> `{total, hits, facets, parsed, ms, timing, totalFamilies?, all?}`
+  - `query`: implicit AND, `AND`, `OR`, `NOT` / `-x`, parentheses, `"exact phrase"` (stop words inside keep their
+    place), `prefix*` (2 characters at least), `a NEAR/n b` (default n = 5; operands: words, phrases, prefixes, OR groups,
+    NEAR groups), a word with separators (`C12-200`, `DLin-MC3-DMA`) = phrase.
+    Text fields, also as groups `title:(a OR b)`: `claims:` `indep:` `dep:` `title:` `abstract:` `asg:` (a bare word
+    in `asg:` matches the beginning of a name token); `same:(...)` = all conditions inside one claim.
+    Metadata: `cpc:A61K9/51` (prefix; `|` or `,` separated lists), `auth:` `kind:` `year:2015-2022` (`2019`, `2021-`,
+    `-2010`), `prio:` `exp:` (years), `player:` `pn:"EP 3 532 103"` `fam:` `tier:` `seed:1` `seedtier:` `status:granted`
+    `text:1` `inforce:1` `compounds:1`. Switches: `lang:de|en`, `indep:1` (independent claims only), `scope:claim`.
+    A bare word searches claims, title and abstract (not the assignee). Boolean operators combine on the level of the
+    PATENT (terms may sit in different claims); phrases and NEAR always match inside one claim / title / abstract.
+    `opts.scope = "claim"` (or `same:`) makes AND / NOT work inside one claim.
+  - `opts`: `{filters: {auth[], kinds[], yearFrom, yearTo, prioFrom, prioTo, cpc[], players[] (names or indexes), status[], tiers[], seedTiers[], indepOnly, lang, textOnly, hasCompounds, hasImg, deInForce, expAfter (yyyymmdd), seedOnly, asg (query text), pn[], fam, ps (restrict to patent indexes)}, limit=25, offset=0, sort: "score"|"date"|"expiry", group: "family", facets: true, snippets: true, perHit: 3, snippetLength: 280, scope: "patent"|"claim", all: false}`
+  - `hits[i]` = `{p, score, n (matching claims), fam, best: {n, lang, indep, field: "claim"|"title"|"abstract"|"assignee", score, snippet: [[text, isMatch], ...]}, top: [up to perHit best units, same shape]}`;
+    with `group: "family"` one hit per family (best member) plus `members: p[]`, `nMembers`, and `totalFamilies` on the result.
+  - `facets` = `{auth:{EP:n,..}, year:{2019:n,..}, player:{..}, status:{..}, tier:{..}, seedTier:{..}, kind:{..}, cpc4:{A61K:n,..}, text: n, deInForce: n}` over the full result set
+  - `parsed` = `{query, ast, unit, warnings: [{code, message}]}` (pass it to `highlight`); `all: true` adds `all: Uint32Array` of every matching p.
   - An empty query with filters lists the filtered patents (sorted by date).
-- `LnpSearch.claims(p, lang?)` -> `[{n, lang, indep, dep[], text}]` (all languages if `lang` omitted)
-- `LnpSearch.highlight(text, parsed)` -> `[[text, isMatch], ...]`
+- `LnpSearch.claims(p, lang?)` -> `[{n, lang, indep, dep[], text, children[], roots[], img?[]}]` (all languages if `lang` omitted;
+  `children` = claims that refer to this one, `roots` = the independent claims it finally depends on)
+- `LnpSearch.abstract(p)` -> string | null
+- `LnpSearch.highlight(text, parsed | queryString)` -> `[[text, isMatch], ...]` (pieces concatenate to `text`; one span per occurrence, a phrase is one span)
+- `LnpSearch.snippets(ps[], parsed)` -> hits with best units for patents outside the current page
 - `LnpSearch.defs(p)` -> string[]
 - `LnpSearch.claimImages(p)` -> `[{claim, id, w, h, blob}]` (PNG blobs; empty if none)
-- `LnpSearch.suggest(prefix)` -> up to 10 index terms with document frequency
+- `LnpSearch.suggest(prefix, k = 10)` -> `[{term, df}]` index terms completing the last word, most frequent first
+- `LnpSearch.parse(query)`, `LnpSearch.diag()`, `LnpSearch.onProgress(fn)`, `LnpSearch.reset()`
+- Measured on the synthetic full-scale index (1.14 M claims, Chromium, local server): init about 100 ms, first query
+  on a fresh engine 150-450 ms, warm 3-50 ms.
 
 ### `LnpChem` (`engine/chem.js` + `engine/chem-worker.js` + `engine/chemfp.js` + `vendor/openchemlib-full.js`)
 Pure JS (OpenChemLib 8.21.0 UMD, no wasm, no eval). `chem-worker.js` is the search core: it runs as a dedicated
@@ -363,28 +481,187 @@ after `init`. `chemfp.js` (count fingerprint, lipid descriptors, scaffold) is sh
 
 ### `LnpStore` (`engine/store.js`)
 Persistence on the Artifact `db` capability with a `localStorage` fallback and an in-memory
-last resort; same API in all three. Documents stay under 200 KiB (opinions are split
-into a head document and part documents when larger).
-- `LnpStore.init()` -> `{backend: "db"|"local"|"memory"}`
-- `LnpStore.list(kind)`, `.get(kind, id)`, `.put(kind, id, obj)`, `.remove(kind, id)`, `.onChange(kind, fn)`
-- kinds: `profiles`, `opinions`, `marks` (per-patent tag + note), `searches`, `settings`, `diag`
+last resort; same API in all three. The backend is chosen once in `init()`: `db` when `claude.use("db")` answers
+within 5 s and a first read succeeds, else `local` (keys `lnp:<kind>/<id>`), else `memory`. A db write that is refused
+later (view-only viewer, quota) is kept in the local backend for the visit and `diag().readonly` is set.
+- `LnpStore.init()` -> `{backend: "db"|"local"|"memory"}` (lazy: every call below runs it on first use)
+- `LnpStore.get(kind, id)` -> the stored value | `null`; `LnpStore.entry(kind, id)` -> `{id, updated, value}` | `null`
+- `LnpStore.put(kind, id, value)` -> `{id, updated, backend}`; `LnpStore.remove(kind, id)`
+- `LnpStore.list(kind)` -> the stored values, newest first. Plain objects come back as shallow copies with the
+  document id filled in as `id` when the value has none (plus non-enumerable `_id`, `_updated`).
+  `LnpStore.entries(kind, {values: false}?)` -> `[{id, updated, value}]` for callers that need the write time.
+- `LnpStore.onChange(kind, fn)` -> unsubscribe; `fn({type: "put"|"remove", kind, id, value?})` for writes of this page
+- `LnpStore.diag()` -> `{backend, readonly, log[], kinds, partChars}`; `LnpStore.cleanId(id)`
+- kinds: `profiles`, `opinions`, `marks`, `searches`, `settings`, `diag`. Ids are reduced to `[A-Za-z0-9_.~:@+-]`
+  (other characters become `_`, at most 150 characters).
+- Storage layout in `db`: collection = kind, document `<kind>/<id>` = `{u: ISO time, v: value}`. A value whose
+  ASCII-escaped JSON is longer than 120,000 characters is split: head `{u, n, len}` plus `<kind>-parts/<id>.<i>` =
+  `{s: text}` (parts are written before the head, surplus parts of an older version are deleted), so every document
+  stays far below the 256 KiB limit whatever the caller stores.
+- Documents written by the app shell:
+  - `marks/<pn>` = `{pn, star, tag, note, title, player, ts}` (watchlist star, tag and note of one publication; removed
+    when all three are empty)
+  - `searches/<id>` = `{name, q, hash, filters, sort, total, ts}` (`hash` is the deep link of the search view)
+  - `settings/fto-selection` = `{pns: [...], q?, from: "suche"|"patent"|"merkliste", ts}`: the publications handed to
+    the FTO view ("FTO pruefen"); the FTO view reads it on mount
+  - `diag/boot` = `{v, at, ok, ms: {store, data, meta, index, views, ready | failed}, engines: {data, search, chem},
+    enc, built, snapshots, counts, gzip, worker, store, caps: {claude, sample, db, downloads, user}, ai, aiAvailable,
+    fto, views[], route, ua: {browser, major, os, mobile}, viewport, theme, dark, errors: [{t, where, code, message}]}`,
+    rewritten 1.5 s after boot and after every logged error (also when the data files could not be loaded)
 
 ### `LnpAI` (`engine/ai.js`)
-Thin wrapper over the Artifact `sample` capability.
-- `LnpAI.available()` -> bool, `LnpAI.limits()`
-- `LnpAI.json(prompt, {tier, signal, schema, images, onStatus})` -> object; validates against `schema` (small built-in JSON-schema subset validator), retries once with the REPAIR block, never more
-- `LnpAI.text(prompt, {tier, signal, onText})`
-- Errors are `{code, message}`; `LnpAI.explain(err, lang)` gives UI copy. No automatic retries beyond the single repair.
-- `LnpAI.mock(fn)` installs a test double (used by tests and by the demo mode when `sample` is absent).
+Thin wrapper over the Artifact `sample` capability (`const sample = await claude.use("sample")`). The page must declare
+`capabilities: {sample: {images: true}}` for claim formula images to reach Claude; with `{sample: {}}` everything works
+and formula features are marked `formel_fehlt`. No dependencies; `LnpSearch` / `LnpData` are only used by
+`semanticSearch` and `explainClaim` (replaceable with `LnpAI.configure({search, data})`).
+- `LnpAI.init()` -> bool (asks `claude.use("sample")` once; `null` or no `window.claude` = not available);
+  `LnpAI.available()` -> bool (sync, after `init`; false after `not_granted` and similar); `LnpAI.state()`;
+  `LnpAI.limits()` -> `{maxPromptBytes, images?: {maxCount, maxInputBytes, mediaTypes}, modelTiers?}` (never rejects).
+- `LnpAI.text(prompt, {tier, signal, onText, images, cache, label})` -> `{text, truncated, tier, tierApplied, cuts, bytesIn, bytesOut, imagesSent, imagesDropped, input}`.
+  `prompt` = a string, a list of turns `{role, content}`, or a list of parts `{t, cut, label, mode, min, close}`
+  (`cut: 0` = never shortened; otherwise shortened in descending `cut` order, `mode` `"tail"` | `"headtail"` | `"drop"`).
+- `LnpAI.json(prompt, {schema, check, tier, signal, images, onText, onStatus, meta, cache, label})` -> parsed value. Uses
+  `sample()` (not `sample.json`) and its own extraction: whole reply, code fence, first balanced `{...}`/`[...]`, first-to-last
+  bracket, each also without trailing commas. Validates against `schema` with the built-in JSON-schema subset validator
+  (`type`, `enum`, `const`, `required`, `properties`, `additionalProperties`, `items`, `minItems`, `maxItems`, `pattern`,
+  `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`) and against `check(value) -> errors[]`. On failure exactly ONE
+  repair call is made: the first prompt, the first reply and the REPAIR block of `prompts.md` with the validation errors;
+  a second failure rejects with `{code: "invalid_json" | "schema_invalid", errors, text}`. `meta` (an object you pass in)
+  receives `{repaired, calls, cuts, bytesIn, bytesOut, tier, tierApplied, imagesSent, imagesDropped, truncatedOutput}`;
+  `onStatus` gets `{type: "repair" | "truncated" | "tier" | "images_dropped", ...}`.
+- 256 KiB cap: `LnpAI.bytes(s)` counts UTF-8 bytes; `LnpAI.fit(prompt, cap)` -> `{input, bytes, cuts: [{label, mode, originalBytes, removedBytes}]}`
+  shortens deterministically and leaves a marker `[... TRUNCATED BY APP: n bytes removed from <label> ...]` at each cut;
+  when the fixed parts alone are too large the call rejects `prompt_too_large` without sending anything.
+- Model tiers (`tier` = a task name or a tier): `expand`, `rerank`, `triage` / `T` -> `quick`; `normalize` / `A`, `chart` / `B`,
+  `dependent` / `C`, `explain` -> `default`; `redteam` / `E`, `synthesis` / `D` -> `complex`. A tier missing from
+  `limits().modelTiers` falls back to `default`; a substituted tier is reported through `onStatus`.
+- Calls are queued (one `sample` call at a time). `signal` (AbortSignal) rejects `{code: "cancelled"}`, also while queued.
+- Errors are `{code, message, text?}` (codes of `sample.d.ts` plus `unavailable`, `schema_invalid`). `not_granted`,
+  `sampling_disabled`, `not_declared`, `capability_disabled`, `capability_removed` switch the feature off for the view
+  (`available()` false, no further call is sent); `rate_limited` is never retried. `LnpAI.message(err, lang)` gives the
+  German / English UI copy, `LnpAI.action(err)` -> `"off" | "wait" | "login" | "retry" | "none"`, `LnpAI.isFatal(err)`.
+- `LnpAI.usage()` -> `{calls, ok, failed, repairs, bytesIn, bytesOut, images, ms, byTier, last, log[]}` (in memory);
+  `LnpAI.onUsage(fn)`.
+- `LnpAI.semanticSearch(query, {n = 60, batch = 30, filters, signal, onStage})` ->
+  `{hits: [{p, pn, title, claimNo, lang, score (0-3 | null), reason, check[], bm25, bm25Rank, text}], expansion, queries: {strict, relaxed, cpc}, used, calls, degraded[], total}`:
+  query expansion (1 call) -> BM25 on independent claims with the expanded boolean query (strict, plus relaxed when
+  fewer than n/2 hits) -> re-ranking in batches of 30 claims (sequential) -> merged ranking with a one-line reason per
+  hit. Without Claude, or when a call fails, the BM25 order is kept and `degraded` says why.
+- `LnpAI.explainClaim(pn | p, claimNo, {lang, signal, onText})` -> `{text, truncated, pn, claimNo, claimLang, cuts}`: plain-language
+  explanation of one claim with the claims it refers to and the definitions excerpt. `LnpAI.explain(...)` is both:
+  `explain(err, lang)` = `message(err, lang)`, `explain(pn, claimNo, opts)` = `explainClaim`.
+- `LnpAI.mock(fn, {limits})` installs a test double (`fn(input, options)` -> string | `{text, truncated}` | JSON value;
+  throw `{code}` to simulate failures); `LnpAI.mock(null)` removes it; `LnpAI.reset()`.
 
 ### `LnpFto` (`engine/fto.js`, `engine/fto-prompts.js`, `engine/fto-render.js`)
-Implements `data/probe/method/prompts.md` and `FTO_METHOD.md` (copied to `docs/method/`).
-- `LnpFto.normalizeProfile(profileForm, {signal})` -> `ProductFeatures` (step A; chemistry descriptors come from `LnpChem.descriptors`, never from the model)
-- `LnpFto.candidates(features, {max})` -> `[{p, routes: ["text","structure","player","seed","manual"], score, why}]` (no model: text queries built from the features, structure search, seed tier 1, user marks)
-- `LnpFto.run({profile, features, candidates, depth: "quick"|"standard"|"deep", lang: "de"|"en", markets: ["DE","EP","US"], onEvent, signal})` -> `Opinion`
-  - events: `{type: "stage", stage, done, total}`, `{type: "triage", p, rel, why}`, `{type: "chart", p, chart}`, `{type: "redteam", p, report}`, `{type: "text", section, text}`, `{type: "warn", message}`, `{type: "usage", calls}`
-  - depth: quick = triage + charts for the top 5, no red team; standard = top 10 with dependent claims and red team; deep = top 20
-  - deterministic checks from prompts.md are applied in code: verbatim quote check, literal result recomputed from feature verdicts, final risk = more adverse of chart and red team, expiry and status from `LnpData`, limits block inserted verbatim
-- `LnpFto.chartOne(features, p, opts)` -> claim chart for a single patent (used from the patent view)
-- `LnpFto.render(opinion, "md"|"html")` -> string (the HTML is a self-contained printable document)
-- `Opinion` = `{id, created, lang, profile, features, markets, depth, snapshot (manifest.snapshots), patents: [{p, pn, rel, risk (0-4), riskLabel, status, expiry, charts[], dependent, redteam, digest}], matrix: {features[], rows[]}, sections: {summary, scope, method, findings, equivalents, exemptions, designAround, nextSteps}, limits, usage}`
+Implements `docs/method/FTO_METHOD.md` and `docs/method/prompts.md`. `fto-prompts.js` (`LnpFtoPrompts`) carries the
+prompt blocks and JSON schemas of `prompts.md` verbatim in a generated section (`node tests/fto_test.mjs --gen-prompts`;
+the test fails when the section drifts from the document) plus the data envelopes and the app addendum. Engines are
+taken from the globals or from `LnpFto.configure({data, search, chem, store, ai, prompts, render, now})`.
+- `LnpFto.normalizeProfile(form, {signal, lang, onEvent})` -> `ProductFeatures` (schema `pf-1` of `prompts.md`) with an extra
+  `_app` block `{model, created, form, lipids[], warnings[]}`. `form` = `{name, lipids: [{role: "ionizable"|"helper"|"sterol"|"peg"|"other", name, smiles, molPct, pka, pegMw, cas}], ratioBasis, np, payload: {type, modification, lengthNt, encodes}, particle: {sizeNm, sizeMethod, pdi, encapsulationPct, zetaMv, morphology}, process: {mixing, device, frr, tfr, solvent, ethanolPct, buffer, ph, tempC, post[], site, maker}, formulation: {buffer, cryo, lyo, storage}, use: {route, indication, tissue, dose}, stage, markets: ["DE","EP","UPC","US"], launchDate, acts[], freeText}`.
+  Structures are parsed and described by `LnpChem` (formula, MW, counts, head group, linkers, chains with carbon counts
+  and branching); step A only arranges and words the profile. SMILES, InChIKey, descriptors and every number that the form
+  carries are put back over the model output. Without Claude (or when step A fails twice) the deterministic profile is
+  returned with `_app.model = false`.
+- `LnpFto.candidates(profile, {max = 90, markets, manual: [p | pn], semantic: bool | text, signal, onEvent})` ->
+  `[{p, pn, auth, kind, title, assignee, player, status, text, family, routes: ["structure","markush","text","seed","semantic","manual","family"], score, why[]}]`
+  with a property `record` (the search record: every generated query verbatim with hit counts, the structure searches,
+  seed counts, corpus snapshot and counts, notes). No model call except for the optional semantic route. Routes: exact /
+  substructure / similarity (>= 0.8) search for each lipid (weighted by role and by whether SureChEMBL found the structure
+  in the claims), "markush" = the user's lipid is disclosed in the document and an independent claim has a formula image,
+  boolean claim queries generated from the profile, seed families of the watched players, family members of hits in the
+  target jurisdictions. Seed tier 1 and user marks are always in the result; WO publications are pointers only.
+- `LnpFto.run(profile, {patents, searchRecord, depth: "quick"|"standard"|"deep", lang, markets, onEvent, signal, id, persist})`
+  (also `run({profile | features, candidates | patents, ...})`) -> `Opinion`. `patents` = result of `candidates()` (or a list
+  of `p` / `pn`); omitted = `candidates()` is run.
+  - Chain, strictly sequential: status and jurisdiction gate (no model) -> T triage in batches of 10 (independent claims
+    clipped to 2200 + 800 characters) -> per patent B claim chart (independent claims verbatim with numbers, definitions
+    excerpt with paragraph ids, formula images when `limits().images`), C dependent claims (all claims + checked chart
+    summary; A patents, at depth deep also B), E red team (unless every claim is already "met" and nothing is flagged)
+    -> digest built by the app -> D synthesis.
+  - depth: quick = triage + charts for the top 5, no C, no E; standard = top 10 with C and E; deep = top 20, and expired /
+    lapsed / revoked rights are charted too. Order of analysis: in force before dead, A before B, granted before pending,
+    then candidate score. Everything not charted is listed with its reason (`dead`, `triage_c`, `depth_limit`, `no_text`,
+    `text_cut`, `wo`, `market`, `no_ai`).
+  - Jurisdiction: EP publications are assessed for the selected markets among DE / EP / UPC with `in_force_de`, lapses and
+    opposition from `LnpData.status`; US publications for US. Expiry is always an estimate shown with its basis. A status
+    older than 6 months (measured on the snapshot date of the source), unknown or missing is "ungeprueft" and treated as
+    in force; a revocation with an appeal on record is treated as in force.
+  - events: `{type: "stage", stage: "status"|"triage"|"patent"|"chart"|"dependent"|"redteam"|"synthesis"|"structure"|"text", done, total, pn}`,
+    `{type: "triage", p, pn, rel, why}`, `{type: "chart", p, pn, chart, risk}`, `{type: "dependent", ...}`, `{type: "redteam", p, pn, report, risk}`,
+    `{type: "text", section, text}` (streamed model text of the running step), `{type: "repair", step, errors, detail}`,
+    `{type: "warn", message}`, `{type: "usage", calls, usage}`, `{type: "saved" | "resumed", step}`, `{type: "resume", id, steps}`, `{type: "done", id}`.
+  - Resumable: the opinion id is derived from the inputs (profile, depth, language, markets, patents, corpus snapshot).
+    A head document `{id, kind: "fto-opinion", state: "running"|"done"|"cancelled"|"paused", steps, args, error, summary}` and one
+    document per finished step are written through `LnpStore` (kind `opinions`; step documents have `part: 1`, ids
+    `<id>--<step>` and `<id>--<step>-c<i>`, at most 60,000 characters each, so list views must skip documents with
+    `part`). A saved step is reused only when the hash of its prompt is unchanged. The same `run()` call after a reload, or
+    `LnpFto.resume(id, {onEvent, signal})`, continues after the last finished step. `LnpStore` needs `get`, `put`,
+    `remove`, `list(kind)` (documents with `id`); without it an in-memory store is used.
+  - A stop (`cancelled`), `rate_limited`, `not_granted` and the like reject with `{code, message, id, userMessage}`; other
+    failures of one step (invalid after the repair, refused) are recorded for that patent ("nicht beurteilbar") and the
+    chain goes on.
+  - Checks applied in code, never left to the model: every `claim_quote` must be a substring of the claim text after
+    whitespace normalisation (`app.quote`: `ok` | `elided` | `approx` | `fail` | `empty`; only `ok` is verified, `fail` marks
+    the row `zitat_nicht_verifiziert`); a "nicht_erfuellt" that rests on an unverified quote, on a formula that exists
+    only as an unsent image, or on an unclear Markush test counts as "unklar"; the literal result of a claim is
+    recomputed from the rows (all met -> literally met); truncated or formula-less claims are at most "possible"; every
+    independent claim must appear in the chart; risk floors (literally met + granted -> 5, possible -> at least 3,
+    formula missing -> "nicht beurteilbar"); final risk = the more adverse of B and E, a lower red-team value is never
+    taken over; chain results of dependent claims are recomputed; the overall risk per market is computed from the final
+    risks; patent numbers in the synthesis must exist in the digests; sweeping "free / no infringement" wording is
+    flagged. Equivalence is rendered as a question for counsel and changes nothing by itself.
+  - Prompt-injection defence: instructions first, then data in delimited blocks; a `<` that would open or close an
+    envelope tag inside patent or user text is replaced by U+2039; the addendum tells the model to ignore instructions in
+    data; nothing from the model or the patents is rendered as HTML without escaping.
+- `LnpFto.chartOne(profile, pn | p, {depth = "quick", lang, markets, signal, onEvent})` -> one entry of `Opinion.patents` (plus
+  `limits`, `warnings`); nothing is saved.
+- `LnpFto.render(opinion, "md" | "html" | "json")` -> string. Every rendering starts and ends with the verbatim limits block
+  (`LIMITS_DE` / `LIMITS_EN` with the status snapshot date). HTML is a self-contained printable document (inline CSS, no
+  scripts, no links, fixed tag set, every string escaped); `LnpFtoRender.fragment(opinion)` is the same without the
+  document frame. Sections: summary with risk matrix, product profile as understood, search record, per patent (status,
+  claim chart, formula test, equivalence questions, dependent claims, red team, questions for counsel, design-around
+  ideas), cross-cutting points, rights not analysed and why, next steps.
+- `LnpFto.list()` (heads only), `LnpFto.load(id)` -> saved `Opinion`, `LnpFto.remove(id)`; pure helpers `verifyQuote`,
+  `literalFromVerdicts`, `maxRisk`, `rightOf`, `statusLabel`, `checkChart`, `textQueries`.
+- `Opinion` = `{v, id, created, finished, lang, depth, markets, aiUsed, title, snapshot (manifest.snapshots), statusSnapshot, limits, profile, search: {record, candidates, triage: {A, B, C}, charted, report}, patents: [{p, pn, auth, kind, title, assignee, family, filing, routes, why, jurisdiction, markets, rel, relWhy, status (text), right: {granted, pending, dead, deadReason, code, src, asof, stale, unverified, inForceDe, lapsedIn, opposition, modifiers, notes, expiry}, expiry: {date, basis, estimate: true, ptaDays}, risk: {b, e, final, chart?}, literal: {b, e, final, claim}, flags[], failed, chart (ClaimChart + `app` blocks), dependent, redteam, digest (ChartDigest)}], notCharted: [{p, pn, reason, text, rel, status, expiry}], overall: {markets: [{market: "DE"|"EP_UPC"|"US", risk, drivers[]}], pending}, synthesis (Opinion schema `op-1` of prompts.md + `app`) | null, matrix: [{pn, jurisdiction, markets, rel, risk, riskB, riskE, literal, status, expiry, expiryBasis, dead, pending, flags}], warnings[], usage, run: {calls, resumedSteps}}`.
+  Risk codes: `1_sehr_gering` ... `5_sehr_hoch`, `nicht_beurteilbar` (ranks between 3 and 4).
+
+## Work views (`web/app/views/`)
+
+`struktur.js`, `produkte.js`, `fto.js`, `landschaft.js`, `merkliste.js`, `system.js` register themselves with
+`LnpApp.registerView`. They share `app/views/views.css` (classes prefixed `k-`), `app/views/lib/kit.js` (`LnpKit`: page
+furniture, descriptor and risk vocabulary, depiction box, chart tooltip, file picker) and `app/views/lib/chart.js`
+(`LnpChart`: stacked columns as inline SVG; bar lists, segmented bar, heat map and expiry timeline as HTML marks; every
+mark carries a tooltip and a link into the search view). The shell loads only `app/views/*.js`, so each view file starts
+with the same small loader (`LnpLazyView(id, files, mount)`): it fetches the css and the lib files once, in order,
+before the first mount; nothing in the shell had to change. No view assigns `innerHTML`.
+
+Routes (alphabet of `router.js`):
+- `#struktur[-<query>][--m<exact|sub|sim|scaffold>][--t<min similarity %>][--n<pn>][--c<SCHEMBL id>][--f<filters>][--s<sort>]`;
+  `f` = list of `tl<min>-<max>` (longest tail), `nt<n>`, `es<n>`, `am<class>`, `cl1`; `c` opens the compound with its
+  publications (claims first, then granted rights with an open term, then later expiry).
+- `#produkte[-<profile id> | -beispiel]`, `#fto[-<opinion id>][--p<profile id>][--d<quick|standard|deep>]`,
+  `#landschaft[--rkern]`, `#merkliste[--t<tag>][--s<exp|pn>]`, `#system[--xtest]` (starts the self-test).
+
+Documents written by these views (through `LnpStore`):
+- `profiles/<id>` = the form of `LnpFto.normalizeProfile` plus `{id, example, updated}`; export files are
+  `{kind: "lnp-profile", v: 1, profile}` or `{kind: "lnp-profiles", v: 1, profiles: []}` (import accepts both, a bare
+  profile or a list, and always assigns new ids). `window.LnpProfile = {example(), blank(), clean(doc)}` (produkte.js).
+- `settings/pf-<profile id>` = `{stamp, features}`: the normalised profile (`pf-1`), reused while the profile and the
+  availability of Claude are unchanged, so the candidate search does not repeat step A.
+- `settings/fto-selection`: `from` also takes `"struktur"`.
+- `searches/<id>.snap` = `{ts, built, total, pns: "EP… US…"}` (watchlist, "Stand übernehmen"): the result list of a
+  saved search (up to 5,000 publications) against which a rerun marks what is new; without it a rerun falls back to
+  "published after the search was saved".
+
+Call estimate shown before a run (view `fto`): triage `ceil(n / 10)` for the selected publications with claim text,
+one chart call per charted publication (`LnpFto.DEPTH[depth].n` at most), up to one dependent-claims call and one
+red-team call each at depth standard / deep, one synthesis call; repairs (at most one per step) and split charts of
+long claim sets are named but not counted.
+
+`engine/loader.js` (worker service): concurrent `get` requests for one file share one fetch and so one ArrayBuffer;
+all but the last waiter now receive a copy, the last takes the buffer by transfer. Before, the second transfer threw
+inside the worker and the caller never got an answer (seen when `LnpData.patents()` touched more chunks than the
+chunk LRU holds, e.g. in `LnpFto.candidates`).
