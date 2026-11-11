@@ -1,0 +1,92 @@
+/* LNP Patent Desk: Design-around assistant view. Tokens come from index.html (:root); components from app.css / views.css.
+   Light and dark follow the shared tokens; the layout works down to 390 px. */
+
+.da-page .da-banner { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 8px; background: var(--surface); color: var(--dim); font-size: 13px; line-height: 1.5; }
+.da-page .da-banner svg { flex: none; margin-top: 1px; color: var(--warn); }
+.da-page .da-banner span { overflow-wrap: anywhere; }
+
+.da-form { display: flex; align-items: flex-end; gap: 10px 14px; flex-wrap: wrap; margin: 12px 0 8px; }
+.da-form .k-field { flex: 1 1 240px; min-width: 0; }
+.da-form .k-field:nth-child(2) { flex: 1 1 160px; }
+.da-form .k-field:nth-child(3) { flex: 0 0 auto; }
+.da-form .da-go { flex: none; }
+.da-form .da-go .btn { height: 38px; }
+
+.da-status { margin: 8px 0; min-height: 0; }
+.da-status:empty { margin: 0; }
+.da-body { display: flex; flex-direction: column; gap: 16px; }
+
+/* starting point */
+.da-start .da-start-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.da-start-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 14px 18px; align-items: start; margin-top: 10px; }
+.da-mol, .da-start-grid .k-mol { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.da-smiles { font-size: 12.5px; color: var(--dim); overflow-wrap: anywhere; word-break: break-word; margin: 0 0 4px; }
+.da-start-info .da-sub { margin: 10px 0 6px; font-size: 13px; color: var(--faint); }
+.da-rules { display: flex; flex-direction: column; gap: 5px; }
+.da-rule { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.da-rname { min-width: 2.5em; color: var(--text); }
+.da-rrule { color: var(--dim); overflow-wrap: anywhere; }
+
+/* toolbar */
+.da-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.da-filters { display: flex; align-items: flex-end; gap: 10px 14px; flex-wrap: wrap; }
+.da-filters .k-field { flex: 0 0 auto; }
+.da-filters .select { min-width: 9em; }
+.da-count { align-self: center; font-size: 12.5px; color: var(--faint); font-family: var(--mono); }
+.da-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* variant list */
+.da-list { display: flex; flex-direction: column; gap: 10px; }
+.da-card { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); overflow: hidden; }
+.da-card-top { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 12px; padding: 12px; }
+.da-card-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.da-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.da-move { font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--text); overflow-wrap: anywhere; }
+.da-reason { margin: 0; font-size: 13px; color: var(--dim); overflow-wrap: anywhere; }
+.da-card-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
+.da-mi .faint { color: var(--faint); }
+.da-card-det { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }
+.da-det-block { display: flex; flex-direction: column; gap: 5px; }
+.da-det-title { margin: 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.da-pats, .da-mks { display: flex; flex-direction: column; gap: 4px; }
+.da-pat, .da-mk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.da-pat-why { color: var(--dim); }
+.da-none { margin: 0; font-size: 13px; color: var(--faint); }
+.da-riskwhy { margin: 0; font-size: 12.5px; color: var(--faint); overflow-wrap: anywhere; }
+
+/* risk pill 0-4 (shares the risk scale of DESIGN.md) */
+.da-risk { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); white-space: nowrap; }
+.da-risk-bar { display: inline-flex; gap: 2px; }
+.da-risk-bar i { width: 7px; height: 11px; border-radius: 2px; background: var(--muted); border: 1px solid var(--line); }
+.da-risk[data-lv="0"] .da-risk-bar i.on { background: #3b7b34; border-color: #3b7b34; }
+.da-risk[data-lv="1"] .da-risk-bar i.on { background: #8a9a2a; border-color: #8a9a2a; }
+.da-risk[data-lv="2"] .da-risk-bar i.on { background: #b45309; border-color: #b45309; }
+.da-risk[data-lv="3"] .da-risk-bar i.on { background: #dc2b05; border-color: #dc2b05; }
+.da-risk[data-lv="4"] .da-risk-bar i.on { background: #97260c; border-color: #97260c; }
+.pill.sm { font-size: 10.5px; padding: 1px 6px; }
+
+/* formulation + explanation + limits */
+.da-formsec .da-sub { margin: 4px 0 10px; font-size: 13px; color: var(--dim); }
+.da-form-rows { display: flex; flex-direction: column; gap: 6px; }
+.da-form-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 13px; }
+.da-form-move { color: var(--text); overflow-wrap: anywhere; }
+.da-form-was { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; color: var(--dim); }
+.da-explain { display: flex; flex-direction: column; gap: 6px; }
+.da-expl-note { margin: 0; font-size: 12.5px; color: var(--faint); }
+.da-expl-p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
+.da-empty { margin-top: 18px; }
+.da-limits { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 0 12px; }
+.da-limits summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0; font-size: 13.5px; color: var(--dim); }
+.da-limits ul { padding: 0 0 10px 18px; list-style: disc; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); max-width: 92ch; }
+
+@media (max-width: 720px) {
+  .da-start-grid { grid-template-columns: 1fr; }
+  .da-start-grid .k-mol { width: 100%; }
+  .da-card-top { grid-template-columns: 1fr; }
+  .da-card-top .k-mol { width: 100%; }
+  .da-form .k-field, .da-form .k-field:nth-child(2) { flex: 1 1 100%; }
+  .da-form .k-field:nth-child(3) { flex: 1 1 100%; }
+  .da-form .da-go, .da-form .da-go .btn { width: 100%; }
+  .da-toolbar { flex-direction: column; align-items: stretch; }
+  .da-actions { justify-content: flex-start; }
+}
