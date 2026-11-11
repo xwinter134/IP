@@ -1,0 +1,95 @@
+<title>LNP Patent Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Martian+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one gradient band on top (name, corpus counts, global jump), a left rail, one scrolling work area.
+   Data sits in hairline grids on warm neutrals; the signal red only marks what is active. */
+:root {
+  --bg: #ffffff; --surface: #faf9f9; --muted: #f2efef; --line: #e7e4e4; --line-strong: #d7d0d0; --ring: #a99d9d;
+  --text: #292424; --dim: #574e4e; --faint: #796b6b;
+  --btn-bg: #292424; --btn-fg: #faf9f9;
+  --brand: #f84016; --signal: #dc2b05;
+  --good: #3b7b34; --warn: #b45309; --crit: #bc2706; --info: #4128da;
+  --good-bg: #edf5ec; --warn-bg: #fbf1e3; --crit-bg: #fbece8; --info-bg: #eeecfb;
+  --risk0: #3b7b34; --risk1: #8a9a2a; --risk2: #b45309; --risk3: #dc2b05; --risk4: #97260c;
+  --hit-bg: #ffe6a3; --hit-fg: #292424; --ins-bg: #dcefd9; --del-bg: #f8d9d1;
+  --band-a: #473f96; --band-b: #6b3d89; --band-c: #953c65; --band-d: #a03d57; --band-e: #b0412a; --band-fg: #ffffff;
+  --shadow: 0 1px 3px -1px #00000026, 0 4px 10px -2px #0000001a;
+  --scrim: #29242466;
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.23, 1, .32, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171212; --surface: #1c1717; --muted: #292424; --line: #3a3232; --line-strong: #4a4040; --ring: #796b6b;
+    --text: #f2efef; --dim: #c9c0c0; --faint: #a99d9d;
+    --btn-bg: #f2efef; --btn-fg: #1c1717;
+    --signal: #f95834;
+    --good: #78d771; --warn: #fcd34d; --crit: #fa856b; --info: #9ca8ff;
+    --good-bg: #1d2b1b; --warn-bg: #33290f; --crit-bg: #381b14; --info-bg: #201f3d;
+    --risk0: #78d771; --risk1: #c3d45c; --risk2: #fcd34d; --risk3: #f95834; --risk4: #fa856b;
+    --hit-bg: #6b4e0a; --hit-fg: #fff6dc; --ins-bg: #23401f; --del-bg: #55231a;
+    --shadow: 0 1px 3px -1px #00000080, 0 4px 14px -2px #00000066;
+    --scrim: #000000a6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171212; --surface: #1c1717; --muted: #292424; --line: #3a3232; --line-strong: #4a4040; --ring: #796b6b;
+  --text: #f2efef; --dim: #c9c0c0; --faint: #a99d9d;
+  --btn-bg: #f2efef; --btn-fg: #1c1717;
+  --signal: #f95834;
+  --good: #78d771; --warn: #fcd34d; --crit: #fa856b; --info: #9ca8ff;
+  --good-bg: #1d2b1b; --warn-bg: #33290f; --crit-bg: #381b14; --info-bg: #201f3d;
+  --risk0: #78d771; --risk1: #c3d45c; --risk2: #fcd34d; --risk3: #f95834; --risk4: #fa856b;
+  --hit-bg: #6b4e0a; --hit-fg: #fff6dc; --ins-bg: #23401f; --del-bg: #55231a;
+  --shadow: 0 1px 3px -1px #00000080, 0 4px 14px -2px #00000066;
+  --scrim: #000000a6;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+</style>
+<link rel="stylesheet" href="app/app.css">
+
+<div class="app" id="app" data-state="boot">
+  <header class="band" id="band">
+    <div class="band-in">
+      <a class="brand" href="#suche" id="brand" aria-label="LNP Patent Desk, go to Search">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name"><b>LNP</b> <span>Patent Desk</span></span>
+      </a>
+      <dl class="band-counts" id="band-counts" aria-label="Dataset"></dl>
+      <button class="jump" id="jump" type="button" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
+        <span class="jump-ico" aria-hidden="true"></span>
+        <span class="jump-text">Patent number, search or view</span>
+        <kbd id="jump-kbd">Ctrl K</kbd>
+      </button>
+      <button class="band-btn" id="theme-btn" type="button" aria-label="Change appearance" title="Appearance: automatic"></button>
+    </div>
+  </header>
+  <nav class="rail" id="rail" aria-label="Sections"></nav>
+  <main class="view" id="view" tabindex="-1">
+    <section class="boot" id="boot" aria-live="polite">
+      <p class="overline">Start-up</p>
+      <h1 class="boot-title">Loading dataset</h1>
+      <div class="boot-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="boot-bar"><span id="boot-fill"></span></div>
+      <p class="boot-now" id="boot-now">Starting scripts</p>
+      <ol class="boot-steps" id="boot-steps"></ol>
+      <noscript><p class="boot-now">This page needs JavaScript.</p></noscript>
+    </section>
+  </main>
+</div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div id="overlays"></div>
+
+<script src="engine/loader.js"></script>
+<script src="engine/tok.js"></script>
+<script src="engine/data.js"></script>
+<script src="engine/search.js"></script>
+<script src="engine/chem.js"></script>
+<script src="engine/store.js"></script>
+<script src="app/ui.js"></script>
+<script src="app/router.js"></script>
+<script src="app/app.js"></script>

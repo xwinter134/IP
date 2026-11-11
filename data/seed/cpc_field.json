@@ -1,0 +1,766 @@
+[
+ {
+  "cpc": "A61K9/127",
+  "role": "core",
+  "definition": "Synthetic bilayered vehicles, e.g. liposomes or liposomes with cholesterol as the only non- phosphatidyl surfactant",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Dispersions; Emulsions"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 15,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/1271",
+  "role": "core",
+  "definition": "Non-conventional liposomes, e.g. PEGylated liposomes or liposomes coated or grafted with polymers (liposomes as conjugates {A61K 47/6911})",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Dispersions; Emulsions",
+   "Synthetic bilayered vehicles, e.g. liposomes or liposomes with cholesterol as the only non- phosphatidyl surfactant"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 15,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/1272",
+  "role": "core",
+  "definition": "comprising non-phosphatidyl surfactants as bilayer-forming substances, e.g. cationic lipids or non-phosphatidyl liposomes coated or grafted with polymers (lipids as modifying agents {A61K 47/543})",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Dispersions; Emulsions",
+   "Synthetic bilayered vehicles, e.g. liposomes or liposomes with cholesterol as the only non- phosphatidyl surfactant",
+   "Non-conventional liposomes, e.g. PEGylated liposomes or liposomes coated or grafted with polymers (liposomes as conjugates {A61K 47/6911})"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 27,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/1277",
+  "role": "core",
+  "definition": "Preparation processes; Proliposomes",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Dispersions; Emulsions",
+   "Synthetic bilayered vehicles, e.g. liposomes or liposomes with cholesterol as the only non- phosphatidyl surfactant"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 7,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/1278",
+  "role": "core",
+  "definition": "Post-loading, e.g. by ion or pH gradient",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Dispersions; Emulsions",
+   "Synthetic bilayered vehicles, e.g. liposomes or liposomes with cholesterol as the only non- phosphatidyl surfactant",
+   "Preparation processes; Proliposomes"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 1,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/51",
+  "role": "core",
+  "definition": "Nanocapsules; {Nanoparticles; (nanotubes pure drug nanoparticles A61K 9/14; drug nanoparticles with adsorbed surface modifiers and non-active nanoparticles, A61K 47/50; preparations for in vivo diagnosis A61K 49/00; with radioactive substances A61K 51/00)}",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Preparations in capsules, e.g. of gelatin, of chocolate {(A61K 9/0004 takes precedence; bite capsules",
+   "Microcapsules {having a gas, liquid or semi- solid filling; Solid microparticles or pellets surrounded by a distinct coating layer, e.g. coated microspheres, coated drug crystals (A61K 9/2081 takes precedence; particles "
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 1,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/5123",
+  "role": "core",
+  "definition": "{Organic compounds, e.g. fats, sugars}",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Preparations in capsules, e.g. of gelatin, of chocolate {(A61K 9/0004 takes precedence; bite capsules",
+   "Microcapsules {having a gas, liquid or semi- solid filling; Solid microparticles or pellets surrounded by a distinct coating layer, e.g. coated microspheres, coated drug crystals (A61K 9/2081 takes precedence; particles ",
+   "Nanocapsules; {Nanoparticles; (nanotubes pure drug nanoparticles A61K 9/14; drug nanoparticles with adsorbed surface modifiers and non-active nanoparticles, A61K 47/50; preparations for in vivo diagnosis A61K 49/00; with",
+   "{Excipients; Inactive ingredients}"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 27,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/5192",
+  "role": "core",
+  "definition": "{Processes}",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Preparations in capsules, e.g. of gelatin, of chocolate {(A61K 9/0004 takes precedence; bite capsules",
+   "Microcapsules {having a gas, liquid or semi- solid filling; Solid microparticles or pellets surrounded by a distinct coating layer, e.g. coated microspheres, coated drug crystals (A61K 9/2081 takes precedence; particles ",
+   "Nanocapsules; {Nanoparticles; (nanotubes pure drug nanoparticles A61K 9/14; drug nanoparticles with adsorbed surface modifiers and non-active nanoparticles, A61K 47/50; preparations for in vivo diagnosis A61K 49/00; with"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 3,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/19",
+  "role": "core",
+  "definition": "lyophilised {, i.e. freeze-dried, solutions or dispersions (lyophilised products with subsequent particle size reduction A61K 9/14; granules or pellets made by lyphilisation by lyophilisation A61K 9/2095; lyophilisation additives A61K 47/00)}",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "Particulate form, e.g. powders, {Processes for size reducing of pure drugs or the resulting products, Pure drug nanoparticles (microspheres A61K 9/16; microcapsules A61K 9/50; nanocapsules, nanoparticles of the matrix ty"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 1,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/18",
+  "role": "core",
+  "definition": "Amines; Amides; Ureas; Quaternary ammonium compounds; Amino acids; Oligopeptides having up to five amino acids",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "Organic compounds, e.g. natural or synthetic hydrocarbons, polyolefins, mineral oil, petrolatum or ozokerite",
+   "containing nitrogen, {e.g. nitro-, nitroso-, azo- compounds, nitriles, cyanates}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 17,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/24",
+  "role": "core",
+  "definition": "containing atoms other than carbon, hydrogen, oxygen, halogen, nitrogen or sulfur, e.g. cyclomethicone or phospholipids",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "Organic compounds, e.g. natural or synthetic hydrocarbons, polyolefins, mineral oil, petrolatum or ozokerite"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 12,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/28",
+  "role": "core",
+  "definition": "Steroids, e.g. cholesterol, bile acids or glycyrrhetinic acid",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "Organic compounds, e.g. natural or synthetic hydrocarbons, polyolefins, mineral oil, petrolatum or ozokerite"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 11,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/543",
+  "role": "core",
+  "definition": "{Lipids, e.g. triglycerides; Polyamines, e.g. spermine or spermidine}",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "the non-active ingredient being chemically bound to the active ingredient, e.g. polymer-drug conjugates",
+   "the non-active ingredient being a modifying agent",
+   "the modifying agent being an organic compound"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 9,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/544",
+  "role": "core",
+  "definition": "{Phospholipids}",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "the non-active ingredient being chemically bound to the active ingredient, e.g. polymer-drug conjugates",
+   "the non-active ingredient being a modifying agent",
+   "the modifying agent being an organic compound",
+   "{Lipids, e.g. triglycerides; Polyamines, e.g. spermine or spermidine}"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 0,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/60",
+  "role": "core",
+  "definition": "the organic macromolecular compound being a polyoxyalkylene oligomer, polymer or dendrimer, e.g. PEG, PPG, PEO or polyglycerol",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "the non-active ingredient being chemically bound to the active ingredient, e.g. polymer-drug conjugates",
+   "the non-active ingredient being a modifying agent",
+   "the modifying agent being an organic macromolecular compound, e.g. an oligomeric, polymeric or dendrimeric molecule",
+   "obtained otherwise than by reactions only involving carbon-to-carbon unsaturated bonds, e.g. polyureas or polyurethanes"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 2,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/6911",
+  "role": "core",
+  "definition": "{the form being a liposome}",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "the non-active ingredient being chemically bound to the active ingredient, e.g. polymer-drug conjugates",
+   "the conjugate being characterised by physical or galenical forms, e.g. emulsion, particle, inclusion complex, stent or kit",
+   "{the form being a colloid or an emulsion}"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 4,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/6929",
+  "role": "core",
+  "definition": "{the form being a nanoparticle, e.g. an immuno-nanoparticle}",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "the non-active ingredient being chemically bound to the active ingredient, e.g. polymer-drug conjugates",
+   "the conjugate being characterised by physical or galenical forms, e.g. emulsion, particle, inclusion complex, stent or kit",
+   "{the form being a particulate, a powder, an adsorbate, a bead or a sphere}",
+   "{the form being a solid microparticle having no hollow or gas-filled cores}"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 5,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/10",
+  "role": "core",
+  "definition": "Alcohols; Phenols; Salts thereof, e.g. glycerol; Polyethylene glycols [PEG]; Poloxamers; PEG/ POE alkyl ethers",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "Organic compounds, e.g. natural or synthetic hydrocarbons, polyolefins, mineral oil, petrolatum or ozokerite",
+   "containing oxygen, {e.g. ethers, acetals, ketones, quinones, aldehydes, peroxides}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 3,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/14",
+  "role": "core",
+  "definition": "Esters of carboxylic acids, e.g. fatty acid monoglycerides, medium-chain triglycerides, parabens or PEG fatty acid esters",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "Organic compounds, e.g. natural or synthetic hydrocarbons, polyolefins, mineral oil, petrolatum or ozokerite",
+   "containing oxygen, {e.g. ethers, acetals, ketones, quinones, aldehydes, peroxides}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 6,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K47/22",
+  "role": "core",
+  "definition": "Heterocyclic compounds, e.g. ascorbic acid, tocopherol or pyrrolidones",
+  "parents": [
+   "Medicinal preparations characterised by the non-active ingredients used, e.g. carriers or inert additives; Targeting or modifying agents chemically bound to the active ingredient",
+   "Organic compounds, e.g. natural or synthetic hydrocarbons, polyolefins, mineral oil, petrolatum or ozokerite"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 13,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K48/0008",
+  "role": "core",
+  "definition": "{characterised by an aspect of the 'non-active' part of the composition delivered, e.g. wherein such 'non-active' part is not delivered simultaneously with the 'active' part of the composition}",
+  "parents": [
+   "Medicinal preparations containing genetic material which is inserted into cells of the living body to treat genetic diseases; Gene therapy"
+  ],
+  "dot_level": 1,
+  "families_in_seed_with_this_leaf_code": 3,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K48/0025",
+  "role": "core",
+  "definition": "{wherein the non-active part clearly interacts with the delivered nucleic acid}",
+  "parents": [
+   "Medicinal preparations containing genetic material which is inserted into cells of the living body to treat genetic diseases; Gene therapy",
+   "{characterised by an aspect of the 'non-active' part of the composition delivered, e.g. wherein such 'non-active' part is not delivered simultaneously with the 'active' part of the composition}"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 7,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K48/0033",
+  "role": "core",
+  "definition": "{the non-active part being non-polymeric}",
+  "parents": [
+   "Medicinal preparations containing genetic material which is inserted into cells of the living body to treat genetic diseases; Gene therapy",
+   "{characterised by an aspect of the 'non-active' part of the composition delivered, e.g. wherein such 'non-active' part is not delivered simultaneously with the 'active' part of the composition}",
+   "{wherein the non-active part clearly interacts with the delivered nucleic acid}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 11,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K48/0041",
+  "role": "core",
+  "definition": "{the non-active part being polymeric}",
+  "parents": [
+   "Medicinal preparations containing genetic material which is inserted into cells of the living body to treat genetic diseases; Gene therapy",
+   "{characterised by an aspect of the 'non-active' part of the composition delivered, e.g. wherein such 'non-active' part is not delivered simultaneously with the 'active' part of the composition}",
+   "{wherein the non-active part clearly interacts with the delivered nucleic acid}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 6,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K48/005",
+  "role": "context_only_combine_with_keywords",
+  "definition": "{characterised by an aspect of the 'active' part of the composition delivered, i.e. the nucleic acid delivered}",
+  "parents": [
+   "Medicinal preparations containing genetic material which is inserted into cells of the living body to treat genetic diseases; Gene therapy"
+  ],
+  "dot_level": 1,
+  "families_in_seed_with_this_leaf_code": 7,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K31/7105",
+  "role": "context_only_combine_with_keywords",
+  "definition": "Natural ribonucleic acids, i.e. containing only riboses attached to adenine, guanine, cytosine or uracil and having 3'-5' phosphodiester links",
+  "parents": [
+   "Medicinal preparations containing organic active ingredients",
+   "Carbohydrates; Sugars; Derivatives thereof (sorbitol In this group, the expressions are used with the meanings indicated in Note (3) following the title of the subclass C07H",
+   "Compounds having three or more nucleosides or nucleotides"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 18,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K31/7088",
+  "role": "context_only_combine_with_keywords",
+  "definition": "Compounds having three or more nucleosides or nucleotides",
+  "parents": [
+   "Medicinal preparations containing organic active ingredients",
+   "Carbohydrates; Sugars; Derivatives thereof (sorbitol In this group, the expressions are used with the meanings indicated in Note (3) following the title of the subclass C07H"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 17,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K31/713",
+  "role": "context_only_combine_with_keywords",
+  "definition": "Double-stranded nucleic acids or oligonucleotides",
+  "parents": [
+   "Medicinal preparations containing organic active ingredients",
+   "Carbohydrates; Sugars; Derivatives thereof (sorbitol In this group, the expressions are used with the meanings indicated in Note (3) following the title of the subclass C07H",
+   "Compounds having three or more nucleosides or nucleotides"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 20,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K39/39",
+  "role": "context_only_combine_with_keywords",
+  "definition": "characterised by the immunostimulating additives, e.g. chemical adjuvants",
+  "parents": [
+   "Medicinal preparations containing antigens or antibodies (materials for immunoassay G01N 33/53)"
+  ],
+  "dot_level": 1,
+  "families_in_seed_with_this_leaf_code": 6,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K2039/53",
+  "role": "context_only_combine_with_keywords",
+  "definition": "{DNA (RNA) vaccination}",
+  "parents": [
+   "Medicinal preparations containing antigens or antibodies (materials for immunoassay G01N 33/53)",
+   "{comprising whole cells, viruses or DNA/RNA}"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 16,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K2039/55555",
+  "role": "context_only_combine_with_keywords",
+  "definition": "{Liposomes; Vesicles, e.g. nanoparticles; Spheres, e.g. nanospheres; Polymers}",
+  "parents": [
+   "Medicinal preparations containing antigens or antibodies (materials for immunoassay G01N 33/53)",
+   "{characterised by a specific combination antigen/ adjuvant}",
+   "{Organic adjuvants}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 12,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "A61K9/0019",
+  "role": "context_only_combine_with_keywords",
+  "definition": "{Injectable compositions; Intramuscular, intravenous, arterial, subcutaneous administration; Compositions to be administered through the skin in an invasive manner (non- active ingredients are additionally classified in",
+  "parents": [
+   "Medicinal preparations characterised by special physical form {(nuclear magnetic resonance contrast preparations or magnetic resonance imaging contrast preparations A61K 49/18; preparations containing radioactive substan",
+   "{Galenical forms characterised by the site of application}"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 12,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C12N15/88",
+  "role": "core",
+  "definition": "using microencapsulation, e.g. using {amphiphile} liposome vesicle",
+  "parents": [
+   "Mutation or genetic engineering; DNA or RNA concerning genetic engineering, vectors, e.g. plasmids, or their isolation, preparation or purification; Use of hosts therefor (mutants or genetically engineered microorganisms",
+   "Recombinant DNA-technology",
+   "Introduction of foreign genetic material using processes not otherwise provided for, e.g. co- transformation"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 19,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C12N2320/32",
+  "role": "core",
+  "definition": "Special delivery means, e.g. tissue-specific",
+  "parents": [
+   "Applications; Uses",
+   "Special therapeutic applications"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 13,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C12N15/111",
+  "role": "context_only_combine_with_keywords",
+  "definition": "{General methods applicable to biologically active non-coding nucleic acids}",
+  "parents": [
+   "Mutation or genetic engineering; DNA or RNA concerning genetic engineering, vectors, e.g. plasmids, or their isolation, preparation or purification; Use of hosts therefor (mutants or genetically engineered microorganisms",
+   "Recombinant DNA-technology",
+   "DNA or RNA fragments; Modified forms thereof (DNA or RNA not used in recombinant technology, C07H 21/00); {Non-coding nucleic acids having a biological activity} {Documents relating to DNA or its corresponding RNA and th"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 10,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C12N15/113",
+  "role": "context_only_combine_with_keywords",
+  "definition": "Non-coding nucleic acids modulating the expression of genes, e.g. antisense oligonucleotides; {Antisense DNA or RNA; Triplex- forming oligonucleotides; Catalytic nucleic acids, e.g. ribozymes; Nucleic acids used in co-suppression or gene silencing (when used in plants C12N 15/8218)}",
+  "parents": [
+   "Mutation or genetic engineering; DNA or RNA concerning genetic engineering, vectors, e.g. plasmids, or their isolation, preparation or purification; Use of hosts therefor (mutants or genetically engineered microorganisms",
+   "Recombinant DNA-technology",
+   "DNA or RNA fragments; Modified forms thereof (DNA or RNA not used in recombinant technology, C07H 21/00); {Non-coding nucleic acids having a biological activity} {Documents relating to DNA or its corresponding RNA and th"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 12,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C12N2310/14",
+  "role": "context_only_combine_with_keywords",
+  "definition": "interfering nucleic acids [NA]",
+  "parents": [
+   "Structure or type of the nucleic acid",
+   "Type of nucleic acid"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 12,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C12N15/67",
+  "role": "context_only_combine_with_keywords",
+  "definition": "General methods for enhancing the expression",
+  "parents": [
+   "Mutation or genetic engineering; DNA or RNA concerning genetic engineering, vectors, e.g. plasmids, or their isolation, preparation or purification; Use of hosts therefor (mutants or genetically engineered microorganisms",
+   "Recombinant DNA-technology",
+   "Introduction of foreign genetic material using vectors; Vectors; Use of hosts therefor; Regulation of expression"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 5,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C07C229/12",
+  "role": "core",
+  "definition": "to carbon atoms of acyclic carbon skeletons",
+  "parents": [
+   "Compounds containing amino and carboxyl groups bound to the same carbon skeleton",
+   "having amino and carboxyl groups bound to acyclic carbon atoms of the same carbon skeleton",
+   "the carbon skeleton being acyclic and saturated",
+   "having only one amino and one carboxyl group bound to the carbon skeleton",
+   "the nitrogen atom of the amino group being further bound to acyclic carbon atoms or to carbon atoms of rings other than six- membered aromatic rings"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 9,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C07C229/16",
+  "role": "core",
+  "definition": "to carbon atoms of hydrocarbon radicals substituted by amino or carboxyl groups, e.g. ethylenediamine-tetra-acetic acid, iminodiacetic acids",
+  "parents": [
+   "Compounds containing amino and carboxyl groups bound to the same carbon skeleton",
+   "having amino and carboxyl groups bound to acyclic carbon atoms of the same carbon skeleton",
+   "the carbon skeleton being acyclic and saturated",
+   "having only one amino and one carboxyl group bound to the carbon skeleton",
+   "the nitrogen atom of the amino group being further bound to acyclic carbon atoms or to carbon atoms of rings other than six- membered aromatic rings"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 6,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C07C219/06",
+  "role": "core",
+  "definition": "having the hydroxy groups esterified by carboxylic acids having the esterifying carboxyl groups bound to hydrogen atoms or to acyclic carbon atoms of an acyclic saturated carbon skeleton",
+  "parents": [
+   "Compounds containing amino and esterified hydroxy groups bound to the same carbon skeleton",
+   "having esterified hydroxy groups and amino groups bound to acyclic carbon atoms of the same carbon skeleton",
+   "the carbon skeleton being acyclic and saturated"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 6,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C07C235/06",
+  "role": "core",
+  "definition": "having the nitrogen atoms of the carboxamide groups bound to hydrogen atoms or to acyclic carbon atoms",
+  "parents": [
+   "Carboxylic acid amides, the carbon skeleton of the acid part being further substituted by oxygen atoms",
+   "having carbon atoms of carboxamide groups bound to acyclic carbon atoms and singly-bound oxygen atoms bound to the same carbon skeleton",
+   "the carbon skeleton being acyclic and saturated"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 4,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C07C271/20",
+  "role": "core",
+  "definition": "to carbon atoms of hydrocarbon radicals substituted by nitrogen atoms not being part of nitro or nitroso groups",
+  "parents": [
+   "Derivatives of carbamic acids, i.e. compounds containing any of the groups , the",
+   "Esters of carbamic acids",
+   "having oxygen atoms of carbamate groups bound to acyclic carbon atoms",
+   "with the nitrogen atoms of the carbamate groups bound to hydrogen atoms or to acyclic carbon atoms"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 4,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "C07D295/13",
+  "role": "core",
+  "definition": "to an acyclic saturated chain",
+  "parents": [
+   "Heterocyclic compounds containing polymethylene-imine rings with at least five ring members, 3-azabicyclo [3.2.2] nonane, piperazine, morpholine or thiomorpholine rings, having only hydrogen atoms directly attached to th",
+   "with substituted hydrocarbon radicals attached to ring nitrogen atoms",
+   "substituted by singly or doubly bound nitrogen atoms (nitro radicals C07D 295/06)",
+   "with the ring nitrogen atoms and the substituent nitrogen atoms attached to the same carbon chain, which is not interrupted by carbocyclic rings"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 7,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F33/30",
+  "role": "core",
+  "definition": "Micromixers",
+  "parents": [
+   "Other mixers; Mixing plants; Combinations of mixers"
+  ],
+  "dot_level": 1,
+  "families_in_seed_with_this_leaf_code": 3,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F25/4331",
+  "role": "core",
+  "definition": "{Mixers with bended, curved, coiled, wounded mixing tubes or comprising elements for bending the flow}",
+  "parents": [
+   "Flow mixers; Mixers for falling materials, e.g. solid particles (centrifugal mixers B04)",
+   "Static mixers (colloid-mills B02C; mixing valves F16K 11/00)",
+   "in which the mixing is affected by moving the components jointly in changing directions, e.g. in tubes provided with baffles or obstructions",
+   "Mixing tubes, e.g. wherein the material is moved in a radial or partly reversed direction",
+   "Mixing tubes wherein the shape of the tube influences the mixing, e.g. mixing tubes with varying cross-section or provided with inwardly extending profiles"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 2,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F25/4317",
+  "role": "core",
+  "definition": "{Profiled elements, e.g. profiled blades, bars, pillars, columns or chevrons}",
+  "parents": [
+   "Flow mixers; Mixers for falling materials, e.g. solid particles (centrifugal mixers B04)",
+   "Static mixers (colloid-mills B02C; mixing valves F16K 11/00)",
+   "in which the mixing is affected by moving the components jointly in changing directions, e.g. in tubes provided with baffles or obstructions",
+   "Mixing tubes, e.g. wherein the material is moved in a radial or partly reversed direction",
+   "Straight mixing tubes with baffles or obstructions that do not cause substantial pressure drop; Baffles therefor"
+  ],
+  "dot_level": 5,
+  "families_in_seed_with_this_leaf_code": 2,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F25/433",
+  "role": "core",
+  "definition": "Mixing tubes wherein the shape of the tube influences the mixing, e.g. mixing tubes with varying cross-section or provided with inwardly extending profiles",
+  "parents": [
+   "Flow mixers; Mixers for falling materials, e.g. solid particles (centrifugal mixers B04)",
+   "Static mixers (colloid-mills B02C; mixing valves F16K 11/00)",
+   "in which the mixing is affected by moving the components jointly in changing directions, e.g. in tubes provided with baffles or obstructions",
+   "Mixing tubes, e.g. wherein the material is moved in a radial or partly reversed direction"
+  ],
+  "dot_level": 4,
+  "families_in_seed_with_this_leaf_code": 1,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F23/41",
+  "role": "core",
+  "definition": "Emulsifying",
+  "parents": [
+   "Dissolving (separating by dissolving B01D; dissolving to effect cooling F25D 5/00)",
+   "Mixing liquids with liquids; Emulsifying"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 2,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F25/23",
+  "role": "core",
+  "definition": "Mixing by intersecting jets",
+  "parents": [
+   "Flow mixers; Mixers for falling materials, e.g. solid particles (centrifugal mixers B04)",
+   "Jet mixers, i.e. mixers using high-speed fluid streams (using jets to create vortex flow"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 0,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01F2101/22",
+  "role": "core",
+  "definition": "Mixing of ingredients for pharmaceutical or medical compositions",
+  "parents": [
+   "Mixing characterised by the nature of the mixed materials or by the application field"
+  ],
+  "dot_level": 1,
+  "families_in_seed_with_this_leaf_code": 0,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01J13/02",
+  "role": "core",
+  "definition": "Making microcapsules or microballoons {(for medical preparations A61K 9/50)}",
+  "parents": [
+   "Colloid chemistry, e.g. the production of colloidal materials or their solutions, not otherwise provided for; Making microcapsules or microballoons"
+  ],
+  "dot_level": 1,
+  "families_in_seed_with_this_leaf_code": 1,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01J13/04",
+  "role": "core",
+  "definition": "by physical processes, e.g. drying, spraying",
+  "parents": [
+   "Colloid chemistry, e.g. the production of colloidal materials or their solutions, not otherwise provided for; Making microcapsules or microballoons",
+   "Making microcapsules or microballoons {(for medical preparations A61K 9/50)}"
+  ],
+  "dot_level": 2,
+  "families_in_seed_with_this_leaf_code": 0,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B82Y5/00",
+  "role": "core",
+  "definition": "Nanobiotechnology or nanomedicine, e.g. protein engineering or drug delivery",
+  "parents": [],
+  "dot_level": 0,
+  "families_in_seed_with_this_leaf_code": 4,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ },
+ {
+  "cpc": "B01L3/5027",
+  "role": "core",
+  "definition": "{by integrated microfluidic structures, i.e. dimensions of channels and chambers are such that surface tension forces are important, e.g. lab-on-a-chip}",
+  "parents": [
+   "Containers or dishes for laboratory use, e.g. laboratory glassware; Droppers Petri dishes for enzymology or microbiology are classified in group C12M 1/22.",
+   "Burettes; Pipettes",
+   "{Drop counters; Drop formers}"
+  ],
+  "dot_level": 3,
+  "families_in_seed_with_this_leaf_code": 1,
+  "n_seed_families": 62,
+  "source": "official CPC scheme PDF (cooperativepatentclassification.org), parsed 2026-11-10"
+ }
+]

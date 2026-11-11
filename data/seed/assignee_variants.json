@@ -1,0 +1,305 @@
+[
+ {
+  "player": "Arbutus/Genevant/Protiva",
+  "match_regex_case_insensitive": "arbutus|protiva|protivia|tekmira|genevant|inex pharm|roivant hepatology",
+  "variants_observed_on_fetched_pages": [
+   "ARBUTUS BIOPHARMA CORP., BURNABY, CA",
+   "ARBUTUS BIOPHARMA CORP., VANCOUVER, CA",
+   "ARBUTUS BIOPHARMA CORPORATION",
+   "ARBUTUS BIOPHARMA CORPORATION, CA",
+   "ARBUTUS BIOPHARMA CORPORATION; CA",
+   "Arbutus Biopharma Corp",
+   "Genevant Sciences GmbH",
+   "PROTIVA BIOTHERAPEUTICS INC.",
+   "PROTIVA BIOTHERAPEUTICS, INC.",
+   "PROTIVA BIOTHERAPEUTICS, INC., C/O TEKMIRA PHARMAC",
+   "PROTIVIA BIOTHERAPEUTICS, INC.",
+   "Protiva Biotherapeutics Inc",
+   "TEKMIRA PHARMACEUTICALS CORPORATION",
+   "Tekmira Pharmaceuticals Corp"
+  ],
+  "additional_variants_unverified_background": [
+   "Inex Pharmaceuticals Corp",
+   "Tekmira Pharmaceuticals Corp",
+   "Genevant Sciences Ltd",
+   "Genevant Sciences Corp",
+   "OnCore Biopharma"
+  ]
+ },
+ {
+  "player": "Alnylam",
+  "match_regex_case_insensitive": "alnylam",
+  "variants_observed_on_fetched_pages": [
+   "ALNYLAM PHARMACEUTICALS, INC.",
+   "Alnylam Pharmaceuticals Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "Alnylam Europe AG",
+   "Alnylam Pharmaceuticals GmbH",
+   "Sirna/Alnylam co-assignments"
+  ]
+ },
+ {
+  "player": "Acuitas",
+  "match_regex_case_insensitive": "acuitas",
+  "variants_observed_on_fetched_pages": [
+   "ACUITAS THERAPEUTICS INC.",
+   "ACUITAS THERAPEUTICS, INC.",
+   "Acuitas Therapeutics Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "AlCana Technologies Inc (former name)"
+  ]
+ },
+ {
+  "player": "Moderna",
+  "match_regex_case_insensitive": "moderna|mordernatx",
+  "variants_observed_on_fetched_pages": [
+   "MODERNA THERAPEUTICS, INC.",
+   "MODERNATX, INC.",
+   "MODERNATX, INC., CAMBRIDGE, US",
+   "MODERNATX, INC., US",
+   "ModernaTx Inc",
+   "Mordernatx Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "Moderna Inc",
+   "ModeRNA Therapeutics"
+  ]
+ },
+ {
+  "player": "BioNTech",
+  "match_regex_case_insensitive": "biontech|tron\\b|tron -|translationale onkologie",
+  "variants_observed_on_fetched_pages": [
+   "BIONTECH AG",
+   "BIONTECH RNA PHARMACEUTICALS GMBH",
+   "BIONTECH SE",
+   "BioNTech SE",
+   "Biontech RNA Pharmaceuticals GmbH",
+   "TRON - TRANSLATIONALE ONKOLOGIE AN DER JOHANNES GU",
+   "TRON - TRANSLATIONALE ONKOLOGIE AN DER UNIVERSITAE",
+   "TRON -TRANSLATIONALE ONKOLOGIE AN DER UNIVERSITATSMEDIZIN DER JOHANNES GUTENBERG-UNIVERSITAT MAINZ GGMBH",
+   "Translationale Onkologie an der Universitätsmedizin der Johannes Gutenberg-Universität Mainz"
+  ],
+  "additional_variants_unverified_background": [
+   "BioNTech RNA Pharmaceuticals GmbH",
+   "BioNTech Delivery Technologies GmbH",
+   "BioNTech US Inc",
+   "Ribological GmbH",
+   "Uniwersytet Warszawski co-assignments"
+  ]
+ },
+ {
+  "player": "CureVac",
+  "match_regex_case_insensitive": "curevac|cure vac",
+  "variants_observed_on_fetched_pages": [
+   "CUREVAC AG",
+   "CUREVAC AG, 72076 TUEBINGEN, DE",
+   "CUREVAC AG, DE",
+   "CUREVAC AG, FRIEDRICH-MIESCHER-STR. 15, DE",
+   "CUREVAC GMBH",
+   "CUREVAC SE",
+   "CUREVAC SE, DE",
+   "CUREVAC SE; DE",
+   "CureVac SE",
+   "Curevac AG"
+  ],
+  "additional_variants_unverified_background": [
+   "CureVac GmbH",
+   "CureVac Real Estate GmbH",
+   "CureVac Manufacturing GmbH",
+   "CureVac RNA Printer GmbH"
+  ]
+ },
+ {
+  "player": "Translate Bio / Sanofi",
+  "match_regex_case_insensitive": "translate bio|rana therapeutics|shire human genetic|sanofi",
+  "variants_observed_on_fetched_pages": [
+   "RANA THERAPEUTICS, INC.",
+   "RaNA Therapeutics Inc",
+   "SHIRE HUMAN GENETIC THERAPIES, INC.",
+   "Shire Human Genetics Therapies Inc",
+   "TRANSLATE BIO, INC.",
+   "Translate Bio Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "Sanofi SA",
+   "Sanofi Pasteur Inc",
+   "Ethris GmbH (co-applicant on some families)"
+  ]
+ },
+ {
+  "player": "UBC (Cullis) / Precision NanoSystems",
+  "match_regex_case_insensitive": "british columbia|precision nanosystems|global life sciences solutions canada",
+  "variants_observed_on_fetched_pages": [
+   "GLOBAL LIFE SCIENCES SOLUTIONS CANADA ULC",
+   "GLOBAL LIFE SCIENCES SOLUTIONS CANADA ULC, VAN, CA",
+   "Global Life Sciences Solutions Canada ULC",
+   "PRECISION NANOSYSTEMS INC.",
+   "PRECISION NANOSYSTEMS ULC",
+   "Precision Nanosystems ULC",
+   "THE UNIVERISTY OF BRITISH COLUMBIA",
+   "THE UNIVERSITY OF BRITISH COLUMBIA",
+   "THE UNIVERSITY OF BRITISH COLUMBIA, CA",
+   "THE UNIVERSITY OF BRITISH COLUMBIA, VANCOUVER, CA",
+   "THE UNIVERSITY OF BRITISH COLUMBIA; CA",
+   "University of British Columbia"
+  ],
+  "additional_variants_unverified_background": [
+   "Cytiva",
+   "Global Life Sciences Solutions USA LLC",
+   "NanoVation Therapeutics"
+  ]
+ },
+ {
+  "player": "Arcturus",
+  "match_regex_case_insensitive": "arcturus",
+  "variants_observed_on_fetched_pages": [
+   "ARCTURUS THERAPEUTICS, INC.",
+   "Arcturus Therapeutics Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "Arcturus Therapeutics Holdings Inc"
+  ]
+ },
+ {
+  "player": "GSK / Novartis Vaccines",
+  "match_regex_case_insensitive": "glaxosmithkline biologicals|novartis vaccines",
+  "variants_observed_on_fetched_pages": [
+   "GLAXOSMITHKLINE BIOLOGICALS SA",
+   "GLAXOSMITHKLINE BIOLOGICALS SA, BE",
+   "GlaxoSmithKline Biologicals SA",
+   "NOVARTIS VACCINES AND DIAGNOSTICS, INC.",
+   "Novartis Vaccines and Diagnostics Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "GSK Biologicals",
+   "Novartis AG (pre-2015 vaccines filings)",
+   "Seqirus"
+  ]
+ },
+ {
+  "player": "Novartis",
+  "match_regex_case_insensitive": "novartis ag|novarits institutes|novartis institutes",
+  "variants_observed_on_fetched_pages": [
+   "NOVARITS INSTITUTES FOR BIOMEDICAL RESEARCH INC.,",
+   "NOVARTIS AG",
+   "Novartis AG"
+  ],
+  "additional_variants_unverified_background": []
+ },
+ {
+  "player": "MIT",
+  "match_regex_case_insensitive": "massachusetts institute of technology",
+  "variants_observed_on_fetched_pages": [
+   "MASSACHUSETTS INSTITUTE OF TECHNOLOGY",
+   "MASSACHUSETTS INSTITUTE OF TECHNOLOGY, MASSACHUSET",
+   "Massachusetts Institute of Technology"
+  ],
+  "additional_variants_unverified_background": [
+   "Children's Medical Center Corp co-assignments"
+  ]
+ },
+ {
+  "player": "Sirna / Merck & Co.",
+  "match_regex_case_insensitive": "sirna therapeutics|merck sharp",
+  "variants_observed_on_fetched_pages": [
+   "MERCK SHARP & DOHME CORP.",
+   "SIRNA THERAPEUTICS, INC.",
+   "Sirna Therapeutics Inc"
+  ],
+  "additional_variants_unverified_background": [
+   "Merck Sharp & Dohme LLC"
+  ]
+ },
+ {
+  "player": "UT Southwestern / ReCode",
+  "match_regex_case_insensitive": "university of texas",
+  "variants_observed_on_fetched_pages": [
+   "THE BOARD OF REGENTS OF THE UNIVERSITY OF TEXAS SYSTEM",
+   "The University of Texas System",
+   "The University of Texas at Austin"
+  ],
+  "additional_variants_unverified_background": [
+   "ReCode Therapeutics Inc"
+  ]
+ },
+ {
+  "player": "Polymun",
+  "match_regex_case_insensitive": "polymun",
+  "variants_observed_on_fetched_pages": [
+   "POLYMUN SCIENTIFIC IMMUNBIOLOGISCHE FORSCHUNG GMB",
+   "Polymun Scientific Immunbiologische Forschung GmbH"
+  ],
+  "additional_variants_unverified_background": []
+ },
+ {
+  "player": "Evonik",
+  "match_regex_case_insensitive": "evonik",
+  "variants_observed_on_fetched_pages": [
+   "EVONIK OPERATIONS GMBH",
+   "Evonik Operations GmbH"
+  ],
+  "additional_variants_unverified_background": [
+   "Evonik Roehm GmbH",
+   "Evonik Corporation",
+   "Evonik Canada Inc (former Transferra Nanosciences)"
+  ]
+ },
+ {
+  "player": "Merck KGaA",
+  "match_regex_case_insensitive": "merck patent|screenfect",
+  "variants_observed_on_fetched_pages": [
+   "Merck Patent GmbH",
+   "Screenfect GmbH"
+  ],
+  "additional_variants_unverified_background": [
+   "Merck KGaA",
+   "Sigma-Aldrich Co LLC",
+   "MilliporeSigma",
+   "Exelead Inc",
+   "AmpTec GmbH"
+  ]
+ },
+ {
+  "player": "eTheRNA",
+  "match_regex_case_insensitive": "etherna|vrije universiteit brussel|universiteit gent|ghent university",
+  "variants_observed_on_fetched_pages": [
+   "ETHERNA IMMUNOTHERAPIES NV",
+   "Etherna Immunotherapies NV",
+   "Ghent University",
+   "UNIVERSITEIT GENT",
+   "VRIJE UNIVERSITEIT BRUSSEL",
+   "Vrije Universiteit Brussel"
+  ],
+  "additional_variants_unverified_background": []
+ },
+ {
+  "player": "GreenLight",
+  "match_regex_case_insensitive": "greenlight",
+  "variants_observed_on_fetched_pages": [
+   "Greenlight Biosciences Inc"
+  ],
+  "additional_variants_unverified_background": []
+ },
+ {
+  "player": "Intellia",
+  "match_regex_case_insensitive": "intellia",
+  "variants_observed_on_fetched_pages": [
+   "INTELLIA THERAPEUTICS, INC.",
+   "Intellia Therapeutics Inc"
+  ],
+  "additional_variants_unverified_background": []
+ },
+ {
+  "player": "_noise_not_assignees",
+  "note": "Owner names from security-interest/licence events seen on pages; exclude from assignee filters",
+  "variants_observed_on_fetched_pages": [
+   "ARES CAPITAL CORPORATION, AS AGENT",
+   "BANK OF AMERICA, N.A., NORTH CAROLINA",
+   "NATIONAL INSTITUTES OF HEALTH (NIH), U.S. DEPT. OF",
+   "NATIONAL INSTITUTES OF HEALTH (NIH), U.S. DEPT. OF HEALTH AND HUMAN SERVICES (DHHS), U.S. GOVERNMENT, MARYLAND",
+   "SILICON VALLEY BANK"
+  ]
+ }
+]
