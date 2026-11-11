@@ -399,6 +399,14 @@ corpus snapshot they were built from (`counts.snapshot`, `counts.patents`) so th
 built from another corpus file. `pipeline/run_all.sh` runs the three steps (each only when its script exists) before
 `build_dist.py`.
 
+Assignee normalisation (`pipeline/lib/asg_norm.py`): a raw string may hold several `;`-separated parties (split before the
+first-owner and non-owner logic; `Surname; Given A.` stays one person); HTML entities are decoded; `X University` and
+`University of X` are one key only for the X listed in `university_prefix_merge` (Washington University and the University of
+Washington stay apart; DOCDB `UNIV X` = `University of X`); `raw_regex` aliases split a key that is too short (Merck & Co.
+vs Merck S.A.). `LnpTags` assignee facet values are `asg:<slug>` (slug of the canonical name), stable across rebuilds;
+`registerFacets` appends "(stale snapshot)" to the facet titles and sets `note` when `info().mismatch` is set. The vaccine
+tag is "Vaccine / infectious disease": any vaccine term or infectious-disease name, cancer vaccines included.
+
 ## Browser engines (all in `web/engine/`, plain scripts, ASCII only, no build step)
 
 Every engine works in three modes and picks the first that works: dedicated Worker from

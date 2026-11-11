@@ -1,0 +1,71 @@
+/* LNP Patent Desk: library screen view. Tokens come from index.html (:root), components from app.css / views.css. */
+.sc-page .sc-ta { min-height: 140px; resize: vertical; line-height: 1.5; font-size: 13px; }
+.sc-page .sc-ta[readonly] { opacity: .7; }
+.sc-opts { display: flex; flex-direction: column; gap: 10px; }
+.sc-bar { height: 4px; border-radius: 2px; background: var(--muted); overflow: hidden; max-width: 520px; }
+.sc-bar span { display: block; height: 100%; width: 0; background: var(--signal); transition: width .2s var(--ease); }
+.sc-prog { min-height: 20px; }
+.sc-pv { display: flex; flex-direction: column; gap: 8px; }
+.sc-pvt table td { vertical-align: middle; }
+.sc-pvt .k-mol { height: 48px; width: 100px; }
+.sc-pvt tr.sc-bad td { background: var(--crit-bg); }
+.sc-in, .sc-id { overflow-wrap: anywhere; max-width: 260px; }
+.sc-errs { list-style: disc; padding-left: 18px; font-size: 13px; color: var(--crit); display: flex; flex-direction: column; gap: 3px; overflow-wrap: anywhere; }
+.sc-actions { margin-left: auto; }
+.sc-tags { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.sc-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sc-table { font-size: 13px; }
+.sc-table td.num { text-align: right; width: 1%; white-space: nowrap; }
+.sc-table td { vertical-align: middle; }
+.sc-c0 { width: 1%; white-space: nowrap; }
+.sc-c0 .sc-exp { padding: 0 6px; }
+.sc-rn { color: var(--faint); margin-left: 4px; }
+.sc-ic-r { transform: rotate(180deg); } .sc-ic-d { transform: rotate(-90deg); }
+.sc-cmp { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sc-cmp .k-mol { width: 130px; height: 62px; flex: none; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.sc-cn { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sc-cname { font-weight: 500; overflow-wrap: anywhere; }
+.sc-smi { overflow-wrap: anywhere; max-width: 36ch; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-row[data-level="4"] td:first-child, .sc-row[data-level="3"] td:first-child { box-shadow: inset 2px 0 0 var(--crit); }
+.sc-row[data-level="2"] td:first-child { box-shadow: inset 2px 0 0 var(--warn); }
+.sc-invalid td { background: var(--surface); }
+.sc-detail-row > td { background: var(--surface); padding: 12px; }
+.sc-detail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sc-hits { display: flex; flex-direction: column; gap: 4px; }
+.sc-hitgrp { display: flex; gap: 4px 10px; align-items: baseline; flex-wrap: wrap; }
+.sc-hitgrp .k-filters-l { min-width: 90px; }
+.sc-hitlist { display: inline-flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.sc-hit { font-size: 12px; }
+.sc-pt { background: var(--bg); }
+.sc-mkbox { display: flex; flex-direction: column; gap: 6px; }
+a.pill.sc-mk { text-decoration: none; cursor: pointer; }
+a.pill.sc-mk:hover { text-decoration: underline; }
+.sc-saved { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.sc-saved li { display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; padding: 8px 12px; border-top: 1px solid var(--line); }
+.sc-saved li:first-child { border-top: 0; }
+.sc-sname { font-weight: 500; margin-right: auto; text-decoration: none; overflow-wrap: anywhere; }
+.sc-sname:hover { text-decoration: underline; text-decoration-color: var(--signal); }
+.sc-savedlg { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
+.sc-limits { margin-top: 18px; background: var(--surface); }
+
+@media (max-width: 760px) {
+  .sc-table, .sc-table tbody, .sc-table tr, .sc-table td, .sc-ptab, .sc-ptab tbody, .sc-ptab tr, .sc-ptab td { display: block; width: 100%; }
+  .sc-table thead, .sc-ptab thead { display: none; }
+  .sc-tw, .sc-pt { border: 0; overflow: visible; }
+  .sc-table tr.sc-row { border: 1px solid var(--line); border-radius: 10px; margin-top: 10px; padding: 6px 0; background: var(--bg); position: relative; }
+  .sc-table td, .sc-ptab td { border-top: 0; padding: 4px 12px; }
+  .sc-table td.num { text-align: left; width: 100%; }
+  .sc-table td[data-l]:not(.sc-c1):not(.sc-c0):not(.sc-flag)::before, .sc-ptab td[data-l]::before { content: attr(data-l); display: inline-block; min-width: 110px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  .sc-c0 { display: flex; align-items: center; justify-content: space-between; }
+  .sc-row[data-level="4"], .sc-row[data-level="3"] { box-shadow: inset 3px 0 0 var(--crit); }
+  .sc-row[data-level="2"] { box-shadow: inset 3px 0 0 var(--warn); }
+  .sc-table tr.sc-detail-row { border: 1px solid var(--line); border-radius: 10px; margin-top: -4px; padding: 0; }
+  .sc-detail-row > td { padding: 10px; }
+  .sc-ptab tr { border-top: 1px solid var(--line); padding: 6px 0; }
+  .sc-ptab tr:first-child { border-top: 0; }
+  .sc-cmp .k-mol { width: 110px; }
+  .sc-in, .sc-id { max-width: none; }
+  .sc-actions { margin-left: 0; }
+  .sc-pvt .table-wrap { overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .sc-bar span { transition: none; } }
