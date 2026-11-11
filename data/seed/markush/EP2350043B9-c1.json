@@ -1,0 +1,311 @@
+{
+ "v": "mk-1",
+ "pn": "EP2350043B9",
+ "claim": 1,
+ "lang": "en",
+ "created": "2026-11-11T00:00:00Z",
+ "updated": "2026-11-11T00:00:00Z",
+ "origin": "curated",
+ "reviewed": true,
+ "source": {
+  "images": [
+   "imgb0073"
+  ],
+  "textHash": null,
+  "claimText": "An amino lipid having the following structure (II): [chem] or salts thereof, wherein R1 and R2 are either the same or different and independently substituted C12-C24 alkyl, optionally substituted C12-C24 alkenyl, optionally substituted C12-C24 alkynyl, or optionally substituted C12-C24 acyl; R3 and R4 are either the same or different and independently optionally substituted C1-C6 alkyl, optionally substituted C1-C6 alkenyl, or optionally substituted C1-C6 alkynyl, or R3 and R4 may join to form an optionally substituted heterocyclic ring of 4 to 6 carbon atoms and 1 or 2 heteroatoms chosen from nitrogen and oxygen; R5 is either absent or is hydrogen or C1-C6 alkyl to provide a quaternary amine; m, n, and p are either the same or different and independently either 0 or 1 with the proviso that m, n, and p are not simultaneously 0; Y and Z are either the same or different and independently O, S, or NH."
+ },
+ "core": {
+  "smiles": "[*:5]N([*:3])([*:4])CCC1[*:10][*:11][*:12]C([*:1])([*:2])[*:13][*:14]1",
+  "note": "Structure (II): R3R4(R5)N-CH2CH2-CH< ring: CH-(CH2)n-Y-(CH2)p-C(R1)(R2)-(CH2)m-Z-CH. Read from a low-resolution image; claim 2 (DLin-K-C2-DMA, a compound of claim 1) confirms the reading n = 1, p = 0, m = 0."
+ },
+ "vars": [
+  {
+   "name": "R1",
+   "attach": [
+    1
+   ],
+   "kind": "substituent",
+   "quote": "R1 and R2 are either the same or different and independently substituted C12-C24 alkyl, optionally substituted C12-C24 alkenyl, optionally substituted C12-C24 alkynyl, or optionally substituted C12-C24 acyl",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 12,
+     "cMax": 24,
+     "substituted": true
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 12,
+     "cMax": 24,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": null
+    },
+    {
+     "type": "alkynyl",
+     "cMin": 12,
+     "cMax": 24,
+     "substituted": null
+    },
+    {
+     "type": "acyl",
+     "cMin": 12,
+     "cMax": 24,
+     "dblMax": 99,
+     "substituted": null
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R2",
+   "attach": [
+    2
+   ],
+   "kind": "substituent",
+   "quote": "R1 and R2 are either the same or different and independently substituted C12-C24 alkyl, optionally substituted C12-C24 alkenyl, optionally substituted C12-C24 alkynyl, or optionally substituted C12-C24 acyl",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 12,
+     "cMax": 24,
+     "substituted": true
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 12,
+     "cMax": 24,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": null
+    },
+    {
+     "type": "alkynyl",
+     "cMin": 12,
+     "cMax": 24,
+     "substituted": null
+    },
+    {
+     "type": "acyl",
+     "cMin": 12,
+     "cMax": 24,
+     "dblMax": 99,
+     "substituted": null
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R3",
+   "attach": [
+    3
+   ],
+   "kind": "substituent",
+   "quote": "R3 and R4 are either the same or different and independently optionally substituted C1-C6 alkyl, optionally substituted C1-C6 alkenyl, or optionally substituted C1-C6 alkynyl, or R3 and R4 may join to form an optionally substituted heterocyclic ring of 4 to 6 carbon atoms and 1 or 2 heteroatoms chosen from nitrogen and oxygen",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 6,
+     "substituted": null
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 1,
+     "cMax": 6,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": null
+    },
+    {
+     "type": "alkynyl",
+     "cMin": 1,
+     "cMax": 6,
+     "substituted": null
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R4",
+   "attach": [
+    4
+   ],
+   "kind": "substituent",
+   "quote": "R3 and R4 are either the same or different and independently optionally substituted C1-C6 alkyl, optionally substituted C1-C6 alkenyl, or optionally substituted C1-C6 alkynyl, or R3 and R4 may join to form an optionally substituted heterocyclic ring of 4 to 6 carbon atoms and 1 or 2 heteroatoms chosen from nitrogen and oxygen",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 6,
+     "substituted": null
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 1,
+     "cMax": 6,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": null
+    },
+    {
+     "type": "alkynyl",
+     "cMin": 1,
+     "cMax": 6,
+     "substituted": null
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R5",
+   "attach": [
+    5
+   ],
+   "kind": "substituent",
+   "optional": true,
+   "quote": "R5 is either absent or is hydrogen or C1-C6 alkyl to provide a quaternary amine",
+   "alts": [
+    {
+     "type": "H"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 6
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "n",
+   "attach": [
+    10
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 0,
+    "max": 1
+   },
+   "alts": [],
+   "quote": "m, n, and p are either the same or different and independently either 0 or 1 with the proviso that m, n, and p are not simultaneously 0",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "Y",
+   "attach": [
+    11
+   ],
+   "kind": "divalent",
+   "quote": "Y and Z are either the same or different and independently O, S, or NH",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*O*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*S*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*N*",
+     "note": "NH"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "p",
+   "attach": [
+    12
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 0,
+    "max": 1
+   },
+   "alts": [],
+   "quote": "m, n, and p are either the same or different and independently either 0 or 1 with the proviso that m, n, and p are not simultaneously 0",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "m",
+   "attach": [
+    13
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 0,
+    "max": 1
+   },
+   "alts": [],
+   "quote": "m, n, and p are either the same or different and independently either 0 or 1 with the proviso that m, n, and p are not simultaneously 0",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "Z",
+   "attach": [
+    14
+   ],
+   "kind": "divalent",
+   "quote": "Y and Z are either the same or different and independently O, S, or NH",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*O*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*S*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*N*",
+     "note": "NH"
+    }
+   ],
+   "quoteStatus": "ok"
+  }
+ ],
+ "provisos": [
+  {
+   "quote": "with the proviso that m, n, and p are not simultaneously 0",
+   "when": [
+    {
+     "var": "m",
+     "n": 0
+    },
+    {
+     "var": "n",
+     "n": 0
+    },
+    {
+     "var": "p",
+     "n": 0
+    }
+   ],
+   "effect": "exclude",
+   "quoteStatus": "ok"
+  }
+ ],
+ "unsupported": [
+  {
+   "text": "R3 and R4 may join to form an optionally substituted heterocyclic ring of 4 to 6 carbon atoms and 1 or 2 heteroatoms chosen from nitrogen and oxygen",
+   "vars": [
+    "R3",
+    "R4"
+   ],
+   "effect": "broadens"
+  }
+ ],
+ "ref": {
+  "name": "DLin-KC2-DMA",
+  "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCCC1(OC(CO1)CCN(C)C)CCCCCCCC/C=C\\C/C=C\\CCCCC",
+  "note": "n = 1, Y = O, p = 0, m = 0, Z = O, R1 = R2 = linoleyl (C18, 2 C=C), R3 = R4 = methyl, R5 absent"
+ },
+ "curator": "hand-read from the claim image and claim text (LNP Patent Desk seed)"
+}

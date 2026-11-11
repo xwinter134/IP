@@ -57,6 +57,10 @@ case "${1:-build}" in
     else
       echo "== chemistry: data/work/chem is up to date"
     fi
+    # extra datasets (xdata): each step is skipped when its script does not exist (yet)
+    for step in ranges_build tags_build markush_seed; do
+      if [ -f "pipeline/$step.py" ]; then stage "$step" $PY "pipeline/$step.py"; fi
+    done
     if [ "${ENC:-b64}" = "bin" ]; then
       stage "dist (raw binary, local only)" $PY pipeline/build_dist.py --enc bin --out data/dist-bin
     else

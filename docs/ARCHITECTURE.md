@@ -361,6 +361,44 @@ copies the `publish` files unchanged (base64 variant: `x.gz.bin` -> `x.gz.b64.tx
 stay JSON) and may set patent flag bit3 from `pat.gz.bin`. Current build: 84,691 compounds, 33,258 publications,
 1,061,376 links, 18.8 MB in 9 files (largest `fp.gz.bin` 10.2 MB).
 
+## Extra data (xdata)
+
+Optional datasets that a pipeline step (outside `build_dist.py`) writes next to the chemistry build and that engines
+`web/engine/x-*.js` read. `build_dist.py` knows nothing about their content, only about the directory layout.
+
+```
+data/work/xdata/<name>/xdata.json   {name, v, built, target: "both" | "pages", files: [names], files_pages?: [names], counts: {...}, notes}
+data/work/xdata/<name>/<file>       each listed file: *.gz.bin (gzip payload) or *.json; at most 3 files per dataset, names [a-z0-9._-]
+```
+
+`python3 -I pipeline/build_dist.py [--xdata-dir data/work/xdata] [--target artifact|pages]` copies every dataset to
+`dist/data/x/<name>/<file>`: `x.gz.bin` becomes `x.gz.b64.txt` with `--enc b64` and stays `x.gz.bin` with `--enc bin`,
+`*.json` is copied as it is. With the default `--target artifact` only datasets with `target: "both"` are used and only
+their `files`; `--target pages` (passed by `pipeline/build_pages.sh`) adds datasets with `target: "pages"` and the
+`files_pages` of every dataset (for example long quotes that do not fit the Artifact budget). The bytes of all xdata
+files (after base64) are counted with the fixed parts before the text budget is computed, so the text cut absorbs them,
+and are reported as `manifest.sizes.xdata`. Files count towards `manifest.files`, the publish batches (rank after the
+patent table, before the text index), the 500-file and the 15 MB-per-file limits; a missing listed file, an unreadable
+`xdata.json`, more than 3 files or a bad name stops the build.
+
+`manifest.x` exists only when at least one dataset was included:
+
+```
+"x": {"<name>": {"v": <xdata v>, "built": "<xdata built>", "files": {"<logical file name>": <bytes on disk>}, "counts": {...}}}
+```
+
+The file names in `files` are the logical names (`tags.gz.bin`), the sizes are those of the published files (base64
+included). Engines read `LnpData.manifest.x && LnpData.manifest.x[name]`; a missing entry means "not in this build" and
+the feature says so. They fetch with `LnpLoader.create({base: LnpData.base() + 'x/' + name + '/', enc: LnpData.manifest.enc})`
+and `get('<file>.gz.bin', {as: 'bin' | 'json'})`; the loader maps `.gz.bin` to `.gz.b64.txt` itself.
+
+Datasets so far (`docs/TOOLS_PLAN.md` 2.4, 2.5): `ranges` (`pipeline/ranges_build.py`), `markush` (`pipeline/markush_seed.py`) and
+`tags` (`pipeline/tags_build.py`: tags, legal bits and canonical assignee per patent index `p`, format `tg-1`, rules in
+`data/seed/tag_rules.json` and `data/seed/assignee_aliases.json`, engine `LnpTags`). Datasets indexed by `p` record the
+corpus snapshot they were built from (`counts.snapshot`, `counts.patents`) so that the engine can warn when the dist was
+built from another corpus file. `pipeline/run_all.sh` runs the three steps (each only when its script exists) before
+`build_dist.py`.
+
 ## Browser engines (all in `web/engine/`, plain scripts, ASCII only, no build step)
 
 Every engine works in three modes and picks the first that works: dedicated Worker from

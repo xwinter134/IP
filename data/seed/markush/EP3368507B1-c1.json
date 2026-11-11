@@ -1,0 +1,198 @@
+{
+ "v": "mk-1",
+ "pn": "EP3368507B1",
+ "claim": 1,
+ "lang": "en",
+ "created": "2026-11-11T00:00:00Z",
+ "updated": "2026-11-11T00:00:00Z",
+ "origin": "curated",
+ "reviewed": true,
+ "source": {
+  "images": [
+   "imgb0095"
+  ],
+  "textHash": null,
+  "claimText": "A compound having the following structure (IG): [chem] or a pharmaceutically acceptable salt or stereoisomer thereof, wherein: R1 and R2 are each independently C6-C24 alkyl or C6-C24 alkenyl; R3 is OR5, CN, -C(=O)OR4, -OC(=O)R4 or -NR5C(=O)R4; R4 is C1-C12 alkyl; R5 is H or C1-C6 alkyl; R6 is, at each occurrence, H; n is an integer ranging from 2 to 12; and y and z are each independently an integer ranging from 6 to 9."
+ },
+ "core": {
+  "smiles": "[*:1]C(=O)O[*:2]N([*:3][*:4])[*:5]OC(=O)[*:6]",
+  "note": "Structure (IG): R1-C(=O)O-(CH2)y-N[-(CHR6)n-R3]-(CH2)z-OC(=O)-R2. R6 is H at each occurrence, so the n unit is CH2. R3 is an expanded group because OR5 / C(=O)OR4 carry further variables."
+ },
+ "vars": [
+  {
+   "name": "R1",
+   "attach": [
+    1
+   ],
+   "kind": "substituent",
+   "quote": "R1 and R2 are each independently C6-C24 alkyl or C6-C24 alkenyl",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 6,
+     "cMax": 24
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 6,
+     "cMax": 24,
+     "dblMin": 1,
+     "dblMax": 99
+    }
+   ],
+   "note": "Alkyl / alkenyl substitution is defined in the description, not in the claim: chains with hetero atoms are reported unclear.",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "y",
+   "attach": [
+    2
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 6,
+    "max": 9
+   },
+   "alts": [],
+   "quote": "y and z are each independently an integer ranging from 6 to 9",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "n",
+   "attach": [
+    3
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 2,
+    "max": 12
+   },
+   "alts": [],
+   "quote": "n is an integer ranging from 2 to 12",
+   "note": "R6 is, at each occurrence, H: the repeat unit is CH2.",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R3",
+   "attach": [
+    4
+   ],
+   "kind": "divalent",
+   "quote": "R3 is OR5, CN, -C(=O)OR4, -OC(=O)R4 or -NR5C(=O)R4",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*O[*:10]",
+     "note": "OR5"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*C#N",
+     "note": "CN"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*C(=O)O[*:11]",
+     "note": "-C(=O)OR4"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*OC(=O)[*:12]",
+     "note": "-OC(=O)R4"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*N([*:13])C(=O)[*:14]",
+     "note": "-NR5C(=O)R4"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "z",
+   "attach": [
+    5
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 6,
+    "max": 9
+   },
+   "alts": [],
+   "quote": "y and z are each independently an integer ranging from 6 to 9",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R2",
+   "attach": [
+    6
+   ],
+   "kind": "substituent",
+   "quote": "R1 and R2 are each independently C6-C24 alkyl or C6-C24 alkenyl",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 6,
+     "cMax": 24
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 6,
+     "cMax": 24,
+     "dblMin": 1,
+     "dblMax": 99
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R4",
+   "attach": [
+    11,
+    12,
+    14
+   ],
+   "kind": "substituent",
+   "quote": "R4 is C1-C12 alkyl",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 12
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R5",
+   "attach": [
+    10,
+    13
+   ],
+   "kind": "substituent",
+   "quote": "R5 is H or C1-C6 alkyl",
+   "alts": [
+    {
+     "type": "H"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 6
+    }
+   ],
+   "quoteStatus": "ok"
+  }
+ ],
+ "provisos": [],
+ "unsupported": [],
+ "ref": {
+  "name": "ALC-0315",
+  "smiles": "CCCCCCCCC(CCCCCC)C(=O)OCCCCCCN(CCCCCCOC(=O)C(CCCCCC)CCCCCCCC)CCCCO",
+  "note": "y = z = 6, n = 4, R3 = OH (OR5 with R5 = H), R1 = R2 = pentadecan-7-yl (C15 branched; the ester acyl is 2-hexyldecanoyl)"
+ },
+ "curator": "hand-read from the claim image and claim text (LNP Patent Desk seed)"
+}

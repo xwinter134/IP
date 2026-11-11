@@ -1,0 +1,285 @@
+{
+ "v": "mk-1",
+ "pn": "EP3350157B1",
+ "claim": 1,
+ "lang": "en",
+ "created": "2026-11-11T00:00:00Z",
+ "updated": "2026-11-11T00:00:00Z",
+ "origin": "curated",
+ "reviewed": true,
+ "source": {
+  "images": [
+   "imgb0491"
+  ],
+  "textHash": null,
+  "claimText": "A compound of Formula (IA): [chem] or a salt thereof, wherein l is selected from 1, 2, 3, 4, and 5; m is selected from 5, 6, 7, 8, and 9; M1 is a bond or M'; M and M' are independently selected from -C(O)O-, -OC(O)-, -C(O)N(R')-, -P(O)(OR')O-, -S-S-, an aryl group, and a heteroaryl group; each R' is linear C1-18 alkyl; R4 is -(CH2)nQ, in which Q is OH or -OC(O)N(R)2, and n is selected from 1, 2, 3, 4, and 5; each R is independently selected from the group consisting of C1-3 alkyl, C2-3 alkenyl, and H; and R2 and R3 are independently selected from the group consisting of H, C1-14 alkyl, and C2-14 alkenyl."
+ },
+ "core": {
+  "smiles": "N(CC[*:1][*:2][*:3])([*:4][*:5]C([*:6])[*:7])[*:8][*:9]",
+  "note": "Formula (IA). Upper arm N-CH2-CH2-(CH2)l-M1-R'; lower arm N-(CH2)m-M-CH(R2)(R3); R4 = -(CH2)nQ written as repeat n + group Q. The bracketed CH2 of each arm is the repeat unit as drawn."
+ },
+ "vars": [
+  {
+   "name": "l",
+   "attach": [
+    1
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 1,
+    "max": 5
+   },
+   "alts": [],
+   "quote": "l is selected from 1, 2, 3, 4, and 5",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "M1",
+   "attach": [
+    2
+   ],
+   "kind": "divalent",
+   "quote": "M1 is a bond or M'; M and M' are independently selected from -C(O)O-, -OC(O)-, -C(O)N(R')-, -P(O)(OR')O-, -S-S-, an aryl group, and a heteroaryl group",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "**",
+     "note": "a bond"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*C(=O)O*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*OC(=O)*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*C(=O)N([*:12])*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*P(=O)(O[*:13])O*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*SS*"
+    },
+    {
+     "type": "aryl",
+     "note": "arylene, substitution not stated"
+    },
+    {
+     "type": "heteroaryl",
+     "note": "heteroarylene"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R'",
+   "attach": [
+    3,
+    12,
+    13,
+    14,
+    15
+   ],
+   "kind": "substituent",
+   "quote": "each R' is linear C1-18 alkyl",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 18,
+     "branched": false,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "m",
+   "attach": [
+    4
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 5,
+    "max": 9
+   },
+   "alts": [],
+   "quote": "m is selected from 5, 6, 7, 8, and 9",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "M",
+   "attach": [
+    5
+   ],
+   "kind": "divalent",
+   "quote": "M and M' are independently selected from -C(O)O-, -OC(O)-, -C(O)N(R')-, -P(O)(OR')O-, -S-S-, an aryl group, and a heteroaryl group",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*C(=O)O*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*OC(=O)*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*C(=O)N([*:14])*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*P(=O)(O[*:15])O*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*SS*"
+    },
+    {
+     "type": "aryl"
+    },
+    {
+     "type": "heteroaryl"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R2",
+   "attach": [
+    6
+   ],
+   "kind": "substituent",
+   "quote": "R2 and R3 are independently selected from the group consisting of H, C1-14 alkyl, and C2-14 alkenyl",
+   "alts": [
+    {
+     "type": "H"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 14,
+     "substituted": false
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 2,
+     "cMax": 14,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R3",
+   "attach": [
+    7
+   ],
+   "kind": "substituent",
+   "quote": "R2 and R3 are independently selected from the group consisting of H, C1-14 alkyl, and C2-14 alkenyl",
+   "alts": [
+    {
+     "type": "H"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 14,
+     "substituted": false
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 2,
+     "cMax": 14,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "n",
+   "attach": [
+    8
+   ],
+   "kind": "repeat",
+   "unit": "C",
+   "range": {
+    "min": 1,
+    "max": 5
+   },
+   "alts": [],
+   "quote": "R4 is -(CH2)nQ, in which Q is OH or -OC(O)N(R)2, and n is selected from 1, 2, 3, 4, and 5",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "Q",
+   "attach": [
+    9
+   ],
+   "kind": "divalent",
+   "quote": "R4 is -(CH2)nQ, in which Q is OH or -OC(O)N(R)2, and n is selected from 1, 2, 3, 4, and 5",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*O",
+     "note": "OH"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*OC(=O)N([*:10])[*:11]",
+     "note": "-OC(O)N(R)2"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R",
+   "attach": [
+    10,
+    11
+   ],
+   "kind": "substituent",
+   "quote": "each R is independently selected from the group consisting of C1-3 alkyl, C2-3 alkenyl, and H",
+   "alts": [
+    {
+     "type": "H"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 3,
+     "substituted": false
+    },
+    {
+     "type": "alkenyl",
+     "cMin": 2,
+     "cMax": 3,
+     "dblMin": 1,
+     "dblMax": 99,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  }
+ ],
+ "provisos": [],
+ "unsupported": [],
+ "ref": {
+  "name": "SM-102",
+  "smiles": "CCCCCCCCCCCOC(=O)CCCCCN(CCCCCCCC(=O)OC(CCCCCCCC)CCCCCCCC)CCO",
+  "note": "l = 3, M1 = M' = -C(O)O-, R' = n-undecyl, m = 7, M = -C(O)O-, R2 = R3 = n-octyl, n = 2, Q = OH"
+ },
+ "curator": "hand-read from the claim image and claim text (LNP Patent Desk seed)"
+}

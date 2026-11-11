@@ -1,0 +1,612 @@
+{
+ "v": 1,
+ "notes": "Assignee normalisation data for pipeline/lib/asg_norm.py. aliases: first match wins; 'keys' are exact normalised keys, 'regex' is applied to the normalised key (lower case, no punctuation, 'of/the' dropped, 'University of X' = 'university x'). non_owner: regexes on the lower-cased raw string for banks, security agents and law firms (never an owner). Seeded from the 300 most frequent raw assignee strings of data/work/targets.parquet and from data/seed/assignee_variants.json (players); display names of other organisations are the most frequent mixed-case spelling. owner_override: regexes that cancel a non_owner hit (e.g. 'South Bank University').",
+ "non_owner": [
+  "\\bbank\\b",
+  "\\bbanque\\b",
+  "\\bas (?:collateral |security |administrative |notes |lender )?(?:agent|trustee)\\b",
+  "\\b(?:collateral|administrative|security) (?:agent|trustee)\\b",
+  "\\[collateral agent\\]",
+  "\\bcapital (?:corp|finance|management|one)",
+  "\\bfleet capital\\b",
+  "\\bwells fargo\\b",
+  "\\bmorgan stanley\\b",
+  "\\bjpmorgan\\b",
+  "\\bcitibank\\b",
+  "\\bcredit suisse\\b",
+  "\\bgoldman sachs\\b",
+  "\\bbarclays\\b",
+  "\\bhsbc\\b",
+  "\\boxford finance\\b",
+  "\\bsixth street\\b",
+  "\\borbimed royalty\\b",
+  "\\bhercules (?:technology|capital)\\b",
+  "\\bbiopharma credit\\b",
+  "\\bmidcap financial\\b",
+  "\\bwilmington trust\\b",
+  "\\bableco\\b",
+  "\\broyalty (?:&|and|&amp;) credit\\b",
+  "\\bpatentanw\\w*",
+  "\\brechtsanw\\w*",
+  "\\blaw (?:firm|offices?|group)\\b",
+  "\\battorneys?\\b",
+  "\\bfoley hoag\\b",
+  "\\b(?:finance|financial|lending|royalt(?:y|ies)|venture lending)\\b.{0,40}\\b(?:fund|corp|corporation|llc|lp|l\\.p\\.|inc|ltd|llp|partners|trust)\\b",
+  "\\b(?:lending|royalty|credit|milestones?) (?:fund|funds|partners|opportunit\\w*)\\b",
+  "\\broyalt(?:y|ies) (?:&|and|&amp;)? ?milestones?\\b",
+  "\\b(?:technology|life sciences|healthcare) (?:finance|lending)\\b",
+  "\\binnovatus\\b",
+  "\\b(?:halter|calfee)\\b.*\\bllp\\b",
+  "\\b[a-z][a-z&.,' -]{2,60}\\bllp\\s*$"
+ ],
+ "owner_override": [
+  "\\bsouth bank university\\b",
+  "\\bwellcome trust\\b"
+ ],
+ "aliases": [
+  {
+   "name": "ModernaTX",
+   "keys": [],
+   "regex": [
+    "^moderna",
+    "^mordernatx"
+   ]
+  },
+  {
+   "name": "Alnylam Pharmaceuticals",
+   "keys": [],
+   "regex": [
+    "^alnylam"
+   ]
+  },
+  {
+   "name": "Arbutus Biopharma (incl. Protiva, Tekmira, Inex)",
+   "keys": [],
+   "regex": [
+    "^(arbutus|protiva|protivia|tekmira|inex)\\b"
+   ]
+  },
+  {
+   "name": "Genevant Sciences",
+   "keys": [],
+   "regex": [
+    "^genevant"
+   ]
+  },
+  {
+   "name": "Acuitas Therapeutics",
+   "keys": [],
+   "regex": [
+    "^acuitas"
+   ]
+  },
+  {
+   "name": "BioNTech",
+   "keys": [],
+   "regex": [
+    "^biontech"
+   ]
+  },
+  {
+   "name": "TRON (Translationale Onkologie, Mainz)",
+   "keys": [],
+   "regex": [
+    "^tron\\b",
+    "^translationale onkologie"
+   ]
+  },
+  {
+   "name": "CureVac",
+   "keys": [],
+   "regex": [
+    "^cure ?vac"
+   ]
+  },
+  {
+   "name": "Translate Bio (incl. Rana)",
+   "keys": [],
+   "regex": [
+    "^translate bio",
+    "^rana\\b"
+   ]
+  },
+  {
+   "name": "Shire Human Genetic Therapies",
+   "keys": [],
+   "regex": [
+    "^shire human genetic"
+   ]
+  },
+  {
+   "name": "Sanofi",
+   "keys": [],
+   "regex": [
+    "^sanofi"
+   ]
+  },
+  {
+   "name": "Precision NanoSystems",
+   "keys": [],
+   "regex": [
+    "^precision nanosystems",
+    "^global life sciences solutions canada"
+   ]
+  },
+  {
+   "name": "University of British Columbia",
+   "keys": [],
+   "regex": [
+    "^university british columbia$"
+   ]
+  },
+  {
+   "name": "Arcturus Therapeutics",
+   "keys": [],
+   "regex": [
+    "^arcturus"
+   ]
+  },
+  {
+   "name": "Novartis Vaccines and Diagnostics",
+   "keys": [],
+   "regex": [
+    "^novartis vaccines"
+   ]
+  },
+  {
+   "name": "GlaxoSmithKline",
+   "keys": [],
+   "regex": [
+    "^glaxo"
+   ]
+  },
+  {
+   "name": "Novartis",
+   "keys": [],
+   "regex": [
+    "^(novartis|novarits)\\b"
+   ]
+  },
+  {
+   "name": "Massachusetts Institute of Technology",
+   "keys": [],
+   "regex": [
+    "^massachusetts institute technology$"
+   ]
+  },
+  {
+   "name": "Sirna Therapeutics",
+   "keys": [],
+   "regex": [
+    "^sirna\\b"
+   ]
+  },
+  {
+   "name": "Merck & Co. (MSD)",
+   "keys": [],
+   "regex": [
+    "^merck sharp dohme$"
+   ],
+   "raw_regex": [
+    "^merck\\s*(?:&|and)\\s*co\\b",
+    "^merck,? (?:inc|corp)\\b",
+    "^merck$"
+   ]
+  },
+  {
+   "name": "Merck KGaA",
+   "keys": [],
+   "regex": [
+    "^merck (patent|kgaa|kommanditgesellschaft|sa$|s a$)",
+    "^merck sa",
+    "^screenfect"
+   ]
+  },
+  {
+   "name": "UT Southwestern Medical Center",
+   "keys": [],
+   "regex": [
+    "^university texas southwestern"
+   ]
+  },
+  {
+   "name": "University of Texas System",
+   "keys": [],
+   "regex": [
+    "^university texas$"
+   ]
+  },
+  {
+   "name": "ReCode Therapeutics",
+   "keys": [],
+   "regex": [
+    "^recode\\b"
+   ]
+  },
+  {
+   "name": "Polymun Scientific",
+   "keys": [],
+   "regex": [
+    "^polymun"
+   ]
+  },
+  {
+   "name": "Evonik",
+   "keys": [],
+   "regex": [
+    "^evonik"
+   ]
+  },
+  {
+   "name": "eTheRNA",
+   "keys": [],
+   "regex": [
+    "^etherna"
+   ]
+  },
+  {
+   "name": "GreenLight Biosciences",
+   "keys": [],
+   "regex": [
+    "^greenlight"
+   ]
+  },
+  {
+   "name": "Intellia Therapeutics",
+   "keys": [],
+   "regex": [
+    "^intellia"
+   ]
+  },
+  {
+   "name": "US Government (HHS / NIH)",
+   "keys": [],
+   "regex": [
+    "^(national institutes health|us health)\\b",
+    "^(government )?united states america .*(health|hhs)",
+    "^us dept health"
+   ]
+  },
+  {
+   "name": "University of California",
+   "keys": [],
+   "regex": [
+    "^university california$"
+   ]
+  },
+  {
+   "name": "University of Pennsylvania",
+   "keys": [],
+   "regex": [
+    "^university pennsylvania$"
+   ]
+  },
+  {
+   "name": "Johns Hopkins University",
+   "keys": [],
+   "regex": [
+    "^university (?:the )?johns? hopkins$"
+   ]
+  },
+  {
+   "name": "Northwestern University",
+   "keys": [],
+   "regex": [
+    "^university northwestern$"
+   ]
+  },
+  {
+   "name": "Yale University",
+   "keys": [],
+   "regex": [
+    "^university yale$"
+   ]
+  },
+  {
+   "name": "Stanford University",
+   "keys": [],
+   "regex": [
+    "^university leland stanford junior$"
+   ]
+  },
+  {
+   "name": "Harvard University",
+   "keys": [],
+   "regex": [
+    "^harvard college$",
+    "^university harvard$"
+   ]
+  },
+  {
+   "name": "CNRS (Centre National de la Recherche Scientifique)",
+   "keys": [],
+   "regex": [
+    "^center national recherche scientifique"
+   ]
+  },
+  {
+   "name": "INSERM (Institut National de la Sante et de la Recherche Medicale)",
+   "keys": [],
+   "regex": [
+    "^inserm",
+    "^institut(e)? national sante recherche medical"
+   ]
+  },
+  {
+   "name": "Brigham and Women's Hospital",
+   "keys": [],
+   "regex": [
+    "^brigham women s hospital",
+    "^brigham womens hospital"
+   ]
+  },
+  {
+   "name": "The General Hospital Corporation (Massachusetts General)",
+   "keys": [],
+   "regex": [
+    "^(massachusetts gen hospital|general hospital)$"
+   ]
+  },
+  {
+   "name": "Children's Medical Center Corporation (Boston Children's)",
+   "keys": [],
+   "regex": [
+    "^childrens? (s )?medical center"
+   ]
+  },
+  {
+   "name": "Takeda",
+   "keys": [],
+   "regex": [
+    "^takeda"
+   ]
+  },
+  {
+   "name": "BASF",
+   "keys": [],
+   "regex": [
+    "^basf"
+   ]
+  },
+  {
+   "name": "L'Oreal",
+   "keys": [],
+   "regex": [
+    "^l oreal",
+    "^oreal"
+   ]
+  },
+  {
+   "name": "L.E.A.F. Holdings Group",
+   "keys": [],
+   "regex": [
+    "^(leaf|l e a f|l e f)\\b"
+   ]
+  },
+  {
+   "name": "Flagship Pioneering",
+   "keys": [],
+   "regex": [
+    "^flagship pioneering"
+   ]
+  },
+  {
+   "name": "Yissum Research Development (Hebrew University)",
+   "keys": [],
+   "regex": [
+    "^yissum"
+   ]
+  },
+  {
+   "name": "Theravance",
+   "keys": [],
+   "regex": [
+    "^theravance"
+   ]
+  },
+  {
+   "name": "Nektar Therapeutics",
+   "keys": [],
+   "regex": [
+    "^nektar"
+   ]
+  },
+  {
+   "name": "Max Planck Society",
+   "keys": [],
+   "regex": [
+    "^max planck gesellschaft"
+   ]
+  },
+  {
+   "name": "Boehringer Ingelheim",
+   "keys": [],
+   "regex": [
+    "^boehringer ingelheim"
+   ]
+  },
+  {
+   "name": "Bayer",
+   "keys": [],
+   "regex": [
+    "^bayer"
+   ]
+  },
+  {
+   "name": "F. Hoffmann-La Roche",
+   "keys": [],
+   "regex": [
+    "^(f )?hoffmann la roche",
+    "^roche\\b"
+   ]
+  },
+  {
+   "name": "Elan",
+   "keys": [],
+   "regex": [
+    "^elan\\b"
+   ]
+  },
+  {
+   "name": "Ionis Pharmaceuticals (incl. Isis)",
+   "keys": [],
+   "regex": [
+    "^(ionis|isis)$"
+   ]
+  },
+  {
+   "name": "Alkermes",
+   "keys": [],
+   "regex": [
+    "^alkermes"
+   ]
+  },
+  {
+   "name": "Baxter",
+   "keys": [],
+   "regex": [
+    "^baxter"
+   ]
+  },
+  {
+   "name": "Eisai",
+   "keys": [],
+   "regex": [
+    "^eisai"
+   ]
+  },
+  {
+   "name": "Pfizer",
+   "keys": [],
+   "regex": [
+    "^pfizer"
+   ]
+  }
+ ],
+ "university_prefix_merge": [
+  "aarhus",
+  "arizona state",
+  "auburn",
+  "bar ilan",
+  "baylor",
+  "ben gurion",
+  "boston",
+  "brandeis",
+  "brigham young",
+  "brown",
+  "carnegie mellon",
+  "case western reserve",
+  "central south",
+  "chang gung",
+  "chiba",
+  "clemson",
+  "colorado state",
+  "columbia",
+  "cornell",
+  "creighton",
+  "curtin",
+  "dalhousie",
+  "deakin",
+  "drexel",
+  "duke",
+  "emory",
+  "flinders",
+  "florida state",
+  "fordham",
+  "fudan",
+  "georgetown",
+  "gifu",
+  "griffith",
+  "hiroshima",
+  "hokkaido",
+  "howard",
+  "hunan",
+  "imam abdulrahman bin faisal",
+  "iowa state",
+  "jilin",
+  "john hopkins",
+  "johns hopkins",
+  "juntendo",
+  "kansas state",
+  "keio",
+  "kobe",
+  "korea",
+  "kyoto",
+  "kyushu",
+  "laval",
+  "lehigh",
+  "leland stanford junior",
+  "louisiana state",
+  "loyola",
+  "lund",
+  "macquarie",
+  "marquette",
+  "mcmaster",
+  "michigan state",
+  "mie",
+  "monash",
+  "nagoya",
+  "nanjing",
+  "nankai",
+  "nanyang technological",
+  "national cheng kung",
+  "national taiwan",
+  "national yang ming",
+  "new york",
+  "newcastle",
+  "nihon",
+  "north carolina state",
+  "northeastern",
+  "northwestern",
+  "ohio state",
+  "okayama",
+  "oklahoma state",
+  "oregon health science",
+  "oregon state",
+  "osaka",
+  "ottawa",
+  "peking",
+  "pennsylvania state",
+  "princeton",
+  "purdue",
+  "queens",
+  "rice",
+  "rockefeller",
+  "rush",
+  "rutgers",
+  "sapporo medical",
+  "seoul national",
+  "shandong",
+  "shanghai jiao tong",
+  "sichuan",
+  "southeast",
+  "sun yat sen",
+  "syracuse",
+  "tel aviv",
+  "temple",
+  "texas tech",
+  "thomas jefferson",
+  "tianjin",
+  "tohoku",
+  "tongji",
+  "toronto metropolitan",
+  "tsinghua",
+  "tufts",
+  "tulane",
+  "uppsala",
+  "utah state",
+  "vanderbilt",
+  "villanova",
+  "virginia commonwealth",
+  "wake forest",
+  "waseda",
+  "washington state",
+  "wayne state",
+  "western",
+  "wuhan",
+  "xiamen",
+  "yale",
+  "yonsei",
+  "zhejiang"
+ ]
+}

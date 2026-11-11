@@ -306,6 +306,9 @@
           h('p.k-hint', { text: 'Order: matches in claims first, then granted rights still in force, then later expiry. Expiry is an estimate.' }),
           h('div.table-wrap', null, h('table.data', null, h('thead', null, h('tr', null, ['', 'Number', 'Location', 'Title', 'Legal status', 'Expiry'].map(function (t) { return h('th', { text: t }); }))), tb)),
           list.length > cap ? h('p.k-hint', { text: 'Showing ' + cap + ' of ' + U.num(list.length) + ' publications.' }) : null);
+        // extension hook (LnpApp.ext.compoundAction): extra nodes in the button row of the dialog
+        var xr = body.querySelector('.k-cdlg-top .k-row');
+        if (xr && App.ext) App.ext.nodes('compoundAction', x, { App: App, route: App.route || route, lang: 'en' }).forEach(function (n) { xr.appendChild(n); });
         upd();
       }).catch(function (e) { if (!dead && dlgFor === my) U.set(body, K.errBox(e)); });
     }

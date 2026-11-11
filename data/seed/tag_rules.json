@@ -1,0 +1,1040 @@
+{
+ "v": "tr-1",
+ "notes": "Rule data for pipeline/tags_build.py (format tg-1, docs/TOOLS_PLAN.md 2.5). tags[]: id, group, label; en / de: regexes on lower-cased text (de is used in addition to en for German text); cpc: prefixes of CPC codes without spaces; compound: condition on the compounds that the chemistry build (data/work/chem) links to the patent: where = places of the link (clm claims, abs abstract, ttl title, desc description), min = number of compounds, head = allowed head classes, cols = {descriptor column: {min, max}}, anyCols = at least one of these columns >= 1; claimsOnly: the text regexes are used on claims only. A tag is set when any regex of any source, any CPC prefix or the compound condition hits; the 'from claims' bit is set when the claims or a claim compound hit. Sources: claims (English; German when there are no English claims), title, abstract. Rules are data: other fields (pharma) only need new rule files.",
+ "groups": [
+  {
+   "id": "payload",
+   "label": "Payload"
+  },
+  {
+   "id": "route",
+   "label": "Route of administration"
+  },
+  {
+   "id": "lipid",
+   "label": "Lipid class"
+  },
+  {
+   "id": "use",
+   "label": "Use"
+  },
+  {
+   "id": "process",
+   "label": "Process / formulation"
+  }
+ ],
+ "tags": [
+  {
+   "id": "mrna",
+   "group": "payload",
+   "label": "mRNA",
+   "en": [
+    "\\bmrnas?\\b.{0,40}(?:encod|open reading frame|\\borf\\b|translat|5'? ?utr|3'? ?utr|poly\\(?a\\)?|cap\\b|capped|modified|nucleoside|vaccine|therapeutic|molecule|lnp|lipid nanoparticle|formulat)",
+    "(?:encod\\w*|translat\\w*|express\\w*|vaccine|lnp|lipid nanoparticles?|nucleoside-modified|modified|synthetic|in vitro transcribed|ivt|therapeutic|self-amplifying).{0,40}\\bmrnas?\\b",
+    "messenger[- ]?(?:ribonucleic acid|rna)",
+    "\\bmodrna\\b",
+    "\\bmrna[- ](?:lnp|vaccine|therapeutic|formulation|encoding|cargo|payload)"
+   ],
+   "de": [
+    "boten-?rna",
+    "messenger-?rna",
+    "\\bmrna\\b"
+   ],
+   "note": "a bare 'mRNA' in an siRNA claim ('targets an mRNA') is not enough; the pattern needs an mRNA-as-product context"
+  },
+  {
+   "id": "sarna",
+   "group": "payload",
+   "label": "Self-amplifying RNA (saRNA)",
+   "en": [
+    "self[- ]?amplifying",
+    "\\breplicons?\\b",
+    "\\bsarna\\b",
+    "\\bsa-?mrna\\b",
+    "alphavirus (?:rna|replicon|vector)",
+    "trans-?amplifying",
+    "replicase"
+   ]
+  },
+  {
+   "id": "circrna",
+   "group": "payload",
+   "label": "Circular RNA",
+   "en": [
+    "circular rna",
+    "\\bcircrna\\b",
+    "circularized rna",
+    "circular polyribonucleotide",
+    "covalently closed (?:circular )?rna",
+    "\\boligoribonucleotide.{0,30}circular"
+   ],
+   "de": [
+    "zirkul\\w+ rna",
+    "ringf\\w+ rna"
+   ]
+  },
+  {
+   "id": "sirna",
+   "group": "payload",
+   "label": "siRNA / miRNA / RNAi",
+   "en": [
+    "\\bsirnas?\\b",
+    "small interfering",
+    "short interfering",
+    "\\brnai\\b",
+    "rna interference",
+    "\\bmirnas?\\b",
+    "micro-?rnas?\\b",
+    "\\bshrnas?\\b",
+    "small hairpin",
+    "dicer[- ]substrate",
+    "antagomir",
+    "\\bsaRNAi\\b"
+   ],
+   "de": [
+    "rna-interferenz",
+    "interferierende\\w* rna"
+   ],
+   "cpc": [
+    "C12N2310/14"
+   ]
+  },
+  {
+   "id": "aso",
+   "group": "payload",
+   "label": "Antisense oligonucleotide (ASO)",
+   "en": [
+    "antisense(?! strand| sequence| region| sirna)",
+    "\\basos?\\b",
+    "gapmers?",
+    "splice[- ]switching",
+    "phosphorodiamidate morpholino|morpholino (?:oligo\\w*|antisense)",
+    "phosphorothioate (?:oligo\\w*|backbone|internucleo\\w*|modif\\w*)",
+    "\\bpmo\\b"
+   ],
+   "de": [
+    "antisense(?!-?strang)"
+   ],
+   "cpc": [
+    "C12N2310/11",
+    "C12N2310/315",
+    "C12N2310/321"
+   ]
+  },
+  {
+   "id": "dna",
+   "group": "payload",
+   "label": "DNA / plasmid",
+   "en": [
+    "plasmid",
+    "\\bpdna\\b",
+    "minicircle",
+    "doggybone",
+    "\\bdna (?:vaccine|vector|construct|molecule)",
+    "dna encoding",
+    "expression (?:vector|cassette)",
+    "closed[- ]ended dna",
+    "\\bgene therapy vector",
+    "viral vector"
+   ],
+   "de": [
+    "plasmid",
+    "dna-impfstoff",
+    "expressionsvektor"
+   ]
+  },
+  {
+   "id": "crispr",
+   "group": "payload",
+   "label": "CRISPR / gene editing",
+   "en": [
+    "crispr",
+    "\\bcas ?9\\b",
+    "\\bcas12\\w*",
+    "\\bcas13\\w*",
+    "guide rna",
+    "\\bgrna\\b",
+    "\\bsgrna\\b",
+    "base[- ]edit\\w*",
+    "prime[- ]edit\\w*",
+    "zinc[- ]finger nuclease",
+    "\\btalens?\\b",
+    "meganuclease",
+    "genome[- ]edit\\w*",
+    "gene[- ]edit\\w*",
+    "\\bcpf1\\b",
+    "transposase",
+    "recombinase",
+    "homology[- ]directed",
+    "\\bgene knock-?(?:out|in)\\b"
+   ],
+   "de": [
+    "genom-?editier\\w*",
+    "genom-?editing",
+    "gen-?editier\\w*",
+    "crispr",
+    "zinkfinger"
+   ],
+   "cpc": [
+    "C12N15/90",
+    "C12N9/22",
+    "C12N2310/20"
+   ]
+  },
+  {
+   "id": "protein",
+   "group": "payload",
+   "label": "Protein / peptide",
+   "en": [
+    "(?:encapsulat\\w*|load\\w*|entrap\\w*|deliver\\w*|incorporat\\w*|complex\\w*).{0,50}\\b(?:proteins?|peptides?|antibod\\w+|enzymes?|insulin|polypeptides?|ribonucleoprotein)\\b",
+    "\\b(?:protein|peptide|antibody|polypeptide)(?:s)? (?:drug|therapeutic|cargo|payload|conjugate|delivery)",
+    "\\bribonucleoproteins?\\b",
+    "\\brnp\\b",
+    "\\binsulin\\b",
+    "\\bglp-?1\\b",
+    "\\bpeptide drug"
+   ],
+   "de": [
+    "protein\\w* (?:wirkstoff|beladen)",
+    "peptid\\w*wirkstoff"
+   ],
+   "claimsOnly": true
+  },
+  {
+   "id": "smallmol",
+   "group": "payload",
+   "label": "Small molecule drug",
+   "en": [
+    "small[- ]molecule",
+    "chemotherap\\w+",
+    "doxorubicin",
+    "paclitaxel",
+    "\\btaxane",
+    "cisplatin",
+    "irinotecan",
+    "vincristine",
+    "vinorelbine",
+    "amphotericin",
+    "camptothecin",
+    "cytotoxic (?:agent|drug)",
+    "anti-?cancer (?:agent|drug)",
+    "hydrophobic drug",
+    "poorly (?:water[- ])?soluble drug",
+    "encapsulated (?:drug|agent|active)",
+    "\\bcurcumin",
+    "cannabi\\w+",
+    "\\bbupivacaine"
+   ],
+   "de": [
+    "zytostatik\\w*",
+    "kleinmolek\\w+",
+    "chemotherap\\w+"
+   ]
+  },
+  {
+   "id": "im",
+   "group": "route",
+   "label": "Intramuscular",
+   "en": [
+    "intramuscular\\w*",
+    "intra-muscular",
+    "\\bi\\.m\\.",
+    "intramuscularly"
+   ],
+   "de": [
+    "intramuskul\\w+"
+   ]
+  },
+  {
+   "id": "iv",
+   "group": "route",
+   "label": "Intravenous",
+   "en": [
+    "intravenous\\w*",
+    "intra-venous",
+    "\\bi\\.v\\.",
+    "intravenously",
+    "infus(?:ed|ion) into (?:a |the )?(?:vein|blood)"
+   ],
+   "de": [
+    "intraven\\w+"
+   ]
+  },
+  {
+   "id": "sc",
+   "group": "route",
+   "label": "Subcutaneous",
+   "en": [
+    "subcutaneous\\w*",
+    "sub-cutaneous",
+    "\\bs\\.c\\.",
+    "subcutaneously"
+   ],
+   "de": [
+    "subkutan\\w*"
+   ]
+  },
+  {
+   "id": "inh",
+   "group": "route",
+   "label": "Intranasal / inhaled",
+   "en": [
+    "intranasal\\w*",
+    "nasal(?:ly)? (?:administ|deliver|spray|formulation|mucos)",
+    "\\binhal\\w+",
+    "pulmonary (?:deliver|administ)",
+    "aerosoli[sz]\\w*|aerosol (?:deliver|administ|formulation|particle)|inhalable aerosol",
+    "nebuli[sz]\\w*",
+    "intratracheal",
+    "intrapulmonary",
+    "respiratory (?:tract|delivery)",
+    "\\bdry powder inhaler"
+   ],
+   "de": [
+    "intranasal\\w*",
+    "inhalativ\\w*",
+    "nasal\\w* verabreich"
+   ],
+   "cpc": [
+    "A61K9/0043",
+    "A61K9/007"
+   ]
+  },
+  {
+   "id": "it",
+   "group": "route",
+   "label": "Intratumoral",
+   "en": [
+    "intratumou?ral\\w*",
+    "intra-tumou?ral",
+    "peritumou?ral",
+    "injected? (?:directly )?into (?:a |the )?tumou?rs?"
+   ],
+   "de": [
+    "intratumoral\\w*",
+    "intratumor\\w*"
+   ]
+  },
+  {
+   "id": "oc",
+   "group": "route",
+   "label": "Ocular",
+   "en": [
+    "\\bocular",
+    "intravitreal",
+    "subretinal",
+    "ophthalm\\w+",
+    "eye drops?",
+    "\\bretina\\w*",
+    "intraocular",
+    "suprachoroidal",
+    "conjunctiv\\w+",
+    "\\bcornea\\w*"
+   ],
+   "de": [
+    "okular\\w*",
+    "intravitreal",
+    "augen\\w*"
+   ],
+   "cpc": [
+    "A61K9/0048"
+   ]
+  },
+  {
+   "id": "oral",
+   "group": "route",
+   "label": "Oral",
+   "en": [
+    "\\borally\\b",
+    "\\boral(?:ly)? (?:administ|deliver|dosage|dose|formulation|composition|bioavailab)",
+    "\\bper os\\b",
+    "peroral",
+    "sublingual",
+    "\\bbuccal",
+    "enteric[- ]coat\\w*",
+    "gastro-?intestinal (?:tract|deliver)"
+   ],
+   "de": [
+    "oral verabreich\\w*",
+    "peroral\\w*",
+    "\\boral\\w* (?:darreich|applikation|gabe)"
+   ],
+   "cpc": [
+    "A61K9/0053"
+   ]
+  },
+  {
+   "id": "topical",
+   "group": "route",
+   "label": "Topical / dermal",
+   "en": [
+    "topical\\w*",
+    "transdermal\\w*",
+    "\\bdermal\\b",
+    "cutaneous",
+    "intradermal\\w*",
+    "skin (?:applic|deliver|care|cream)",
+    "cosmetic\\w*",
+    "\\bmicroneedle"
+   ],
+   "de": [
+    "topisch\\w*",
+    "transdermal\\w*",
+    "intradermal\\w*",
+    "kosmetisch\\w*"
+   ],
+   "cpc": [
+    "A61K9/0014",
+    "A61K9/0021"
+   ]
+  },
+  {
+   "id": "ionizable",
+   "group": "lipid",
+   "label": "Ionizable lipid",
+   "en": [
+    "(?<!non-)(?<!non )(?<!un)ioni[sz]able",
+    "titratable",
+    "\\bph[- ](?:sensitive|responsive|dependent)\\b.{0,30}lipid",
+    "\\bamino[- ]?lipid",
+    "\\blipidoids?\\b",
+    "\\bdlin-?\\w*",
+    "\\bmc3\\b",
+    "\\bsm-?102\\b",
+    "\\balc-?0315\\b",
+    "\\bdodma\\b",
+    "\\bdodap\\b",
+    "\\bc12-?200\\b",
+    "\\bckk-?e12\\b",
+    "\\bl319\\b",
+    "\\bkc2\\b"
+   ],
+   "de": [
+    "ionisierbar\\w*",
+    "titrierbar\\w*",
+    "aminolipid"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "dimethylamino",
+     "hydroxyalkyl-tert-amine",
+     "tert-amine",
+     "cyclic-tert-amine",
+     "polyamine"
+    ],
+    "cols": {
+     "nTails": {
+      "min": 2
+     },
+     "tailC": {
+      "min": 14
+     },
+     "nQuat": {
+      "max": 0
+     }
+    }
+   }
+  },
+  {
+   "id": "cationic",
+   "group": "lipid",
+   "label": "Permanently cationic lipid",
+   "en": [
+    "permanently (?:positively )?(?:charged|cationic)",
+    "(?:lipid|amphiphile|surfactant lipid).{0,40}quaternary ammonium|quaternary ammonium (?:lipid|head)",
+    "quaternized",
+    "\\(trimethylammonium\\)|trimethylammonium\\)?[- ]?propane",
+    "\\bdotap\\b",
+    "\\bdotma\\b",
+    "\\bdmrie\\b",
+    "\\bddab\\b",
+    "\\bdc-?chol\\b",
+    "lipofectamine",
+    "\\bgl67\\b",
+    "\\bdospa\\b"
+   ],
+   "de": [
+    "quart(?:ä|a)re ammonium\\w*",
+    "permanent kationisch\\w*"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "quaternary"
+    ],
+    "cols": {
+     "nTails": {
+      "min": 1
+     },
+     "tailC": {
+      "min": 12
+     }
+    }
+   }
+  },
+  {
+   "id": "peg",
+   "group": "lipid",
+   "label": "PEG-lipid",
+   "en": [
+    "peg[- ]?(?:ylated )?(?:lipid|phospholipid|dmg|dspe|ceramide|dag|dmpe|c-?dma)",
+    "pegylated lipid",
+    "polyethylene glycol[- ]?(?:modified |conjugated |linked )?(?:lipid|phospholipid)",
+    "dmg-?peg",
+    "dspe-?peg",
+    "\\balc-?0159\\b",
+    "\\bpeg-?\\d{3,5}\\b.{0,30}lipid",
+    "stealth lipid",
+    "lipid-?peg",
+    "peg-?lipid",
+    "polysarcosine",
+    "polyoxazoline.{0,30}lipid",
+    "conjugated lipid",
+    "pegylated (?:phospho\\w*|ceramide|lipid|dag)",
+    "polyethylene glycol.{0,60}(?:lipid|dmg|dspe|ceramide)",
+    "(?:lipid|phospholipid).{0,40}polyethylene glycol"
+   ],
+   "de": [
+    "peg-?(?:ylierte\\w* )?lipid",
+    "polyethylenglykol\\w*-?lipid"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "polyether"
+    ],
+    "cols": {
+     "nTails": {
+      "min": 1
+     }
+    }
+   }
+  },
+  {
+   "id": "sterol",
+   "group": "lipid",
+   "label": "Sterol (cholesterol)",
+   "en": [
+    "(?:phospholipid|neutral lipid|helper lipid|structural lipid|sterol|lipid component).{0,80}cholesterol",
+    "cholesterol.{0,80}(?:phospholipid|dspc|dope|\\blipids?\\b)",
+    "\\bsterols?\\b",
+    "sitosterol",
+    "stigmasterol",
+    "ergosterol",
+    "campesterol",
+    "oxysterol",
+    "cholestanol",
+    "\\bchol\\b",
+    "cholesterol (?:derivative|analog|hemisuccinate)"
+   ],
+   "de": [
+    "cholesterin\\w*",
+    "\\bsterin\\w*"
+   ],
+   "cpc": [
+    "A61K47/28"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "sterol"
+    ]
+   }
+  },
+  {
+   "id": "phospholipid",
+   "group": "lipid",
+   "label": "Phospholipid / helper lipid",
+   "en": [
+    "phospholipids?",
+    "\\bdspc\\b",
+    "\\bdope\\b",
+    "\\bdopc\\b",
+    "\\bdppc\\b",
+    "\\bdmpc\\b",
+    "phosphatidyl\\w+",
+    "helper lipid",
+    "neutral lipid",
+    "\\bpopc\\b",
+    "\\bdopg\\b",
+    "sphingomyelin",
+    "lecithin"
+   ],
+   "de": [
+    "phospholipid\\w*",
+    "helferlipid\\w*",
+    "lecithin"
+   ],
+   "cpc": [
+    "A61K47/24"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "phosphocholine",
+     "phosphoethanolamine",
+     "phospho"
+    ],
+    "cols": {
+     "nTails": {
+      "min": 2
+     }
+    }
+   }
+  },
+  {
+   "id": "biodeg",
+   "group": "lipid",
+   "label": "Biodegradable linker",
+   "en": [
+    "biodegradab\\w*",
+    "bio-?cleavable",
+    "cleavable (?:linker|bond|lipid|group)",
+    "degradable (?:linker|lipid|group|bond)",
+    "ester (?:linker|bond|group|moiety|linkage)",
+    "disulfide[- ]?(?:linker|bond|linkage)",
+    "bio-?reducible",
+    "reducible",
+    "self-?immolative",
+    "labile (?:linker|bond|ester)",
+    "hydrolyz\\w+ (?:ester|bond|linker)"
+   ],
+   "de": [
+    "biologisch abbaubar\\w*",
+    "spaltbar\\w*"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "dimethylamino",
+     "hydroxyalkyl-tert-amine",
+     "tert-amine",
+     "cyclic-tert-amine",
+     "polyamine"
+    ],
+    "cols": {
+     "nTails": {
+      "min": 2
+     },
+     "tailC": {
+      "min": 14
+     }
+    },
+    "anyCols": [
+     "ester",
+     "carbonate",
+     "disulfide",
+     "ketal",
+     "thioester"
+    ]
+   }
+  },
+  {
+   "id": "branched",
+   "group": "lipid",
+   "label": "Branched tail",
+   "en": [
+    "\\bbranched (?:alkyl|alkenyl|tail|chain|lipid|hydrocarbon|acyl)",
+    "\\bbranched-?chain",
+    "guerbet",
+    "2-hexyldecan\\w*",
+    "2-octyldodecan\\w*",
+    "2-butyloctan\\w*",
+    "2-hexyloctan\\w*"
+   ],
+   "de": [
+    "verzweigt\\w+ (?:alkyl|schwanz|kette)"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "dimethylamino",
+     "hydroxyalkyl-tert-amine",
+     "tert-amine",
+     "cyclic-tert-amine",
+     "polyamine"
+    ],
+    "cols": {
+     "nBranched": {
+      "min": 1
+     },
+     "tailC": {
+      "min": 14
+     }
+    }
+   }
+  },
+  {
+   "id": "multitail",
+   "group": "lipid",
+   "label": "Multi-tail (3 or more)",
+   "en": [
+    "(?:three|four|five|six|3|4|5|6) (?:hydrophobic |lipid |alkyl |lipophilic |hydrocarbon )?tails",
+    "multi-?tail\\w*",
+    "tri-?tail\\w*",
+    "tetra-?tail\\w*",
+    "multi-?chain",
+    "multi-?alkyl"
+   ],
+   "compound": {
+    "where": [
+     "clm"
+    ],
+    "min": 1,
+    "head": [
+     "dimethylamino",
+     "hydroxyalkyl-tert-amine",
+     "tert-amine",
+     "cyclic-tert-amine",
+     "polyamine"
+    ],
+    "cols": {
+     "nTails": {
+      "min": 3
+     },
+     "tailC": {
+      "min": 24
+     }
+    }
+   }
+  },
+  {
+   "id": "vaccine",
+   "group": "use",
+   "label": "Vaccine / infectious disease",
+   "en": [
+    "vaccin\\w+",
+    "immuni[sz]ation",
+    "\\bsars-?cov\\w*",
+    "covid\\w*",
+    "influenza",
+    "\\brsv\\b",
+    "respiratory syncytial",
+    "\\bhiv[- ](?:vaccine|antigen|envelope|gag|infection|immuni\\w+)",
+    "\\bcmv\\b",
+    "cytomegalovirus",
+    "zika",
+    "ebola",
+    "rabies",
+    "infectious disease",
+    "immunogenic composition",
+    "\\bhepatitis [abc]\\b",
+    "\\bmalaria",
+    "\\bnorovirus",
+    "\\btuberculosis",
+    "coronavirus"
+   ],
+   "de": [
+    "impfstoff\\w*",
+    "impfung",
+    "infektionskrankheit\\w*",
+    "grippe"
+   ],
+   "cpc": [
+    "A61K39/12",
+    "A61K39/145",
+    "A61K39/21",
+    "A61K39/245"
+   ]
+  },
+  {
+   "id": "cancer",
+   "group": "use",
+   "label": "Cancer",
+   "en": [
+    "cancer\\w*",
+    "tumou?rs?\\b",
+    "neoplas\\w+",
+    "carcinoma",
+    "melanoma",
+    "leuk(?:a)?emi\\w+",
+    "lymphoma",
+    "oncolog\\w+",
+    "neoantigen\\w*",
+    "\\bcar-?t\\b",
+    "checkpoint",
+    "metasta\\w+",
+    "glioblastoma",
+    "sarcoma",
+    "myeloma",
+    "malignan\\w+"
+   ],
+   "de": [
+    "krebs\\w*",
+    "tumor\\w*",
+    "karzinom\\w*",
+    "onkolog\\w+"
+   ],
+   "cpc": [
+    "A61P35",
+    "A61K39/0011"
+   ]
+  },
+  {
+   "id": "replacement",
+   "group": "use",
+   "label": "Protein replacement",
+   "en": [
+    "protein replacement",
+    "enzyme replacement",
+    "replacement therapy",
+    "erythropoietin",
+    "\\bepo\\b",
+    "alpha-?1 antitrypsin",
+    "growth hormone",
+    "factor (?:viii|ix)\\b",
+    "\\bcftr\\b",
+    "ornithine transcarbamylase",
+    "\\botc deficiency",
+    "deficien\\w+ (?:of|in) (?:a |the )?\\w+ (?:protein|enzyme)",
+    "supplement\\w* (?:a )?(?:missing|deficient|defective)",
+    "loss-of-function",
+    "express\\w+ (?:a )?(?:therapeutic|functional|missing|deficient) (?:protein|polypeptide)"
+   ],
+   "de": [
+    "enzymersatz\\w*",
+    "ersatztherapie"
+   ]
+  },
+  {
+   "id": "editing",
+   "group": "use",
+   "label": "Gene editing",
+   "en": [
+    "gene[- ]edit\\w*",
+    "genome[- ]edit\\w*",
+    "crispr",
+    "base[- ]edit\\w*",
+    "prime[- ]edit\\w*",
+    "\\bcas ?9\\b",
+    "zinc[- ]finger nuclease",
+    "\\btalens?\\b",
+    "gene correction",
+    "gene knock-?(?:out|in)\\b"
+   ],
+   "de": [
+    "genom-?editier\\w*",
+    "gen-?editier\\w*",
+    "crispr"
+   ],
+   "cpc": [
+    "C12N15/90"
+   ]
+  },
+  {
+   "id": "rare",
+   "group": "use",
+   "label": "Rare / genetic disease",
+   "en": [
+    "rare disease",
+    "orphan",
+    "lysosomal",
+    "metabolic disorder",
+    "inborn error",
+    "genetic (?:disorder|disease)",
+    "hereditary",
+    "cystic fibrosis",
+    "\\bfabry",
+    "\\bpompe",
+    "hemophilia",
+    "haemophilia",
+    "amyloidosis",
+    "\\battr\\b",
+    "phenylketonuria",
+    "acidemia",
+    "glycogen storage",
+    "duchenne",
+    "sickle cell",
+    "thalassemia",
+    "mucopolysaccharidosis",
+    "\\bgaucher",
+    "wilson'?s disease",
+    "hyperoxaluria"
+   ],
+   "de": [
+    "seltene erkrankung\\w*",
+    "erbkrankheit\\w*",
+    "genetische\\w* (?:erkrankung|störung)"
+   ]
+  },
+  {
+   "id": "micro",
+   "group": "process",
+   "label": "Microfluidic / controlled mixing",
+   "en": [
+    "microfluidic\\w*",
+    "micro-?mixer",
+    "mixing (?:channel|junction|chip)",
+    "\\bt-?junction\\b",
+    "\\bt-?mixer\\b",
+    "impinging jet",
+    "herringbone",
+    "\\bnanoassembl\\w+",
+    "turbulent mixing",
+    "ethanol injection",
+    "solvent injection",
+    "cross-?flow",
+    "in-?line mixing",
+    "vortex mixing",
+    "chaotic advection",
+    "rapid mixing"
+   ],
+   "de": [
+    "mikrofluid\\w*",
+    "mikromischer"
+   ],
+   "cpc": [
+    "B01F33/30",
+    "B01F13/0059",
+    "B01L3/5027"
+   ]
+  },
+  {
+   "id": "lyo",
+   "group": "process",
+   "label": "Lyophilised / dried",
+   "en": [
+    "lyophili[sz]\\w*",
+    "freeze[- ]?dr\\w+",
+    "lyoprotect\\w+",
+    "spray[- ]dr\\w+",
+    "dry powder",
+    "reconstitut\\w+",
+    "cryoprotect\\w+",
+    "\\bdried (?:composition|formulation|powder)"
+   ],
+   "de": [
+    "gefriertrock\\w+",
+    "lyophilis\\w+",
+    "sprühtrock\\w+"
+   ],
+   "cpc": [
+    "A61K9/19"
+   ]
+  },
+  {
+   "id": "ligand",
+   "group": "process",
+   "label": "Targeting ligand",
+   "en": [
+    "targeting (?:ligand|moiety|agent|domain|peptide|antibody)",
+    "ligand[- ]targeted",
+    "\\bgalnac\\b",
+    "n-acetylgalactosamine",
+    "transferrin[- ](?:receptor|conjugat\\w*|ligand)|\\btransferrin-",
+    "antibody[- ]conjugated",
+    "receptor[- ]targeted",
+    "\\bscfv\\b",
+    "\\bnanobod\\w+",
+    "organ[- ]targeting",
+    "selective organ targeting",
+    "conjugated to (?:a |an )?(?:antibody|ligand|targeting|peptide)",
+    "cell-?specific (?:targeting|delivery)",
+    "\\bmannose",
+    "\\bintegrin[- ](?:receptor|ligand|binding|targeting)",
+    "\\brgd\\b",
+    "antibody (?:fragment|fab)"
+   ],
+   "de": [
+    "zielgerichtet\\w*",
+    "targeting-?ligand"
+   ]
+  }
+ ],
+ "legal": [
+  {
+   "id": "opp",
+   "label": "Opposition filed",
+   "bit": 0,
+   "when": {
+    "path": "opposition.filed",
+    "eq": true
+   }
+  },
+  {
+   "id": "oppPending",
+   "label": "Opposition pending",
+   "bit": 1,
+   "when": {
+    "path": "opposition.outcome",
+    "eq": "pending"
+   }
+  },
+  {
+   "id": "revoked",
+   "label": "Revoked after opposition",
+   "bit": 2,
+   "when": {
+    "path": "opposition.outcome",
+    "eq": "revoked"
+   }
+  },
+  {
+   "id": "maintained",
+   "label": "Maintained as amended",
+   "bit": 3,
+   "when": {
+    "path": "opposition.outcome",
+    "eq": "maintained_amended"
+   }
+  },
+  {
+   "id": "appeal",
+   "label": "Appeal on record",
+   "bit": 4,
+   "when": {
+    "path": "appeal",
+    "eq": true
+   }
+  },
+  {
+   "id": "unitary",
+   "label": "Unitary effect registered",
+   "bit": 5,
+   "when": {
+    "path": "unitary",
+    "eq": "registered"
+   }
+  },
+  {
+   "id": "lapsed",
+   "label": "Lapsed in at least one state",
+   "bit": 6,
+   "when": {
+    "path": "lapsed_in",
+    "nonempty": true
+   }
+  },
+  {
+   "id": "td",
+   "label": "Terminal disclaimer",
+   "bit": 7,
+   "when": {
+    "path": "terminal_disclaimer",
+    "eq": true
+   }
+  }
+ ]
+}
