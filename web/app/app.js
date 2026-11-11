@@ -208,6 +208,8 @@
   function loadExtras() {
     var files = (App.manifest && App.manifest.files) || {}, names = Object.keys(files), jobs = [], have = {};
     OPTIONAL_ENGINES.forEach(function (f) { if (files[f]) jobs.push(f); });
+    // extension engines (engine/x-*.js) load before the views that use them, in name order
+    names.filter(function (f) { return /^engine\/x-[a-z0-9._-]+\.js$/.test(f); }).sort().forEach(function (f) { jobs.push(f); });
     BUILTIN.forEach(function (id) { var f = 'app/views/' + id + '.js'; jobs.push(f); have[f] = 1; });
     names.filter(function (f) { return /^app\/views\/[a-z0-9._-]+\.js$/.test(f) && !have[f]; }).sort().forEach(function (f) { jobs.push(f); });
     names.filter(function (f) { return /^app\/[a-z0-9._-]+\.css$/.test(f) && f !== 'app/app.css'; }).sort().forEach(loadCss);
