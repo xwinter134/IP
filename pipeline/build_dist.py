@@ -44,7 +44,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config as C  # noqa: E402
 
 HOST_MAX_FILE = 15 * 1000 * 1000
-HOST_MAX_TOTAL_MB = 240
+HOST_MAX_TOTAL_MB = int(os.environ.get("LNP_HOST_MAX_MB", "240"))  # 240 = Artifact host; a plain web host allows more
 BATCH_FILES = 240
 BATCH_BYTES = 60 * 1000 * 1000
 PAT_CHUNK = 4000
