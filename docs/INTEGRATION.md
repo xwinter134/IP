@@ -210,6 +210,28 @@ snapshot age, missing-record flags; WO publications are skipped; a patent-cliff 
 {"pns": ["EP3532103B1", "US11000000B2"], "family": false}
 ```
 
+**`similar_patents`** `{pn | text, smiles?, limit<=50}`: query by example. Families that share distinctive claim/abstract words (BM25), specific compounds
+(commodity lipids ignored) and CPC codes with the source, scored 0..1, each with a `why` block (shared terms, compounds, CPC codes). The source family is listed separately.
+
+```json
+{"pn": "EP3532103B1", "limit": 10}
+```
+
+**`earliest_disclosure`** `{query, mode: exact|exact+stereo|sim, min_sim?, limit<=200}`: the dated publications of the corpus that show a compound, oldest first, grouped
+by family, with the earliest publication, priority and claim. It indicates where a structure appears first in this corpus; it does not assess novelty.
+
+```json
+{"query": "SM-102", "mode": "exact+stereo", "limit": 20}
+```
+
+**`context_pack`** `{pn | pns[] | search, limit?, format: md|json, dependent_claims?, max_bytes?}`: the same bundle as the "Context pack" button of the web app
+(schema `lnp-context-1`): claims verbatim, status, family, compounds, numeric ranges, curated Markush records and links, with the LIMITS line first and last and
+patent data inside marked blocks.
+
+```json
+{"pn": "EP3532103B1", "format": "md", "max_bytes": 60000}
+```
+
 ### 5.7 Limits and the legal note
 
 - The data are a snapshot (`corpus` in every result: build date, SureChEMBL, EP register, EP and US text dates). Anything newer, and every publication outside the

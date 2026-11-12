@@ -1,7 +1,8 @@
 // Node environment for the browser engines of the LNP Patent Desk (web/engine/*.js).
 //
 // The engines are plain scripts that talk to each other through globals (LnpTok, LnpLoader, LnpData, LnpSearch,
-// LnpChem, LnpRanges, LnpMarkush, LnpExpiry). This module loads those very files in Node, so the MCP server uses
+// LnpChem, LnpRanges, LnpMarkush, LnpExpiry, LnpSimilar,
+// LnpDisclosure, LnpContext). This module loads those very files in Node, so the MCP server uses
 // the same code that runs in the page:
 //   - the only file system access is a replacement of globalThis.fetch that reads files below the dist directory;
 //     any http(s) URL is refused, so the server cannot reach the network through the engines;
@@ -114,6 +115,9 @@ export function createEnv(o) {
   opt('x-ranges.js', 'LnpRanges');
   opt('x-markush.js', 'LnpMarkush');
   opt('x-expiry.js', 'LnpExpiry');
+  opt('x-similar.js', 'LnpSimilar');
+  opt('x-disclosure.js', 'LnpDisclosure');
+  opt('x-context.js', 'LnpContext');
   env.engines.LnpData = globalThis.LnpData; env.engines.LnpSearch = globalThis.LnpSearch;
   return env;
 }

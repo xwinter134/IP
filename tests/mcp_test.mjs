@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tests of the local MCP server (mcp/server.mjs): protocol, the seven tools, error handling, offline behaviour,
+// Tests of the local MCP server (mcp/server.mjs): protocol, the ten tools, error handling, offline behaviour,
 // the plain website build (--enc bin) and a base64 build. Prints timings and the peak resident memory of the server.
 //
 //   node tests/mcp_test.mjs [--pages DIR] [--b64 DIR] [--scratch DIR] [--no-build] [--only pages|b64]
@@ -112,7 +112,7 @@ async function runSuite(label, dist, o) {
   ok(r2.result && ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'].includes(r2.result.protocolVersion), 'unknown protocol version: the server answers with one it supports', r2.result && r2.result.protocolVersion);
   r = await c.rpc('tools/list');
   const names = (r.result.tools || []).map((t) => t.name);
-  ok(JSON.stringify(names) === JSON.stringify(['search', 'get_patent', 'get_claims', 'chem_search', 'markush_check', 'ranges_check', 'expiry']), 'tools/list: the 7 tools', names);
+  ok(JSON.stringify(names) === JSON.stringify(['search', 'get_patent', 'get_claims', 'chem_search', 'markush_check', 'ranges_check', 'expiry', 'similar_patents', 'earliest_disclosure', 'context_pack']), 'tools/list: the 10 tools', names);
   ok(r.result.tools.every((t) => t.description.length > 60 && t.inputSchema.type === 'object' && t.inputSchema.properties && Array.isArray(t.inputSchema.required) && t.annotations.readOnlyHint === true && t.annotations.openWorldHint === false), 'every tool has a description, an object schema with required[] and read-only / closed-world annotations');
   const sc = Object.fromEntries(r.result.tools.map((t) => [t.name, t.inputSchema]));
   ok(sc.search.properties.limit.maximum === 50 && sc.search.required.includes('query') && sc.chem_search.properties.mode.enum.join() === 'exact,sub,sim,scaffold' && sc.markush_check.required.join() === 'pn,claim,smiles' && sc.ranges_check.properties.values.items.required.join() === 'param,value' && sc.expiry.required.join() === 'pns', 'schemas: limit <= 50, modes, required fields');
@@ -244,6 +244,29 @@ async function runSuite(label, dist, o) {
   ok(hasLimits(ex) && ex.data.limits.some((x) => /not legal advice/i.test(x)) && ex.data.limits.some((x) => /SPC|PTE/.test(x)), 'limits: estimates, PTE/SPC, legal note');
   const ef = await c.call('expiry', { pns: [SEED], family: true, jurisdictions: ['EP'] }); ok(!ef.isError && ef.data.rows.length >= 1 && ef.data.rows.every((x) => x.jurisdictions.includes('EP')), 'family and jurisdictions options');
   ok((await c.call('expiry', { pns: ['NOPE'] })).isError && (await c.call('expiry', { pns: [] })).isError && (await c.call('expiry', { pns: ['EP9999999B1'] })).data.error === 'not_found', 'only unknown numbers / empty list -> errors');
+
+  sec(`${label}: similar_patents, earliest_disclosure, context_pack`);
+  const sm = await c.call('similar_patents', { pn: SEED, limit: 5 }); T(`${label} similar`, sm.ms);
+  ok(!sm.isError && sm.data.hits.length >= 1 && sm.data.hits.every((h) => h.score > 0 && h.score <= 1 && h.why) && sm.data.source.pn === SEED, 'similar_patents: scored hits with a why block', !sm.isError && sm.data.hits.map((h) => [h.pn, h.score]));
+  ok(!sm.isError && !sm.data.hits.some((h) => h.family_id === sm.data.hits[0].family_id && h !== sm.data.hits[0]) && !sm.data.hits.some((h) => sm.data.source_family_members.some((m) => m.pn === h.pn)), 'similar_patents: one row per family, source family not among the hits');
+  ok(hasLimits(sm) && sm.data.limits.some((x) => /not a novelty, validity or infringement/i.test(x)), 'similar_patents: limits');
+  const smt = await c.call('similar_patents', { text: 'A lipid nanoparticle comprising an ionizable lipid, a sterol, a phospholipid and a PEG lipid, encapsulating an mRNA.', limit: 3 });
+  ok(!smt.isError && smt.data.source.kind === 'text' && smt.data.hits.length >= 1, 'similar_patents: text mode');
+  ok((await c.call('similar_patents', {})).data.error === 'bad_args' && (await c.call('similar_patents', { pn: 'EP9999999B1' })).data.error === 'not_found', 'similar_patents: argument and unknown-number errors');
+  const ed = await c.call('earliest_disclosure', { query: 'SM-102', limit: 5 }); T(`${label} disclosure`, ed.ms);
+  const edOk = !ed.isError && ed.data.compounds.length >= 1 && ed.data.publications.length >= 1 && ed.data.earliest.priority && /^\d{4}-\d\d-\d\d$/.test(ed.data.earliest.priority.priority || '');
+  ok(edOk, 'earliest_disclosure: SM-102 found with an earliest priority date', !ed.isError && ed.data.earliest);
+  ok(edOk && ed.data.publications.every((e, i, a) => !i || (a[i - 1].published || '') <= (e.published || '')), 'earliest_disclosure: publications oldest first');
+  ok(hasLimits(ed) && ed.data.limits.some((x) => /does not assess novelty/i.test(x)), 'earliest_disclosure: limits');
+  ok((await c.call('earliest_disclosure', { query: 'notamolecule((' })).isError, 'earliest_disclosure: unreadable query -> error');
+  const cp = await c.call('context_pack', { pn: SEED, max_bytes: 40000 }); T(`${label} context pack`, cp.ms);
+  ok(!cp.isError && typeof cp.data.pack === 'string' && /^# LNP Patent Desk - context pack/.test(cp.data.pack) && cp.data.pack.includes('>>> PATENT DATA BEGIN') && cp.data.bytes <= 40000 && cp.data.publications === 1, 'context_pack md: header, marked data blocks, size cap', cp.isError ? cp.data : [cp.data.bytes, cp.data.publications]);
+  const cpt = cp.isError ? '' : cp.data.pack, lf = cpt.indexOf('\nLIMITS: '), ll = cpt.lastIndexOf('\nLIMITS: ');
+  const lineAt = (at) => cpt.slice(at + 1, cpt.indexOf('\n', at + 1));
+  ok(lf >= 0 && lf < 400 && ll > lf && cpt.length - ll < 1500 && lineAt(lf) === lineAt(ll), 'context_pack md: identical LIMITS line at the start and at the end', [lf, ll, cpt.length]);
+  const cj = await c.call('context_pack', { search: 'ionizable lipid', limit: 2, format: 'json' });
+  ok(!cj.isError && cj.data.pack && cj.data.pack.schema === 'lnp-context-1' && cj.data.publications >= 1 && cj.data.publications <= 2, 'context_pack json from a search', cj.isError ? cj.data : [cj.data.publications]);
+  ok((await c.call('context_pack', { pn: SEED, pns: [SEED] })).data.error === 'bad_args', 'context_pack: exactly one target');
 
   if (o.cancel) {
     sec(`${label}: cancellation and responsiveness`);

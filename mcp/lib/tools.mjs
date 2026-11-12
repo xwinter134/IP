@@ -1,4 +1,4 @@
-// The seven MCP tools. Each handler returns a plain object (serialised as JSON text by the protocol layer) that always
+// The ten MCP tools. Each handler returns a plain object (serialised as JSON text by the protocol layer) that always
 // carries `limits`. Values come from the browser engines (LnpSearch, LnpData, LnpChem, LnpMarkush, LnpRanges, LnpExpiry)
 // running over the build; this file only maps arguments and trims results.
 import { ToolError, UNTRUSTED_NOTICE, isoDate } from './runtime.mjs';
@@ -370,5 +370,140 @@ export function buildTools(rt) {
     }
   };
 
-  return [search, getPatent, getClaims, chemSearch, markushCheck, rangesCheck, expiry];
+  // structure data first: an engine that asks LnpChem itself in Node would start it without the worker core and fail
+  // (the failure is remembered for a few seconds), so the tools below always go through rt.chem()
+  async function chemOptional() {
+    if (rt.manifest.chem === null || rt.manifest.chem === undefined || !rt.env.chemCore) return false;
+    try { await rt.chem(); return true; } catch (e) { return false; }
+  }
+  function engine(name, file) {
+    const E = rt.G[name];
+    if (!E) throw new ToolError('unavailable', `The engine ${file} is not part of this build.`);
+    return E;
+  }
+
+  // ------------------------------------------------------------------------------------------------ similar_patents
+  const similarPatents = {
+    name: 'similar_patents',
+    title: 'Similar patents (query by example)',
+    description: 'Patent families similar to one publication or to a pasted text: shared distinctive claim/abstract words (BM25 over the index), shared specific compounds (commodity lipids ignored) and shared CPC codes, combined into a score 0..1 per family. Every hit says why it is similar. Computed by code; it is not a novelty, validity or infringement assessment.',
+    timeoutMs: 120000,
+    inputSchema: {
+      type: 'object', additionalProperties: false, required: [],
+      properties: {
+        pn: { type: 'string', minLength: 2, maxLength: 40, description: PN_DESC + ' Give pn or text.' },
+        text: { type: 'string', minLength: 20, maxLength: 20000, description: 'A claim or a short description to compare (instead of pn).' },
+        smiles: { type: 'array', maxItems: 20, items: { type: 'string', minLength: 1, maxLength: 2000 }, description: 'Optional structures for text mode (SMILES).' },
+        limit: { type: 'integer', minimum: 1, maximum: 50, description: 'Families returned (default 15).' }
+      }
+    },
+    async handler(a) {
+      if (!a.pn && !a.text) throw new ToolError('bad_args', 'Give either pn (a publication number) or text.');
+      await rt.core();
+      const Sim = engine('LnpSimilar', 'x-similar.js');
+      const chemOk = await chemOptional();
+      let src;
+      if (a.pn) { const f = await rt.findPatent(a.pn); src = f.p; }
+      else src = { text: a.text, smiles: chemOk && a.smiles && a.smiles.length ? a.smiles.join('\n') : undefined };
+      const hits = await Sim.similar(src, { k: a.limit || 15 });
+      const so = hits.source || {};
+      const out = hits.map((h) => ({
+        pn: h.pn, title: h.title, assignee: h.assignee || null, status: h.status || null, family_id: h.family, other_members_in_build: (h.members || []).length,
+        score: Math.round(h.score * 1000) / 1000,
+        why: {
+          text: h.why && h.why.text ? { score: Math.round((h.why.text.score || 0) * 1000) / 1000, shared_terms: (h.why.text.terms || []).slice(0, 12) } : null,
+          compounds: h.why && h.why.compounds ? { shared: h.why.compounds.shared || 0, examples: (h.why.compounds.examples || []).slice(0, 5).map((x) => ({ id: x.id, smiles: x.smiles, publications_worldwide: x.nPatGlobal })) } : null,
+          cpc: h.why && h.why.cpc ? { score: Math.round((h.why.cpc.score || 0) * 1000) / 1000, shared: (h.why.cpc.shared || []).slice(0, 10) } : null
+        }
+      }));
+      const lim = (Sim.limits ? Sim.limits() : []).concat(hits.notes || []);
+      if (!chemOk) lim.push('The structure data is not available here, so the compound part of the score was left out.');
+      return {
+        notice: UNTRUSTED_NOTICE,
+        source: { kind: so.kind || (a.pn ? 'patent' : 'text'), pn: so.pn || null, title: so.title || null, terms: (so.terms || []).slice(0, 25).map((t) => t.term), compounds: so.compounds || null, cpc: so.cpc || [] },
+        source_family_members: (hits.familyMembers || []).map((m) => ({ pn: m.pn, status: m.status || null })),
+        weights: hits.weights || null, returned: out.length, hits: out, ms: hits.ms == null ? null : Math.round(hits.ms),
+        limits: rt.limits('search', lim), corpus: rt.corpus()
+      };
+    }
+  };
+
+  // ------------------------------------------------------------------------------------------------ earliest_disclosure
+  const earliestDisclosure = {
+    name: 'earliest_disclosure',
+    title: 'Earliest disclosure of a compound',
+    description: 'Dated list of the publications of this corpus that show a compound (exact structure, stereo variants, or similar above min_sim), grouped by family, with the earliest publication, the earliest priority and the earliest claim that names it. Query: SMILES, reference lipid name (SM-102, ALC-0315 ...) or SCHEMBL id. It indicates where a structure appears first in this corpus; it does not assess novelty or validity.',
+    timeoutMs: 180000,
+    inputSchema: {
+      type: 'object', additionalProperties: false, required: ['query'],
+      properties: {
+        query: { type: 'string', minLength: 1, maxLength: 4000, description: 'SMILES, reference lipid name or SCHEMBL id.' },
+        mode: { type: 'string', enum: ['exact', 'exact+stereo', 'sim'], description: 'Default exact+stereo (same constitution, any stereo).' },
+        min_sim: { type: 'number', minimum: 0.5, maximum: 1, description: 'Threshold for mode sim (default 0.9).' },
+        limit: { type: 'integer', minimum: 1, maximum: 200, description: 'Publications listed (default 50, oldest first).' }
+      }
+    },
+    async handler(a, ctx) {
+      await rt.chem();
+      const Dc = engine('LnpDisclosure', 'x-disclosure.js');
+      let r;
+      try { r = await Dc.timeline(a.query, { mode: a.mode || 'exact+stereo', minSim: a.min_sim == null ? 0.9 : a.min_sim, signal: ctx && ctx.signal }); }
+      catch (e) { throw new ToolError((e && e.code) || 'bad_query', (e && e.message) || String(e)); }
+      const limit = a.limit || 50;
+      const day = (x) => x ? { pn: x.pn, date: x.date || null, priority: x.prio || null, published: x.pub || null } : null;
+      return {
+        notice: UNTRUSTED_NOTICE, query: r.query || a.query, mode: r.mode, min_sim: r.minSim,
+        compounds: (r.compounds || []).slice(0, 20).map((c) => ({ id: c.id, smiles: c.smiles, match: c.match || null, similarity: c.sim == null ? null : c.sim, publications: c.nPat, families: c.nFam, publications_naming_in_claims: c.nClaims })),
+        compounds_total: r.compoundsTotal, truncated: !!r.truncated,
+        earliest: { publication: day(r.earliest && r.earliest.publication), priority: day(r.earliest && r.earliest.priority), in_claims: day(r.earliest && r.earliest.claims), in_description: day(r.earliest && r.earliest.description) },
+        publications_total: (r.entries || []).length, families_total: (r.families || []).length,
+        publications: (r.entries || []).slice(0, limit).map((e) => ({ pn: e.pn, published: e.pub || null, priority: e.prio || null, filed: e.app || null, family_id: e.family, in_claims: !!e.inClaims, found_in: whereList(e.where), status: e.status || null, title: e.title, player: e.player || null })),
+        families: (r.families || []).slice(0, limit).map((f) => ({ family_id: f.fam, earliest_priority: f.earliestPrio || null, earliest_publication: f.earliestPub || null, members: (f.members || []).slice(0, 20), in_claims: !!f.inClaimsAny, in_force: f.inForce == null ? null : f.inForce, status: f.statusSummary ? f.statusSummary.text : null, player: f.player || null })),
+        ms: r.ms == null ? null : Math.round(r.ms),
+        limits: rt.limits('chem', r.limits || []), corpus: rt.corpus()
+      };
+    }
+  };
+
+  // ------------------------------------------------------------------------------------------------ context_pack
+  const contextPack = {
+    name: 'context_pack',
+    title: 'Context pack',
+    description: 'One bundle of corpus data (claims verbatim, legal status, family, compounds, numeric claim ranges, curated Markush records, links) for one publication, a list or a search, as Markdown with fenced, marked patent-data blocks or as JSON (schema lnp-context-1). The LIMITS line stands first and last. Same format as the "Context pack" button of the web app.',
+    timeoutMs: 180000,
+    inputSchema: {
+      type: 'object', additionalProperties: false, required: [],
+      properties: {
+        pn: { type: 'string', minLength: 2, maxLength: 40, description: PN_DESC },
+        pns: { type: 'array', minItems: 1, maxItems: 100, items: { type: 'string', minLength: 2, maxLength: 40 }, description: 'Several publications.' },
+        search: { type: 'string', minLength: 1, maxLength: 2000, description: 'A search expression (same language as the search tool); the best hits are packed.' },
+        limit: { type: 'integer', minimum: 1, maximum: 100, description: 'Publications from the search (default 20).' },
+        format: { type: 'string', enum: ['md', 'json'], description: 'Default md.' },
+        dependent_claims: { type: 'boolean', description: 'Also include dependent claims (default: independent claims only).' },
+        max_bytes: { type: 'integer', minimum: 20000, maximum: 1000000, description: 'Size cap (default 120000); detail is reduced step by step and every cut is named in LIMITS.' }
+      }
+    },
+    async handler(a, ctx) {
+      const n = (a.pn ? 1 : 0) + (a.pns ? 1 : 0) + (a.search ? 1 : 0);
+      if (n !== 1) throw new ToolError('bad_args', 'Give exactly one of pn, pns or search.');
+      await rt.core();
+      const Cx = engine('LnpContext', 'x-context.js');
+      // optional parts: each missing engine or dataset only removes its section from the pack
+      await chemOptional();
+      if (rt.manifest.x && rt.manifest.x.ranges) { try { await rt.ranges(); } catch (e) { /* the pack says ranges are missing */ } }
+      if (rt.G.LnpMarkush) { try { await rt.markush(); } catch (e) { /* idem */ } }
+      const target = a.pn ? { pn: a.pn } : a.pns ? { pns: a.pns } : { search: { q: a.search }, limit: a.limit || 20 };
+      let r;
+      try { r = await Cx.pack(target, { format: a.format || 'md', include: { claims: a.dependent_claims ? 'all' : true }, maxBytes: a.max_bytes || 120000, signal: ctx && ctx.signal }); }
+      catch (e) { throw new ToolError((e && e.code) || 'pack_failed', (e && e.message) || String(e)); }
+      return {
+        notice: UNTRUSTED_NOTICE + ' In the Markdown pack, patent data sits between ">>> PATENT DATA BEGIN" and ">>> PATENT DATA END <<<" markers.',
+        format: r.format, bytes: r.bytes, publications: r.patents, requested: r.requested, omitted: r.omitted || [], truncated: !!r.truncated, notes: r.notes || [],
+        pack: r.format === 'json' ? r.data : r.text,
+        limits: rt.limits('fto', [].concat(r.limits || [])), corpus: rt.corpus()
+      };
+    }
+  };
+
+  return [search, getPatent, getClaims, chemSearch, markushCheck, rangesCheck, expiry, similarPatents, earliestDisclosure, contextPack];
 }
