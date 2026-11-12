@@ -409,7 +409,7 @@ Try it in the app: `#system`
 **Step 1. Snapshot and scope.** The corpus covers three offices only: European patents (EP), US patents (US) and international PCT applications (WO). It holds 125,104 publications (EP 62,091, US 49,706, WO 13,307) in 52,620 patent families, published from 1979 (US from 1910) to November 2026. It was put together from five routes: a lipid-nanoparticle (LNP) subset of the SureChEMBL bulk data, selected by classification codes and by 3,205 "marker lipids" named in the patents; EP applications in 39 core CPC classes (EPO linked data); granted EP patents in 16 IPC classes (EPO Publication Server); 60 searches in the USPTO Patent Public Search (core classes alone, broader classes together with LNP words in the claims, chemistry and manufacturing classes with LNP words, 20 company groups); and 62 hand-picked key families (126 publications, all present).
 
 | Source snapshot | Date |
-|---|---:|
+|---|---|
 | SureChEMBL bulk release | 2026-11-03 |
 | Discovery searches (EPO, USPTO) | 2026-11-10 |
 | EP Register (legal status) | 2026-08-23 / 08-27 |
@@ -428,7 +428,7 @@ Try it in the app: `#system`
 **Step 3. Coverage per office.** Before any size cut. Full text means the document was downloaded and parsed. EP: only the latest granted version of each application is read, or the application itself when there is no grant, it was filed in 2017 or later and has its own text. US: every grant, and a pre-grant publication only from 2018 on when its application has no grant. WO publications are never downloaded (title, dates, family and compounds only); their status (*) is only the note "PCT publication, no rights". US full text: 20,310 of 28,674 wanted (71 %). The download runs by priority: key families, lipid-specific and core classes were nearly complete (16,756 of 16,772), the lowest band (no core class) had 3,554 of 11,902, so older US patents of the outer field are the most likely to lack claims.
 
 |  | EP | US | WO | All |
-|---|---:|---:|---:|---:|
+|---|---|---|---|---|
 | Publications | 62,091 | 49,706 | 13,307 | 125,104 |
 | Families | 35,716 | 22,520 | 11,878 | 52,620 |
 | Full text wanted | 21,401 | 28,674 | 0 | 50,075 |
@@ -444,7 +444,7 @@ Try it in the app: `#system`
 **Step 4. Artifact build versus website build.** The claude.ai Artifact has a size limit (215 MB budget, 240 MB host limit, data stored as text). When the full text does not fit, the builder keeps key families first, then claims by priority (tier, newest first), then definition paragraphs. In current builds about 13,000 to 14,000 publications lose their claims, mostly EP and some US; all of them are tier 5 (found only by the class searches) and the oldest of that tier, published from 1976 to about late 2019. The exact cut shifts by a few hundred publications with every build; the System view shows the exact figures of the build you are using. Such a publication stays in the table and can still be found by title, abstract and assignee; it is marked "text cut". The website build has no cut.
 
 |  | Artifact | Website |
-|---|---:|---:|
+|---|---|---|
 | Built size | about 213 MB | about 440 MB |
 | Publications with claims | about 28,000 (exact: System view) | 41,678 |
 | ... EP / US | about 10,000 / 18,000 | 21,387 / 20,291 |

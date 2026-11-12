@@ -27,7 +27,7 @@ function render() {
       if (s.list) { s.list.forEach((x) => L.push('- ' + x)); L.push(''); }
       if (s.table) {
         const cell = (c) => String(c).replace(/\|/g, '\\|');
-        L.push('| ' + s.table.cols.map(cell).join(' | ') + ' |', '|' + s.table.cols.map((c, k) => (k ? '---:' : '---')).join('|') + '|');
+        L.push('| ' + s.table.cols.map(cell).join(' | ') + ' |', '|' + s.table.cols.map(() => '---').join('|') + '|');
         s.table.rows.forEach((r) => L.push('| ' + r.map(cell).join(' | ') + ' |'));
         L.push('');
       }
