@@ -138,7 +138,7 @@ Try it in the app: `#struktur`
 
 **Limits**
 
-- Only compounds that were extracted from the patents (84,691 in this build) can be found: structures that appear only in images or drawn as general formulas are not searched here (use the Markush check for those).
+- Only compounds that SureChEMBL extracted from the patent text or images and that pass the lipid filter (84,691 in this build) can be found: structures it missed and general formulas are not searched here (use the Markush check for those).
 - "Appears in a claim" means the text of the claim contains it; it does not say that the claim protects it.
 - The extraction of structures can contain errors.
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
@@ -402,7 +402,7 @@ Try it in the app: `#tools`
 
 ## 15. About the data
 
-What the corpus holds, where it comes from, how it was processed, and what is missing, so that you can judge the results. The numbers are those of the builds of 2026-11-12 (corpus written 04:40 UTC); the System page shows the numbers of the build you are using.
+What the corpus holds, where it comes from, how it was processed, and what is missing, so that you can judge the results. The numbers are those of the builds of 2026-11-12 (corpus written 08:30 UTC); the System page shows the numbers of the build you are using.
 
 Try it in the app: `#system`
 
@@ -425,31 +425,31 @@ Try it in the app: `#system`
 - EP claim formula images (Publication Server ZIP files): the download was stopped by HTTP 429 after 2,008 documents.
 - Not used: EPO OPS, USPTO Open Data Portal, Lens, WIPO full text. Google Patents only to check the 62 key families.
 
-**Step 3. Coverage per office.** Before any size cut. Full text means the document was downloaded and parsed. EP: only the latest granted version of each application is read, or the application itself when there is no grant, it was filed in 2017 or later and has its own text. US: every grant, and a pre-grant publication only from 2018 on when its application has no grant. WO publications are never downloaded (title, dates, family and compounds only); their status (*) is only the note "PCT publication, no rights". US full text: 18,977 of 28,674 wanted (66 %). The download runs by priority: key families, lipid-specific and core classes were nearly complete (16,756 of 16,772), the lowest band (no core class) had 2,221 of 11,902, so older US patents of the outer field are the most likely to lack claims.
+**Step 3. Coverage per office.** Before any size cut. Full text means the document was downloaded and parsed. EP: only the latest granted version of each application is read, or the application itself when there is no grant, it was filed in 2017 or later and has its own text. US: every grant, and a pre-grant publication only from 2018 on when its application has no grant. WO publications are never downloaded (title, dates, family and compounds only); their status (*) is only the note "PCT publication, no rights". US full text: 20,310 of 28,674 wanted (71 %). The download runs by priority: key families, lipid-specific and core classes were nearly complete (16,756 of 16,772), the lowest band (no core class) had 3,554 of 11,902, so older US patents of the outer field are the most likely to lack claims.
 
 |  | EP | US | WO | All |
 |---|---:|---:|---:|---:|
 | Publications | 62,091 | 49,706 | 13,307 | 125,104 |
 | Families | 35,716 | 22,520 | 11,878 | 52,620 |
 | Full text wanted | 21,401 | 28,674 | 0 | 50,075 |
-| Full text in corpus | 21,401 | 18,977 | 0 | 40,378 |
-| With claims | 21,387 | 18,959 | 0 | 40,346 |
-| Claims (EN and DE) | 613,169 | 466,355 | 0 | 1,079,524 |
-| With definition paragraphs | 19,537 | 18,613 | 0 | 38,150 |
-| With legal status | 62,069 | 19,003 | 13,307 * | 94,379 |
+| Full text in corpus | 21,401 | 20,310 | 0 | 41,711 |
+| With claims | 21,387 | 20,291 | 0 | 41,678 |
+| Claims (EN and DE) | 613,169 | 505,658 | 0 | 1,118,827 |
+| With definition paragraphs | 19,537 | 19,936 | 0 | 39,473 |
+| With legal status | 62,069 | 20,339 | 13,307 * | 95,715 |
 | Linked to compounds | 8,603 | 16,277 | 8,378 | 33,258 |
-| Formula image in an independent claim | 4,024 | 4,521 | - | 8,545 |
+| Formula image in an independent claim | 4,024 | 5,046 | - | 9,070 |
 | Formula images downloaded | 2,007 | 0 | - | 2,007 |
 
-**Step 4. Artifact build versus website build.** The claude.ai Artifact has a size limit (215 MB budget, 240 MB host limit, data stored as text). When the full text does not fit, the builder keeps key families first, then claims by priority (tier, newest first), then definition paragraphs. In this build every publication that lost its claims was a tier-5 publication (found only by the class searches) published on or before 2017-10-18. Such a publication stays in the table and can still be found by title, abstract and assignee; it is marked "text cut". The website build has no cut.
+**Step 4. Artifact build versus website build.** The claude.ai Artifact has a size limit (215 MB budget, 240 MB host limit, data stored as text). When the full text does not fit, the builder keeps key families first, then claims by priority (tier, newest first), then definition paragraphs. In this build the 13,505 publications that lost their claims (EP 11,298, US 2,207) were all tier 5 (found only by the class searches) and the oldest of that tier, published from 1976 to 2020-01-14. Such a publication stays in the table and can still be found by title, abstract and assignee; it is marked "text cut". The website build has no cut.
 
 |  | Artifact | Website |
 |---|---:|---:|
-| Built size | 213.97 MB | 428.76 MB |
-| Publications with claims | 29,367 | 40,346 |
-| ... EP / US | 12,084 / 17,283 | 21,387 / 18,959 |
-| Claims in the search index | 744,210 | 1,079,524 |
-| With definition paragraphs | 5,216 | 38,150 |
+| Built size | 213.48 MB | 438.63 MB |
+| Publications with claims | 28,173 | 41,678 |
+| ... EP / US | 10,089 / 18,084 | 21,387 / 20,291 |
+| Claims in the search index | 722,991 | 1,118,827 |
+| With definition paragraphs | 5,216 | 39,473 |
 | Formula images | 4,943 (181 publications) | 42,813 (2,007 publications) |
 | Compounds | 84,691 | 84,691 |
 | Claude features | yes | no |
@@ -462,8 +462,8 @@ Try it in the app: `#system`
 - Search: BM25 ranking over titles, abstracts, assignee names and every claim; words are lower-cased runs of letters a-z and digits, accents removed, no stemming; stop words keep their position so phrases work. Definitions and descriptions are not searched.
 - Legal status: EP from the EP Register snapshot, expiry estimated as filing date + 20 years. US: no status source; expiry calculated from the earliest non-provisional filing date + 20 years + term adjustment, for downloaded documents only.
 - Compounds: taken from SureChEMBL, which found them in the text, in images or in attached MOL files with its own automated methods. Only lipid candidates are kept (molecular weight 350 to 1,500, a long carbon chain); OpenChemLib parsed all 84,913 and merged them into 84,691 unique structures, linked to 33,258 publications. 8,799 were found in claims, 35,730 only in images or MOL files.
-- Numeric ranges: rule-based parser for 14 parameters (mol %, wt %, ratios, N/P, size, PDI, pKa, encapsulation, temperature, pH, chain length, PEG weight, concentration): 307,921 ranges in 96,998 claims of 23,466 publications. Each quote is cut verbatim from the claim text at its stored position.
-- Tags: 33 rule-based tags (payload, route, lipid type, indication, process) from claims, title, abstract, CPC and linked compounds; 87,521 publications tagged. Assignee spellings merged into 16,571 names.
+- Numeric ranges: rule-based parser for 14 parameters (mol %, wt %, ratios, N/P, size, PDI, pKa, encapsulation, temperature, pH, chain length, PEG weight, concentration): 334,677 ranges in 99,964 claims of 24,041 publications. Each quote is cut verbatim from the claim text at its stored position.
+- Tags: 33 rule-based tags (payload, route, lipid type, indication, process) from claims, title, abstract, CPC and linked compounds; 87,784 publications tagged. Assignee spellings merged into 16,568 names.
 - Markush formulae: 5 hand-written records (5 claims of 5 patents) whose quotes are checked against the claim text. Any other generic formula needs a record made on demand.
 
 **Step 6. What is missing and what cannot be indexed.** These gaps are known; a search or check cannot find what is listed here.
@@ -471,7 +471,7 @@ Try it in the app: `#system`
 - Other offices: no CN, JP, KR, DE national or other national patents, no utility models, no WO full text.
 - French claims; characters outside a-z and 0-9 (Greek letters, symbols) are not searchable.
 - Descriptions, examples, tables and figures of the description (only definition paragraphs are kept).
-- US full text still downloading (9,697 wanted documents missing at the snapshot); EP applications without a grant filed before 2017 and Euro-PCT applications without their own text.
+- US full text still downloading (8,364 wanted documents missing at the snapshot); EP applications without a grant filed before 2017 and Euro-PCT applications without their own text.
 - Structures that exist only as images: no image recognition at build time. Images exist for 2,007 of 4,024 EP publications with formula images in an independent claim, none for US. In the Artifact, Claude can read a formula image on request (marked "machine-extracted").
 - Compounds that SureChEMBL did not extract, compounds outside the lipid-candidate filter, polymers such as full-length PEG chains.
 - Markush scope beyond the 5 curated records; sequence listings; citations; inventors; prosecution files.
