@@ -1,0 +1,173 @@
+/* LNP Patent Desk: the text of the "How to" tutorials (global LnpHowtoData; also loadable in Node, see tests/howto_docs.cjs).
+   One source for the view (app/views/howto.js) and for docs/TUTORIALS.md. Plain strings only, no markup: the view inserts them with
+   textContent. Images live in app/howto/<id>-<n>.jpg (made by tests/howto_shots.cjs). Tutorial ids are letters and digits only,
+   so that they fit the router ("#howto-markush"). Every route in "route" / "try" must be a registered view id. */
+(function (g) {
+  'use strict';
+
+  var WORDS = [
+    ['Patent family', 'All publications that go back to the same first filing, for example the European and the US version of one invention. The tool counts families, not single documents, where it matters.'],
+    ['Claims', 'The legally decisive part of a patent: they define what is protected. An independent claim stands alone; dependent claims add features to another claim.'],
+    ['FTO (freedom to operate)', 'The question whether you may make and sell a product without infringing patents of others. The tool only pre-screens; a patent attorney decides.'],
+    ['Markush formula', 'A general chemical formula in a claim with variable parts (R groups, chain lengths). It covers many molecules at once, so a molecule can be inside the claim without being named in it.'],
+    ['SMILES', 'A line of text that writes a molecule, for example CCO for ethanol. Names of well-known lipids (SM-102, ALC-0315 ...) work in most molecule fields as well.'],
+    ['CPC', 'Cooperative Patent Classification: the subject codes of patents, for example A61K 9/127 for liposomes.'],
+    ['PTA / PTE / SPC', 'Patent term adjustment (US) and extensions (US PTE, European SPC) that can lengthen a patent beyond the usual 20 years from filing. The expiry dates in the tool are estimates and do not check PTE or SPC.'],
+    ['Kind code', 'The letter and digit after a patent number: A1 is an application, B1 or B2 a granted patent.'],
+    ['mol %', 'Molar percentage: the share of one lipid among all lipids by number of molecules. Lipid nanoparticle recipes (LNP) are usually written this way.']
+  ];
+
+  var COMMON = [
+    'Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.',
+    'Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.',
+    'Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.',
+    'Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.'
+  ];
+
+  var T = [
+    {
+      id: 'start', title: 'Getting started', route: '#suche',
+      summary: 'Find your way around: the layout, the quick jump with Ctrl or Cmd + K and the appearance setting.',
+      steps: [
+        { text: 'The top band shows what is in this build: patents, patent families, full texts, claims and extracted compounds. The left rail has the main sections: Search, Structure, Products, FTO, Landscape, Watchlist, How to (this page), Tools and System. On a phone the rail sits at the bottom. The big area on the right is the work area of the current section.', img: 'start-1', alt: 'The Search page with the top band, the left rail and a first list of results', route: '#suche' },
+        { text: 'Press Ctrl + K (Cmd + K on a Mac) anywhere, or click the field in the top band. Type a patent number to open it, any words to search, or the name of a section to jump there. Press Enter to take the first suggestion, Esc to close. Press ? for the list of keyboard shortcuts (for example j and k to move through results, s to put a result on the watchlist).', img: 'start-2', alt: 'The jump dialog open with the word ionizable typed in, offering a search for it' },
+        { text: 'The round button at the right end of the band changes the appearance: automatic (follows your device), light or dark. The footer of the rail says how old the data is and where your own notes and saved work are stored.' },
+        { text: 'Not sure where to begin? Search finds patents by words, Structure finds them by molecule, Tools holds the checks for a specific molecule or formulation, FTO pre-screens a whole product. The other tutorials in this list walk through each of them.' }
+      ],
+      limits: ['The keyboard shortcuts work when the cursor is not in a text field.']
+    },
+    {
+      id: 'search', title: 'Searching patents', route: '#suche',
+      summary: 'Search the claims, titles and abstracts, narrow the result with filters, and open a patent.',
+      steps: [
+        { text: 'Type words into the search box and press Enter. Here: ionizable lipid mRNA. The list shows each patent with its legal status, the owner, the priority year, the estimated expiry and the claim passages where your words occur (highlighted). Without a query the page shows a curated set of key families as a starting point.', img: 'search-1', alt: 'Search results for the query ionizable lipid mRNA with highlighted claim passages and filter lists on the left', route: '#suche' },
+        { text: 'The filters on the left narrow the list and show how many patents each choice would leave: legal status, office (US, EP, WO), owner, year, patent class (CPC) and kind code. Tick Granted to keep only granted patents. Chosen filters appear as chips above the list and can be removed there.', img: 'search-2', alt: 'The same search with the filter Granted ticked, fewer results and a chip showing the filter' },
+        { text: 'The buttons under the box write the search syntax for you: AND, OR, NOT, "phrase", NEAR/5 (words close together), * (any ending) and fields such as title:, claims:, indep: (independent claims only), asg: (owner), cpc:, year: and status:. Example: title:"lipid nanoparticle" asg:Moderna. Switch the order with Relevance, Date or Expiry; save the search with the disk button; export the list with CSV.', img: 'search-3', alt: 'Results for a field search combining a title phrase with an owner name' },
+        { text: 'Click a title to open the patent page (next tutorial). The star puts a patent on your watchlist; tick the boxes to select several: a bar at the bottom then offers Watch (all selected) and Check FTO (hand them to the FTO section).', route: '#suche' }
+      ],
+      limits: ['Search covers only patents with a full text in the corpus; a patent shown without claim passages is listed from its bibliographic data only.', 'Words are matched as written (with simple stemming). A concept described with other words is not found: try synonyms and chemical names.', 'The number of hits is the number in the corpus, not the number of patents in the world.']
+    },
+    {
+      id: 'patent', title: 'Reading a patent page', route: '#patent-EP3532103B1',
+      summary: 'Status, dates, claims, family and the legal timeline of one patent, with the example EP 3 532 103 B1.',
+      steps: [
+        { text: 'The top shows the number, the legal status (Granted, Pending, Lapsed ...), whether the patent is in force in Germany, the key family it belongs to, the title and the owner. Below are the buttons: Watch, Compare family, Check FTO, Context pack, Expiry timeline and Similar patents. The date cards give the estimated expiry with its basis (filing date plus 20 years), the priority, filing, publication and grant dates.', img: 'patent-1', alt: 'The top of the patent page for EP3532103B1 with status pills, buttons and date cards', route: '#patent-EP3532103B1' },
+        { text: 'Claims are the part that matters. The first claim is shown in full with its formula image; use Expand dependents to see the dependent claims, English or German to switch the language, and Copy or Link on a claim. Check Markush on a formula claim opens the Markush check (see that tutorial). On the right the box "Status and events" lists what the register says: lapses, fees, divisionals and the source and date of that information.', img: 'patent-2', alt: 'The claims section with claim 1 and its formula, next to the status and events box' },
+        { text: 'Further down: definitions taken from the description, the compounds found in the patent (open one in structure search), the abstract and the legal and prosecution timeline from the earliest priority to the estimated expiry. "Show more entries" reveals older events. Then come numeric ranges found in the claims, the members of the patent family, classification (CPC), links to Espacenet, the EP Register, Google Patents, PATENTSCOPE, Lens and SureChEMBL, and a private tag and note field.', img: 'patent-3', alt: 'The legal and prosecution timeline of the patent with priority, filing, grant and estimated expiry' }
+      ],
+      limits: ['Claim text and status are shown as stored in the snapshot. Check the official register before relying on a date or a status.', 'The explanation of claims by Claude is only available in the claude.ai Artifact version.', 'The expiry date is an estimate from the filing date; extensions (PTE, SPC), terminal disclaimers and unpaid fees are not all checked.']
+    },
+    {
+      id: 'structure', title: 'Structure search', route: '#struktur',
+      summary: 'Find lipids and the patents that mention them, by molecule instead of by words.',
+      steps: [
+        { text: 'Enter a SMILES, a name of a well-known lipid (here SM-102) or a SureChEMBL number and press Search. The buttons below the box fill in common LNP lipids. Alternatively open "Draw structure" and draw the molecule. The box under the mode buttons shows the molecule that was understood, with its tails, head group and linkers.', img: 'structure-1', alt: 'Structure search page with SM-102 entered; similar compounds listed with similarity scores', route: '#struktur' },
+        { text: 'Choose the mode. Similarity lists look-alikes with a percentage (move the slider for the minimum). Exact finds the same molecule. Substructure finds every compound that contains your molecule or fragment. Scaffold groups by the core. Filters narrow by tail length, number of tails, esters and amine type; "only with a match in claims" keeps compounds that appear in a claim.', img: 'structure-2', alt: 'The same molecule searched in substructure mode with 278 compounds found' },
+        { text: 'Each result card is one compound with the number of publications that disclose it and where (claims, description, abstract, formula image). Click a card to open its details with the patents that mention it and their legal status, plus buttons to search similar compounds or the same scaffold, or to copy the SMILES.' }
+      ],
+      limits: ['Only compounds that were extracted from the patents (84,691 in this build) can be found: structures that appear only in images or drawn as general formulas are not searched here (use the Markush check for those).', '"Appears in a claim" means the text of the claim contains it; it does not say that the claim protects it.', 'The extraction of structures can contain errors.']
+    },
+    {
+      id: 'fto', title: 'FTO pre-screening', route: '#fto',
+      summary: 'How the guided pre-screening of a product against patents works, and what you can do on the website without Claude.',
+      steps: [
+        { text: 'FTO means freedom to operate: may you sell this product without infringing someone else\'s patent? The FTO section checks a product profile against patents, element by element. Step 1 is the product: on the Products page create a profile with your lipids (with structure and share in mol %), payload, particle properties, process, use and markets. "Use example profile" loads a generic one to try.', img: 'fto-1', alt: 'The FTO page; a notice says the claim chart needs Claude in the artifact, steps 1 to 3 are listed below', route: '#fto' },
+        { text: 'Step 2 selects the candidates: the patents the profile is checked against, found by search, by structure and by your watchlist. Step 3 sets the depth: Quick (triage and claim charts for 5 patents), Standard (10) or Deep (20). The pre-screen then compares each independent claim with your profile feature by feature, notes the legal status and estimated expiry per patent, and lists open questions.' },
+        { text: 'The claim chart itself is written with Claude, so it runs only in the claude.ai Artifact version. On the public website the page shows the notice you see above; everything before the analysis still works there: the product profile, the search for candidates, and the other tools (Markush check, range check, structure search, expiry timeline). Saved pre-screens appear at the bottom of the page.' },
+        { text: 'Take the result to your patent attorney. The checks that code can do (quotes found in the claim text, numeric ranges, structure matches) are computed; Claude only translates and explains.', route: '#produkte' }
+      ],
+      limits: ['FTO output is a pre-screening, not legal advice and not an opinion on infringement or validity.', 'Only the independent claims of the selected candidates are compared; patents outside the corpus, pending applications that may change, and other countries are not covered.', 'The full run needs Claude and is only in the claude.ai Artifact version; the website shows what is possible without it.']
+    },
+    {
+      id: 'markush', title: 'Markush check', route: '#markush',
+      summary: 'Is a molecule inside the general formula of a claim? Shown with SM-102 and a curated claim of EP 3 350 157 B1.',
+      steps: [
+        { text: 'A Markush formula is a general formula in a claim with variable groups, so the molecule need not be named in the patent to be covered. Step 1: enter the molecule (a SMILES, or a name such as SM-102) and press Check. The picture and the formula confirm what was understood.', img: 'markush-1', alt: 'Markush check, step 1 with the SMILES of SM-102 entered, the drawn molecule and the start of step 2', route: '#markush' },
+        { text: 'Step 2: enter the patent number and press Load, then choose the claim. Curated records exist for a few patents (EP2350043B9, EP3221293B1, EP3350157B1, EP3368507B1, EP3766916B1); for them the formula is already translated into rules and marked "curated". For other patents the translation needs Claude (Artifact version) or your own rules typed into the rule editor (manual mode, "Edit by hand").' },
+        { text: 'Step 4 shows the verdict: here Covered, with the label "curated". Below it, Core says whether the common core of the formula was found in the molecule, and a table lists each variable of the claim with the verdict (met, not met), your fragment, the rule and the sentence of the claim it comes from. Quotes are checked against the claim text by code and marked "verified in the claim text".', img: 'markush-2', alt: 'Result column showing Covered and curated, the core found in the molecule and the first variable rows', route: '#markush' },
+        { text: 'Scroll through the table: every variable (chain length l, linkers M and M1, groups R2 and R3 ...) must be met for the molecule to be inside. One not-met row is enough to fall outside. "Design-around ideas" opens variants just outside the rules (see that tutorial). The Batch tab checks one molecule against all formula claims of a patent.', img: 'markush-3', alt: 'The variable table with each rule marked met and the claim text behind it' }
+      ],
+      limits: ['A curated or machine-read formula can contain mistakes; read the claim itself.', 'The check follows the literal wording of the claim. It does not cover equivalents, claim interpretation by a court or other claims of the patent.', 'Without Claude only curated records and your own rules work; formula images are not read automatically.']
+    },
+    {
+      id: 'screen', title: 'Library screen', route: '#screen',
+      summary: 'Run a whole list of molecules against the corpus in one go.',
+      steps: [
+        { text: 'Paste one molecule per line (SMILES or a known name) into the box, or load a CSV, TSV or SMI file (up to 5 MB) with "Load file". "Insert example" fills a sample. The table below shows each row and whether it was recognised as a structure. Here: SM-102, ALC-0315, DLin-MC3-DMA and a simple distearoyl lipid.', img: 'screen-1', alt: 'Library screen with four SMILES pasted and the table showing four recognised structures', route: '#screen' },
+        { text: 'Choose what to look for: Exact (with stereo variants), Similar (set the minimum similarity), Substructure (slow) and Markush check (against the curated formula records). Press Run screen.' },
+        { text: 'The summary shows how many compounds have a hit, how many appear in claims, how many in granted patents that are in force, and how many are covered by a Markush record. The table below flags each compound (for example "Exact, in claims, granted") with the counts of exact, similar and substructure hits and the number of publications. Filter by flag, sort the worst flag first, export with Export CSV, or keep the run with Save run.', img: 'screen-2', alt: 'Screen results: summary figures and a table of four compounds with flags such as Exact, in claims, granted', route: '#screen' }
+      ],
+      limits: ['Only structures extracted from the patents are matched; a patent that claims a general formula may cover a molecule without any hit here (use the Markush check).', 'A hit means the compound occurs in a patent, not that you infringe it.', 'The result is a pre-screening: status and dates are those of the snapshot.']
+    },
+    {
+      id: 'ranges', title: 'Range check', route: '#ranges',
+      summary: 'Compare the numbers of your formulation with the numeric ranges found in claims.',
+      steps: [
+        { text: 'Enter your values, one row each: choose the parameter (molar fraction in mol %, N/P ratio, particle size, pH ...), for mol % the component, and the value. Here: 50 mol % ionizable lipid, 10 mol % phospholipid, 38.5 mol % sterol (cholesterol), 1.5 mol % PEG lipid and a particle size of 80 nm. "Add value" adds a row, "Fill an example" fills a sample, or take the values from a saved product profile.', img: 'ranges-1', alt: 'Range check with five rows: four mol percent values by component and a particle size of 80 nm', route: '#ranges' },
+        { text: 'Choose "All values inside" (claims whose ranges contain every value you gave) or "Any value inside", and press Check claims. The result lists the claims, grouped into claims with all values inside and claims with some values inside.', img: 'ranges-2', alt: 'Result list of claims whose ranges contain all five values, with the matching claim passages highlighted', route: '#ranges' },
+        { text: 'Each claim shows, per value, the claimed range, the word that qualifies it (for example "about") and the passage of the claim, so you can check it. Export CSV saves the list. Open the patent from the claim number to read the claim in context.' }
+      ],
+      limits: ['The ranges were read from the claim text by pattern rules; a range with an unusual wording can be missed or mis-read, and a range inside a claim does not mean the claim reads on your product.', 'Only the numbers are compared, not the other features of the claim (lipid structure, payload, use).', 'Long result lists are cut (the page says so); narrow the values to see all.']
+    },
+    {
+      id: 'designs', title: 'Design-around ideas', route: '#designs',
+      summary: 'Variants of a molecule that fall just outside one claimed formula, for discussion with counsel.',
+      steps: [
+        { text: 'Enter the molecule (here SM-102), the patent (EP3350157B1) and the claim number (1) and press "Generate ideas". Code takes the Markush rule of that claim, finds the variables that the molecule meets, and changes one of them so that it just leaves the claimed range or group. The start point shows each variable and whether it is met.', img: 'designs-1', alt: 'List of generated variants with risk markers, the claim rule each one leaves, similarity to the start and patents to weigh', route: '#designs' },
+        { text: 'Each idea says which rule it leaves ("Add a C=C to R\'"), whether the new molecule is verified as outside the claim, how far it is from the start structure, a risk marker (low to high) and the patents to weigh: other publications in the corpus that disclose or claim a similar compound. Filter by maximum risk or kind of change, and export as Markdown or CSV or save.' }
+      ],
+      limits: ['An idea generator, not advice: a variant outside the literal wording of a claim can still infringe by equivalence or through another claim or patent.', 'Whether a variant can be made, is stable or works as a lipid is not checked.', 'Needs a curated or hand-made Markush record for the claim; Claude can add the translation in the Artifact version and writes only the commentary.']
+    },
+    {
+      id: 'disclosure', title: 'Earliest disclosure and white space', route: '#disclosure',
+      summary: 'When did a lipid first appear in the corpus, and which parts of the chemistry are crowded or empty?',
+      steps: [
+        { text: 'Open Earliest disclosure, enter a SMILES or a name (SM-102) and press "Show timeline". Choose how strict the match is: exact with stereo variants, exact only or similar. The figures give the earliest publication and the earliest priority date in the corpus, the earliest claim that contains it, and the numbers of publications and families. The timeline below draws one lane per patent family.', img: 'disclosure-1', alt: 'Earliest disclosure of SM-102: figures for earliest publication, priority and claim, then the family timeline', route: '#disclosure' },
+        { text: 'The white-space map compares two structural features of all extracted lipids, for example longest tail against head group. The darker the cell, the more compounds, publications or families sit there; empty cells show combinations that nobody in the corpus disclosed. Click a cell to list its compounds and publications; change the axes or the count with the controls on top.', img: 'disclosure-2', alt: 'White-space map as a blue heat map of tail length against head group', route: '#whitespace' }
+      ],
+      limits: ['Dates are those of documents in the corpus; an earlier disclosure outside it (papers, other patents, products) would not be shown. This is not a novelty assessment.', 'An empty cell means "not found in this corpus", not "free to use" and not "new".', 'Compounds come from automatic extraction and can be missing or wrong.']
+    },
+    {
+      id: 'expiry', title: 'Expiry timeline', route: '#expiry',
+      summary: 'When do the rights of a group of patents run out? Shown with four example patents.',
+      steps: [
+        { text: 'Choose a source: a product profile, an FTO opinion, your watchlist, a selection from the search, a list of compounds, or a list of publication numbers (shown here). Enter the numbers, choose the jurisdictions (EP, DE, US) and whether to include all family members, then press "Build timeline".', img: 'expiry-1', alt: 'Expiry timeline setup with the List source selected and four publication numbers entered', route: '#expiry' },
+        { text: 'The summary counts the rights in force, pending, no longer in force and expired, and gives the latest estimated expiry. The chart shows one bar per patent from the filing date to the estimated expiry (hatched: US patent term adjustment; dashed: pending application; the red line is today). Below the chart the patent cliff counts the expiries per year, and you can export a CSV or a calendar file (ICS).', img: 'expiry-2', alt: 'Timeline chart with four patents shown as bars from filing to estimated expiry', route: '#expiry' }
+      ],
+      limits: ['Estimates from filing dates plus patent term adjustment; PTE and SPC, terminal disclaimers and unpaid fees are not checked.', 'A pending application may be granted, narrowed or refused; its date is the latest possible expiry.', 'Not legal advice: check the dates at the register (EP Register, USPTO Patent Center).']
+    },
+    {
+      id: 'similar', title: 'Similar patents', route: '#similar',
+      summary: 'Query by example: find patents that resemble one you already know.',
+      steps: [
+        { text: 'Enter a publication number (here EP3532103B1) or switch to "Pasted text" and paste, for example, a claim or an abstract of your own. Press "Find similar".', route: '#similar' },
+        { text: 'The tool first shows what it compared: the claims, the compounds found and the patent classes of the source, then the distinctive words it will use. The results are one line per patent family with a score, a bar split into words, compounds and classes, and the reasons shared with the source. Members of the same family are listed separately, not as hits.', img: 'similar-1', alt: 'Similar patents for EP3532103B1: compared text, distinctive terms and a ranked list of similar families with score bars', route: '#similar' }
+      ],
+      limits: ['A similarity aid based on shared words, compounds and classes. It is not a novelty search, not a validity or infringement assessment.', 'A patent that describes the same thing in different words may rank low.']
+    },
+    {
+      id: 'watchlist', title: 'Watchlist and saved searches', route: '#merkliste',
+      summary: 'Keep the patents you follow, add a tag and a note, and rerun searches later.',
+      steps: [
+        { text: 'In the result list or on a patent page press the star. The patent goes on your watchlist and the counter in the rail grows. The key s does the same for the selected result.', img: 'watchlist-1', alt: 'Search results with three starred patents and a counter on the Watchlist entry in the rail', route: '#suche' },
+        { text: 'The Watchlist page lists your patents with legal status, estimated expiry, a tag and a free note that you can edit in the table. Sort by the last change, export as CSV or send all to the FTO check. Below, "Saved searches" keeps the searches you saved with the disk button in Search; "Run again" counts the results now and shows what is new since you saved it.', img: 'watchlist-2', alt: 'The watchlist table with three patents, status pills, tag and note fields', route: '#merkliste' }
+      ],
+      limits: ['Tags, notes and saved searches live in this browser (website) or in the artifact storage (claude.ai). Clearing the browser data deletes them; export a CSV to keep a copy.', 'Legal status and expiry are those of the data snapshot; the watchlist does not warn you of new events by itself, only after you update the data.']
+    },
+    {
+      id: 'ownai', title: 'Using the data with your own AI', route: '#tools',
+      summary: 'Context packs to paste into an assistant, window.LnpAPI for scripts, and the MCP server for Claude Desktop or Claude Code.',
+      steps: [
+        { text: 'Context pack: on a patent page press "Context pack" (or "Context pack (top 50)" in a result list), or open Tools and scroll to "Make a context pack". Enter publication numbers, one per line, choose Markdown or JSON and press "Build pack". Copy puts it on the clipboard, Download saves a file. Paste it into any assistant and ask your question below it.', img: 'ownai-1', alt: 'The Tools page section for AI tools with the three cards and a context pack built for one publication', route: '#tools' },
+        { text: 'The pack starts and ends with a limits statement, claims are copied word for word, and patent text sits inside marked blocks that the assistant is told to treat as quotation. Still check what the assistant says against the claims.' },
+        { text: 'window.LnpAPI: with the page open, press F12 and use the console: await LnpAPI.ready(); const r = await LnpAPI.search(\'ionizable lipid\', {limit: 5}); const c = await LnpAPI.claims(r.hits[0].pn, \'en\'). Every method returns plain JSON and none of them calls Claude. Reference: docs/LNPAPI.md.' },
+        { text: 'MCP server: start node mcp/server.mjs --dist /absolute/path/to/dist-pages from the repository, or register it in Claude Desktop (claude_desktop_config.json) or with claude mcp add in Claude Code. It reads the files of a website build on your computer, needs no network and offers search, claims, structure search, Markush, ranges, expiry, similar patents, earliest disclosure and context packs as tools. Steps and trust notes: docs/INTEGRATION.md and mcp/README.md.' }
+      ],
+      limits: ['Patent text in a pack is untrusted data: an assistant must ignore instructions inside it. The pack tells it so, but you remain responsible for what you paste where.', 'Whatever you paste into an assistant leaves your machine; check the rules of the tool and of your organisation first.', 'The MCP server and window.LnpAPI work on the website build (complete corpus) and on the Artifact build (corpus may be cut by the size budget); they never call a model themselves.']
+    }
+  ];
+
+  var data = { words: WORDS, common: COMMON, tutorials: T };
+  if (typeof module !== 'undefined' && module.exports) module.exports = data;
+  g.LnpHowtoData = data;
+})(typeof window !== 'undefined' ? window : globalThis);

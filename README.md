@@ -17,6 +17,7 @@ Tools (hub `#tools`, each works without Claude):
 - Expiry timeline / patent cliff (ICS and CSV export) and similar patents by text, compounds and CPC.
 - Legal event timeline, tags and normalised assignees as search facets, deep links to other patent databases.
 - For AI tools: `window.LnpAPI`, context packs to paste, and a local MCP server (`mcp/`, `docs/INTEGRATION.md`).
+- Step-by-step tutorials with screenshots: `docs/TUTORIALS.md` (also in the app under "How to").
 
 It is a research aid, not legal advice. Every FTO result is a pre-screening that has to be checked by a patent
 attorney; legal status and expiry dates are estimates from public snapshots.

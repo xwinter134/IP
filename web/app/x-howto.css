@@ -1,0 +1,74 @@
+/* LNP Patent Desk: How to (#howto). Tokens come from index.html (:root, light and dark), components from app.css / views.css. */
+
+.hw-page { min-width: 0; }
+.hw-grid { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 28px; align-items: start; min-width: 0; }
+
+/* ------------------------------------------------------------------ list of tutorials */
+.hw-list { position: sticky; top: 8px; display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.hw-item { position: relative; display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 7px 10px; border-radius: 8px; color: var(--dim); text-decoration: none; font-size: 13.5px; line-height: 1.35; }
+.hw-item:hover { background: var(--muted); color: var(--text); }
+.hw-item[aria-current="page"] { background: var(--muted); color: var(--text); font-weight: 500; }
+.hw-item[aria-current="page"]::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--signal); }
+.hw-n { flex: none; width: 18px; font-family: var(--mono); font-size: 10.5px; color: var(--faint); text-align: right; }
+.hw-t { min-width: 0; overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------------------ one tutorial */
+.hw-art { min-width: 0; outline: none; }
+.hw-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; min-width: 0; }
+.hw-title { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -.025em; text-wrap: balance; overflow-wrap: anywhere; }
+.hw-sum { margin: 0; color: var(--dim); max-width: 72ch; }
+.hw-act { margin: 4px 0 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.hw-try { text-decoration: none; }
+
+.hw-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 26px; counter-reset: hwstep; min-width: 0; }
+.hw-step { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding-left: 44px; counter-increment: hwstep; }
+.hw-step::before { content: counter(hwstep); position: absolute; left: 0; top: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 12.5px; }
+.hw-step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hw-text { margin: 0; max-width: 78ch; line-height: 1.55; overflow-wrap: anywhere; }
+.hw-fig { margin: 0; min-width: 0; }
+.hw-shot { display: block; width: 100%; max-width: 980px; margin: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--muted); overflow: hidden; cursor: zoom-in; box-shadow: var(--shadow); font: inherit; }
+.hw-shot:hover { border-color: var(--ring); }
+.hw-shot:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.hw-shot img { display: block; width: 100%; height: auto; aspect-ratio: 1366 / 854; }
+.hw-miss { margin: 0; padding: 14px; max-width: 980px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--dim); font-size: 13px; background: var(--surface); }
+
+.hw-limits { margin-top: 28px; padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 10px; background: var(--warn-bg); max-width: 980px; }
+.hw-limits h3 { margin: 0 0 6px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--warn); }
+.hw-limits-list { margin: 0; padding-left: 18px; list-style: disc; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; line-height: 1.45; color: var(--text); }
+.hw-limits-list li { overflow-wrap: anywhere; }
+
+.hw-pn { margin-top: 22px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; max-width: 980px; }
+.hw-pn .btn { text-decoration: none; max-width: 100%; }
+.hw-fwd { transform: scaleX(-1); }
+
+/* ------------------------------------------------------------------ words */
+.hw-gloss { margin-top: 32px; max-width: 980px; }
+.hw-words { margin: 0; display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 16px; font-size: 13.5px; line-height: 1.45; }
+.hw-words dt { font-weight: 500; overflow-wrap: anywhere; }
+.hw-words dd { margin: 0; color: var(--dim); }
+
+/* ------------------------------------------------------------------ full-size view */
+.hw-lb { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--scrim); padding: 12px; gap: 8px; }
+.hw-lb-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--bg); box-shadow: var(--shadow); min-width: 0; }
+.hw-lb-cap { flex: 1 1 auto; min-width: 0; font-size: 13px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hw-lb-bar .btn { flex: none; text-decoration: none; }
+.hw-lb-body { flex: 1 1 auto; min-height: 0; overflow: auto; border-radius: 10px; }
+.hw-lb-body img { display: block; max-width: none; width: 1366px; height: auto; margin: 0 auto; border-radius: 10px; background: var(--bg); }
+
+@media (max-width: 900px) {
+  .hw-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .hw-list { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; padding: 8px; }
+  .hw-item { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); font-size: 13px; }
+  .hw-item[aria-current="page"] { border-color: var(--text); }
+  .hw-item[aria-current="page"]::before { display: none; }
+  .hw-n { display: none; }
+}
+@media (max-width: 520px) {
+  .hw-step { padding-left: 0; padding-top: 38px; }
+  .hw-step::before { width: 26px; height: 26px; font-size: 12px; }
+  .hw-words { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .hw-words dd { margin-bottom: 8px; }
+  .hw-lb { padding: 6px; }
+  .hw-lb-cap { display: none; }
+  .hw-lb-bar { justify-content: flex-end; }
+}
