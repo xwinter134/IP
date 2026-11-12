@@ -305,6 +305,11 @@
   function altRuleText(alt, cv, gr) {
     if (cv.kind === 'repeat' && cv.range) return cv.name + ' = ' + cv.range.min + '-' + cv.range.max + ' units';
     if (!alt) return gr && gr.why ? String(gr.why).split(',')[0] : '';
+    // readable rule text, not the record's type names
+    if (alt.type === 'smiles') return str(alt.smiles) === '**' ? 'direct bond' : 'a group from the claim\u2019s list';
+    if (alt.type === 'smarts') return 'a group matching a drawn pattern';
+    if (alt.type === 'any') return 'any group';
+    if (alt.type === 'H') return 'hydrogen';
     var bits = [alt.type];
     if (isNum(alt.cMin) || isNum(alt.cMax)) bits.push('C' + (alt.cMin == null ? '' : alt.cMin) + (alt.cMax != null ? '-C' + alt.cMax : '+'));
     if (alt.branched === true) bits.push('branched'); else if (alt.branched === false) bits.push('linear');
@@ -625,7 +630,9 @@
     var reason;
     if (verified) {
       var use = tNot.length ? tNot : notMet;
-      reason = use.length ? use.map(function (x) { return x.name + ' ' + (x.why || 'not met'); }).join('; ').slice(0, 200) : 'the drawn core no longer matches the claim';
+      reason = use.length ? use.map(function (x) { return x.name + ': ' + (x.why || 'not met'); }).join('; ').slice(0, 200) : 'the drawn core no longer matches the claim';
+      // the moved variable is still met; the variant leaves the claim through a side effect on another variable
+      if (!tNot.length && notMet.length && tv.length) reason = ('not through ' + tv.join(' / ') + ' itself, but as a side effect on ' + reason).slice(0, 220);
     } else {
       var unc = groups.filter(function (x) { return x.verdict === 'unclear'; }).map(function (x) { return x.name + ' ' + (x.why || 'unclear'); });
       reason = 'the checker reads this variant as unclear' + (unc.length ? ' (' + unc.join('; ') + ')' : res.reasons && res.reasons[0] ? ' (' + String(res.reasons[0]) + ')' : '');
@@ -703,10 +710,11 @@
   }
   function moveLabel(mv) {
     if (!mv) return '';
-    if (mv.type === 'chain') return (mv.dir === 'longer' ? 'Lengthen ' : 'Shorten ') + mv.var + ' to C' + mv.to + ' (outside ' + mv.rule + ')';
+    if (mv.type === 'chain') return (mv.dir === 'longer' ? 'Lengthen ' : 'Shorten ') + mv.var + ' to C' + mv.to + ' (claim allows ' + mv.rule + ')';
     if (mv.type === 'unsaturation') {
       var n = isNum(mv.to) && isNum(mv.from) ? Math.abs(mv.to - mv.from) : 1, w = n === 1 ? 'a C=C' : n + ' C=C';
-      return (mv.dir === 'fewer' ? 'Reduce ' + w + ' in ' : 'Add ' + w + ' in ') + mv.var + ' (outside ' + mv.rule + ')';
+      var lim = /^at most 0 /.test(str(mv.rule)) ? 'claim allows none' : 'claim allows ' + str(mv.rule);
+      return (mv.dir === 'fewer' ? 'Remove ' + w + ' from ' : 'Add ' + w + ' to ') + mv.var + ' (' + lim + ')';
     }
     if (mv.type === 'branching') return (mv.dir === 'branched' ? 'Branch ' : 'Linearise ') + mv.var + ' (' + mv.rule + ')';
     if (mv.type === 'linker') return 'Swap ' + mv.from + ' linker -> ' + mv.to + (mv.orient ? ' (reversed)' : '');

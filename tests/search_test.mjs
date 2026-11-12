@@ -40,12 +40,16 @@ const eq = (a, b, name) => ok(JSON.stringify(a) === JSON.stringify(b), name, `go
 const note = (...a) => console.log('  ' + a.join(' '));
 
 // ------------------------------------------------------------------------------------------------ builds
-function build(name, extra) {
+// The comparison builds of the whole corpus get a budget that holds every full text: the corpus outgrew the 215 MB
+// Artifact default (the builder then cuts by design, tested in "budget cut" below), and the bin / b64 comparison needs
+// two builds with the same content.
+const FULL = ['--budget-mb', '450'], FULL_ENV = { LNP_HOST_MAX_MB: '500' };
+function build(name, extra, env) {
   const out = path.join(WORK, 'dist_' + name), bd = path.join(WORK, 'bd_' + name);
   if (extra.indexOf('--enc') < 0) extra = ['--enc', 'bin', ...extra];     // the builder's default is b64; these builds are the raw-binary ones
   const cmd = ['-I', path.join(ROOT, 'pipeline', 'build_dist.py'), '--corpus', CORPUS, '--out', out, '--build-dir', bd, ...extra];
   const t = Date.now();
-  const log = execFileSync('python3', cmd, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64e6, stdio: ['ignore', 'pipe', 'pipe'] });
+  const log = execFileSync('python3', cmd, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64e6, stdio: ['ignore', 'pipe', 'pipe'], env: Object.assign({}, process.env, env || {}) });
   fs.writeFileSync(path.join(WORK, `build_${name}.log`), log);
   note(`built ${name} in ${((Date.now() - t) / 1000).toFixed(1)} s -> ${out}`);
   return { out, bd, log };
@@ -342,15 +346,23 @@ async function nodePart() {
     rl.close();
   }
   const imgDir = path.join(WORK, 'img'), made = fakeImages(imgDir, first);
-  const B = build('bin', ['--img-dir', imgDir]), B64 = build('b64', ['--enc', 'b64', '--img-dir', imgDir]);
+  const B = build('bin', ['--img-dir', imgDir, ...FULL], FULL_ENV), B64 = build('b64', ['--enc', 'b64', '--img-dir', imgDir, ...FULL], FULL_ENV);
   const man = JSON.parse(fs.readFileSync(path.join(B.out, 'data', 'manifest.json'), 'utf8')), man64 = JSON.parse(fs.readFileSync(path.join(B64.out, 'data', 'manifest.json'), 'utf8'));
 
   section('dist layout and manifest');
+  // the host limits are checked on the real Artifact build (dist/, the pipeline/run_all.sh default) when it exists
+  { const md = path.join(ROOT, 'dist', 'data', 'manifest.json');
+    if (fs.existsSync(md)) {
+      const mA = JSON.parse(fs.readFileSync(md, 'utf8')), bat = JSON.parse(fs.readFileSync(path.join(ROOT, 'dist', 'publish_batches.json'), 'utf8'));
+      const nA = bat.reduce((a, b) => a + b.files.length, 0), bytesA = bat.reduce((a, b) => a + b.bytes, 0);
+      ok(mA.enc === 'b64' && nA <= 500 && bytesA <= 240e6 && Object.values(mA.files).every((v) => v[0] <= 15e6), 'dist/ (Artifact build): base64, at most 500 files, 240 MB, 15 MB per file', JSON.stringify({ enc: mA.enc, files: nA, bytes: bytesA }));
+    } else note('dist/ not built: host limits of the Artifact build not checked here');
+  }
   for (const [name, dir, m] of [['bin', B.out, man], ['b64', B64.out, man64]]) {
     const files = []; (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else files.push(path.relative(dir, f).split(path.sep).join('/')); } })(dir);
     const total = files.reduce((a, f) => a + fs.statSync(path.join(dir, f)).size, 0);
     ok(files.length <= 500, `${name}: at most 500 files`, String(files.length));
-    ok(total <= 240e6, `${name}: at most 240 MB`, String(total));
+    ok(total <= 450e6, `${name}: within the budget of the comparison build (450 MB)`, String(total));
     ok(files.every((f) => fs.statSync(path.join(dir, f)).size <= 15e6), `${name}: every file at most 15 MB`);
     ok(files.every((f) => /^[a-z0-9._\/-]+$/.test(f)), `${name}: file names [a-z0-9._-/]`, files.filter((f) => !/^[a-z0-9._\/-]+$/.test(f)).join(' '));
     eq(m.enc, name, `${name}: manifest.enc`);
@@ -375,7 +387,7 @@ async function nodePart() {
   // every .gz.bin really is gzip; b64 decodes to the same bytes
   { let same = true, n = 0; for (const f of Object.keys(man.files)) if (/\.bin$/.test(f)) { const a = fs.readFileSync(path.join(B.out, f)), b = Buffer.from(fs.readFileSync(path.join(B64.out, f.replace(/\.bin$/, '.b64.txt')), 'latin1'), 'base64'); if (/^data\/(idx\/|df-)/.test(f)) { if (!zlib.gunzipSync(a).equals(zlib.gunzipSync(b))) same = false; } else if (!a.equals(b)) same = false; n++; } ok(same, `base64 files decode to the binary files (${n} files)`); }
   // re-run: nothing rewritten (incremental), text index from cache
-  { const again = build('bin', ['--img-dir', imgDir]); const mw = /(\d+) files written, (\d+) unchanged/.exec(again.log); ok(mw && +mw[1] <= 1 && +mw[2] > 50, 're-run rewrites nothing but the manifest', mw ? mw[0] : 'no summary line'); ok(/cache hit/.test(again.log), 're-run reuses the text index'); }
+  { const again = build('bin', ['--img-dir', imgDir, ...FULL], FULL_ENV); const mw = /(\d+) files written, (\d+) unchanged/.exec(again.log); ok(mw && +mw[1] <= 1 && +mw[2] > 50, 're-run rewrites nothing but the manifest', mw ? mw[0] : 'no summary line'); ok(/cache hit/.test(again.log), 're-run reuses the text index'); }
 
   section('reference corpus');
   const ref = await loadRef(B.bd, 0), N = mk(ref), pick = picks(ref);

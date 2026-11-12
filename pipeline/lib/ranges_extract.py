@@ -50,6 +50,13 @@ class _Vocab(object):
             self.cmp[k] = re.compile(r"(?<![A-Za-z<>=≤≥])(?:%s)\s*$" % L[k], flags)
         self.suffix_hi = re.compile(r"^\s*(?:%s)" % L["suffix_hi"], flags)
         self.suffix_lo = re.compile(r"^\s*(?:%s)" % L["suffix_lo"], flags)
+        # two-sided range whose upper end carries its own comparator: "from 6 to less than 7", "more than 0.5 mol %
+        # and less than 3 mol %", "0.5 mol % or more and 3 mol % or less". Groups: sl = "or more" after the lower end,
+        # j = joiner word, hx / hn = exclusive / inclusive comparator before the upper end.
+        joiner = L.get("range_join", r"to|through|and|but|-")
+        self.cmp_gap = re.compile(r"^\s*(?P<sl>%s)?\s*,?\s*(?P<j>%s)\s+(?:(?P<hn>%s)|(?P<hx>%s))?\s*$"
+                                  % (L["suffix_lo"], joiner, L["hi_in"], L["hi_ex"]), flags)
+        self.and_word = re.compile(r"^(?:%s)$" % L.get("range_join_and", r"and|but"), flags)
         self.masks = [re.compile(p, flags) for p in L.get("mask", [])]
         self.clause = re.compile(vocab.get("clause_break", r";|\n"))
         self.generic_unit = re.compile(r"(?:%s)$" % vocab["generic_unit"][lang], flags)
@@ -315,9 +322,15 @@ def extract(claim_text, vocab, lang="en"):
             ok = bool(V.sep_re.match(gap))
             if not ok and V.sep_between_re.match(gap):
                 ok = bool(V.between_re.search(mt[max(0, t["s"] - 16):t["s"]]))
+            ex = None
             if ok:
-                exprs.append({"kind": "range", "a": t, "b": nxt, "lo": t["val"], "hi": nxt["val"], "loInc": True, "hiInc": True, "ap": t["ap"] or nxt["ap"],
-                              "s": t["s"], "e": nxt["e"], "i": i})
+                ex = {"kind": "range", "a": t, "b": nxt, "lo": t["val"], "hi": nxt["val"], "loInc": True, "hiInc": True, "ap": t["ap"] or nxt["ap"],
+                      "s": t["s"], "e": nxt["e"], "i": i}
+            elif t["val"] <= nxt["val"]:
+                ex = _cmp_range(V, mt, t, nxt, i)
+            if ex is not None:
+                _lower_cmp(V, mt, ex)
+                exprs.append(ex)
                 i += 2
                 continue
         # comparator before
@@ -446,7 +459,95 @@ def extract(claim_text, vocab, lang="en"):
             comp = need
         emit(param["id"], comp, lo, hi, ex["loInc"], ex["hiInc"], norm_unit if norm_unit is not None else param["unit"], ex["ap"], s, e)
     out.sort(key=lambda r: (r["off"], r["param"]))
+    return _merge_open(V, text, claim_text, out, bounds, n)
+
+
+_GAP_PLAIN = re.compile(r"^[\s,]*(?:(?:and|but|while|with)\b[\s,]*)?$", re.I)
+_GAP_BAD = re.compile(r"\d|;|\bor\b|\boder\b|\beither\b", re.I)
+
+
+def _merge_open(V, text, claim_text, rows, bounds, n):
+    """'more than X' and 'less than Y' for the same parameter and component in one clause are one interval: both limits
+    hold (a claim row list is otherwise read as alternatives). Joined only when nothing but joiner words, or words
+    without another component, stands between them, and never across "or"."""
+    out = []
+    i = 0
+    while i < len(rows):
+        r = rows[i]
+        q = rows[i + 1] if i + 1 < len(rows) else None
+        # the second number of "the PEG lipid ... at least X mol % and ... at most Y mol %" finds no component word of its
+        # own (the word is taken by the first number): it inherits the first one's component
+        inherit = q is not None and q["comp"] == -1 and r["comp"] >= 0
+        if q is not None and q["param"] == r["param"] and (q["comp"] == r["comp"] or inherit) and q["unit"] == r["unit"]:
+            a, b = (r, q) if (r["hi"] is None and r["lo"] is not None and q["lo"] is None and q["hi"] is not None) else \
+                   (q, r) if (q["hi"] is None and q["lo"] is not None and r["lo"] is None and r["hi"] is not None) else (None, None)
+            gs, ge = r["off"] + r["ml"], q["off"]
+            gap = text[gs:ge] if ge >= gs else None
+            same_clause = gap is not None and not any(gs <= x < ge for x in bounds)
+            ok = a is not None and same_clause and a["lo"] <= b["hi"] and len(gap) <= 60 and not _GAP_BAD.search(gap)
+            if ok and inherit:
+                ok = not [h for h in _comp_hits(V, text, gs, ge) if not V.comps[h[2]]["fallback"]]
+            if ok and not _GAP_PLAIN.match(gap):
+                ok = r["comp"] >= 0 and all(h[2] == r["comp"] or V.comps[h[2]]["fallback"] for h in _comp_hits(V, text, gs, ge))
+            if ok:
+                s, e = r["off"], q["off"] + q["ml"]
+                lead = max(0, s - V.win.get("quote_lead", 60))
+                end = min(n, max(lead + V.win.get("quote_max", 160), e))
+                out.append({"param": r["param"], "comp": r["comp"], "lo": a["lo"], "hi": b["hi"], "loInc": a["loInc"], "hiInc": b["hiInc"],
+                            "unit": r["unit"], "approx": r["approx"] or q["approx"], "q": claim_text[lead:end], "off": s, "ml": e - s})
+                i += 2
+                continue
+        out.append(r)
+        i += 1
     return out
+
+
+def _lead_cmp(V, mt, t):
+    """comparator word right before token t -> (kind, start) | None"""
+    before = mt[max(0, t["s"] - 32):t["s"]]
+    best = None
+    for k, rx in V.cmp.items():
+        cm = rx.search(before)
+        if cm and (best is None or cm.start() < best[1]):
+            best = (k, cm.start())
+    if best is None:
+        return None
+    return best[0], t["s"] - (len(before) - best[1])
+
+
+def _cmp_range(V, mt, t, nxt, i):
+    """two tokens joined by "to less than", "and less than", "or more and ... or less" -> one range expression | None.
+    "and" needs a marker of the lower end ("more than X", "X or more", "between X"), so that "X mol % and less than Y mol %"
+    of two different statements is not joined by accident."""
+    gap = mt[t["e"]:nxt["s"]]
+    gm = V.cmp_gap.match(gap)
+    if not gm:
+        return None
+    after = mt[nxt["e"]:nxt["e"] + 24]
+    shi = V.suffix_hi.match(after)
+    has_hi = bool(gm.group("hn") or gm.group("hx") or shi)
+    lead = _lead_cmp(V, mt, t)
+    lo_marker = bool(gm.group("sl")) or (lead is not None and lead[0].startswith("lo")) or bool(V.between_re.search(mt[max(0, t["s"] - 16):t["s"]]))
+    if lead is not None and lead[0].startswith("hi"):
+        return None         # "less than X and less than Y": two upper limits, not a range
+    if not has_hi and not gm.group("sl"):
+        return None         # plain "X and Y" is a list, handled elsewhere
+    if V.and_word.match(gm.group("j")) and not lo_marker:
+        return None
+    if not has_hi:
+        return None         # "X or more and Y": the second number has no comparator, leave it to the other rules
+    e = nxt["e"] + (shi.end() if shi and not (gm.group("hn") or gm.group("hx")) else 0)
+    return {"kind": "range", "a": t, "b": nxt, "lo": t["val"], "hi": nxt["val"], "loInc": True, "hiInc": not gm.group("hx"),
+            "ap": t["ap"] or nxt["ap"], "s": t["s"], "e": e, "i": i}
+
+
+def _lower_cmp(V, mt, ex):
+    """an exclusive comparator before the lower end of a range ("greater than 0.5 to 3") makes the lower bound exclusive"""
+    lead = _lead_cmp(V, mt, ex["a"])
+    if lead is None or not lead[0].startswith("lo"):
+        return
+    ex["loInc"] = lead[0] == "lo_in"
+    ex["s"] = lead[1]
 
 
 def _unit_class(V, utext):

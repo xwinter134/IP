@@ -28,7 +28,8 @@
   })();
 
   var PAGE = 40;
-  var STATUS = { inside: ['inside', 'crit'], outside: ['outside', 'good'], no_range_in_claim: ['no range in claim', 'hollow'] };
+  // "outside" is neutral, not an all-clear: ranges the rules do not read, "about" and equivalents can still apply
+  var STATUS = { inside: ['inside', 'crit'], outside: ['outside', 'hollow'], no_range_in_claim: ['no range in claim', 'hollow'] };
 
   /* ------------------------------------------------------------ shared pieces */
   // quote node: text before / <mark> / text after, built from text nodes (claim text is never parsed as HTML)
@@ -189,6 +190,9 @@
       if (rv.bad) { drawGrid(); U.toast('A value is not a number.', { error: true }); return; }
       if (!rv.values.length) { U.set(resBox, h('p.k-hint', { text: 'Enter at least one value.' })); return; }
       var my = ++seq;
+      // the values, the mode and the option travel in the URL, so a result can be shared, bookmarked and reloaded
+      st.vkey = rv.values.map(function (v) { return v.param + ':' + (v.comp || '') + ':' + v.value; });
+      R.go({ view: 'ranges', params: { v: st.vkey, m: st.mode === 'any' ? 'any' : '', s: st.strict ? '1' : '', p: st.pid || '' } }, { silent: true, replace: true });
       st.busy = true; U.set(resBox, K.busy('Comparing with the claim ranges …'));
       // give the busy line a chance to paint before the scan
       setTimeout(function () {
@@ -209,7 +213,9 @@
           h('div.rg-val-head', null, h('span.rg-val-name', { text: v.paramLabel + (v.comp ? ' · ' + v.comp : '') }), h('span.rg-val-num.mono', { text: U.num(v.value) + (v.unit ? ' ' + v.unit : '') }), h('span.pill.' + s[1], { text: s[0] })));
         if (v.row) {
           li.appendChild(h('div.rg-val-range', null, h('span.faint', { text: v.status === 'inside' ? 'claimed range ' : 'nearest claimed range ' }), h('span.mono', { text: rangeLine(v.row) }),
-            v.row.compLabel ? h('span.faint', { text: ' · ' + v.row.compLabel }) : (v.compUnknown ? h('span.tag', { title: 'The claim does not name a component next to this range, or the rules could not tell which', text: 'component not identified' }) : null), v.row.inherited ? h('span.tag.rg-inh', { text: 'from claim ' + v.row.fromClaim }) : null));
+            v.row.compLabel ? h('span.faint', { text: ' · ' + v.row.compLabel }) : (v.compUnknown ? h('span.tag', { title: 'The claim does not name a component next to this range, or the rules could not tell which', text: 'component not identified' }) : null), v.row.inherited ? h('span.tag.rg-inh', { text: 'from claim ' + v.row.fromClaim }) : null,
+            v.basisUnknown ? h('span.tag', { title: 'The claim gives a bare "%": it does not say whether the range is by mol or by weight', text: 'basis not stated (mol or weight)' }) : null,
+            v.row.approx && v.status !== 'inside' ? h('span.tag', { title: '"About" was read as the stated number; a court may read the range somewhat wider', text: '"about" can widen the range' }) : null));
           var ph = h('blockquote.rg-q', { text: 'Loading quote …' });
           li.appendChild(ph); loadQuote(v.row, ph);
         }
@@ -236,7 +242,7 @@
       res.all.concat(res.partial).forEach(function (c) {
         c.values.forEach(function (v) {
           var r = v.row;
-          rows.push([c.pn, c.claim, c.indep ? 'yes' : 'no', c.verdict === 'all' ? 'all inside' : 'partially inside', v.paramLabel, v.comp, v.value, v.unit, v.status + (v.compUnknown ? ' (component not identified)' : ''), r ? rangeLine(r) : '', r ? r.compLabel : '', r && r.inherited ? r.fromClaim : '', r ? r.q : '']);
+          rows.push([c.pn, c.claim, c.indep ? 'yes' : 'no', c.verdict === 'all' ? 'all inside' : 'partially inside', v.paramLabel, v.comp, v.value, v.unit, v.status + (v.compUnknown ? ' (component not identified)' : '') + (v.basisUnknown ? ' (basis not stated: mol or weight)' : ''), r ? rangeLine(r) : '', r ? r.compLabel : '', r && r.inherited ? r.fromClaim : '', r ? r.q : '']);
         });
       });
       return rows;
@@ -272,7 +278,9 @@
     var exBtn = h('button.btn.quiet.sm', { type: 'button', onclick: function () { st.pid = ''; st.pname = ''; st.vals = [newVal({ param: 'mol_pct', comp: 'ionizable_cationic', value: 50 }), newVal({ param: 'mol_pct', comp: 'peg', value: 1.5 }), newVal({ param: 'np_ratio', value: 6 }), newVal({ param: 'size_nm', value: 80 }), newVal({ param: 'pdi', value: 0.1 })]; drawProfiles(); drawGrid(); } }, 'Fill an example');
     var clrBtn = h('button.btn.quiet.sm', { type: 'button', onclick: function () { st.vals = [newVal()]; st.res = null; st.pname = ''; st.notes = []; drawProfiles(); drawGrid(); U.clear(resBox); } }, 'Clear');
     var goBtn = h('button.btn.primary', { type: 'button', onclick: run }, U.icon('search'), 'Check claims');
-    actions.appendChild(goBtn); actions.appendChild(modeSeg); actions.appendChild(looseLbl); actions.appendChild(addBtn); actions.appendChild(exBtn); actions.appendChild(clrBtn);
+    // order of work: edit the values, set the options, then run
+    var editRow = h('div.k-row.rg-edit', null, addBtn, exBtn, clrBtn);
+    actions.appendChild(modeSeg); actions.appendChild(looseLbl); actions.appendChild(goBtn);
 
     function build() {
       if (!Rg.available()) {
@@ -280,12 +288,27 @@
           h('p', { text: 'Reason: ' + (Rg.reason() || 'not in this build') + '. The check needs the file with the numeric ranges of the claims. The other views are not affected.' })));
         return;
       }
-      page.appendChild(K.sec('Your values', 'What should be compared', null, profBox, gridBox, actions));
+      page.appendChild(K.sec('Your values', 'What should be compared', null, profBox, gridBox, editRow, actions));
       page.appendChild(resBox);
       st.vals = [newVal()];
       drawProfiles(); drawGrid();
+      if (fromRoute(route)) return;
       var pid = route.params && route.params.p;
       if (pid) loadProfile(String(pid), true);
+    }
+    // #ranges--v<param:comp:value>-x...--m<any>--s<1>: restore the grid and run
+    function fromRoute(r) {
+      var P = (r && r.params) || {}, vs = R.list(P.v).map(String);
+      if (!vs.length) return false;
+      var known = {}; Rg.params().forEach(function (p) { known[p.id] = 1; });
+      var vals = vs.map(function (x) { var a = x.split(':'); return a.length === 3 && Object.prototype.hasOwnProperty.call(known, a[0]) && a[2] !== '' && isFinite(Number(a[2])) ? newVal({ param: a[0], comp: a[1], value: a[2] }) : null; }).filter(Boolean);
+      if (!vals.length) return false;
+      st.vals = vals; st.mode = P.m === 'any' ? 'any' : 'all'; st.strict = P.s === '1'; st.pid = P.p ? String(P.p) : ''; st.pname = '';
+      looseChk.checked = st.strict;
+      Array.prototype.forEach.call(modeSeg.children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.m === st.mode)); });
+      st.vkey = vs;
+      drawProfiles(); drawGrid(); run();
+      return true;
     }
     // profiles for the select (kind "profiles"); a missing store just leaves the list empty
     var pre = St && St.list ? St.list('profiles').then(function (l) { st.profiles = (l || []).filter(function (p) { return p && Array.isArray(p.lipids); }); }, function () { st.profiles = []; }) : Promise.resolve();
@@ -299,6 +322,10 @@
     return {
       update: function (r) {
         route = r;
+        if (!Rg.available()) return true;
+        var vs = R.list(r.params && r.params.v).map(String);
+        if (vs.length && vs.join('|') !== (st.vkey || []).join('|')) { fromRoute(r); return true; }
+        if (vs.length) return true;
         var pid = r.params && r.params.p;
         if (pid && String(pid) !== st.pid && Rg.available()) { loadProfile(String(pid), true); return true; }
         return true;

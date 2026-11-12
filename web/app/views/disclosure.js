@@ -85,7 +85,7 @@
       if (!q || !Ch) { U.clear(preview); return; }
       Ch.parse(q).then(function (p) {
         if (my !== prevSeq || dead) return;
-        if (!p || !p.ok) { U.set(preview, h('p.notice.err', { text: 'The input was not recognised as a structure' + (p && p.error ? ': ' + p.error : '') + '. Accepted are SMILES, the name of a reference lipid or a SCHEMBL number.' })); return; }
+        if (!p || !p.ok) { U.set(preview, h('p.notice.err', { text: 'The input was not recognised as a structure' + (p && p.error ? ': ' + K.chemErr(p.error) : '') + '. Accepted are SMILES, the name of a reference lipid or a SCHEMBL number.' })); return; }
         var info = h('div.k-preview-info', null, h('p.k-sub', { text: (p.name ? p.name + ' · ' : p.id ? p.id + ' · ' : '') + (p.formula || '') + (p.mw ? ' · ' + U.num(Math.round(p.mw * 10) / 10) + ' g/mol' : '') }));
         U.set(preview, h('div.k-preview-box', null, K.mol(p.smiles || q, 260, 130, p.formula), info));
       }, function (e) { if (my === prevSeq && !dead) U.set(preview, K.errBox(e)); });

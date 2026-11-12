@@ -1,9 +1,12 @@
 /* End-to-end test of dist/ in headless Chromium behind a server that mimics the Artifact host (tests/artifact_server.cjs).
      node tests/e2e.cjs [--dist dist] [--only a,b] [--shots DIR] [--report FILE] [--no-fixture] [--headed] [--bin DIR] [--lowmem]
-   Parts (--only): main, mobile, noclaude, nullcaps, blob, strict, faults, fixture, perf, bin (bin only on request)
+   Parts (--only): main, mobile, noclaude, nullcaps, tools, toolsnoclaude, toolsnull, blob, strict, faults, fixture, perf, bin (bin only on request)
    --lowmem: the page sees navigator.deviceMemory = 2 (small-device cache sizes of the engines)
      main      window.claude mocked (sample with canned JSON, downloads, db, user): the whole tool end to end
      noclaude  window.claude absent            nullcaps  claude.use() resolves null for everything
+     tools     the tools of docs/TOOLS_PLAN.md (hub, Markush with mocked translation and OCSR, screen, ranges, design-around,
+               disclosure, white-space, expiry, similar, legal, LnpAPI)
+     toolsnoclaude / toolsnull   every tool view without Claude (manual mode), 390 px, dark
      blob      file workers answer 404 -> blob: workers
      strict    worker-src 'none' -> engines on the main thread
      bin       the raw-binary build (python3 pipeline/build_dist.py --enc bin; --bin DIR or built into a temp dir)
@@ -81,7 +84,7 @@ function makeSample(plan = {}) {
   const calls = [];
   const fn = (input, opt) => {
     const turns = Array.isArray(input) ? input : null, prompt = String(turns ? turns[0].content : input);
-    const step = (/\n\nSTEP ([ATBCED]) /.exec(prompt) || [])[1] || (/Turn the search request below/.test(prompt) ? 'X' : /decide how relevant each patent claim/.test(prompt) ? 'R' : /Erkläre den folgenden Patentanspruch|Explain the following patent claim/.test(prompt) ? 'Q' : '?');
+    const step = /Translate one patent claim that defines compounds by a drawn general formula/.test(prompt) ? 'MK' : /chemical structure drawing/.test(prompt) ? 'OC' : (/\n\nSTEP ([ATBCED]) /.exec(prompt) || [])[1] || (/Turn the search request below/.test(prompt) ? 'X' : /decide how relevant each patent claim/.test(prompt) ? 'R' : /Erkläre den folgenden Patentanspruch|Explain the following patent claim/.test(prompt) ? 'Q' : '?');
     const id = (/<biblio>\{"patent_id":"([^"]+)"/.exec(prompt) || [])[1] || null;
     const bytes = Buffer.byteLength(turns ? turns.map((t) => t.content).join('') : prompt);
     const rec = { n: calls.length + 1, step, id, bytes, tier: (opt && opt.tier) || 'default', images: (opt && opt.images) || 0, prompt, repair: !!turns && turns.length > 1 };
@@ -98,6 +101,9 @@ function makeSample(plan = {}) {
       case 'D': { const ids = [...new Set([...prompt.slice(prompt.lastIndexOf('<digests>[')).matchAll(/"patent_id":"([^"]+)"/g)].map((m) => m[1]))]; out = opObj(ids); break; }
       case 'X': out = { concepts: [{ label: 'lnp', must: true, en: ['lipid nanoparticle', 'nucleic acid-lipid particle'], de: ['lipidnanopartikel'], prefix: ['liposom'] }, { label: 'ratio', must: false, en: ['mol %'], de: [], prefix: [] }], cpc: ['A61K9/51'], exclude: [], note: 'n' }; break;
       case 'R': { const ids = [...prompt.matchAll(/<claim id="(\d+)"/g)].map((m) => Number(m[1])); out = { r: ids.map((x) => ({ id: x, s: x % 4, why: 'reason ' + x + ' <i>x</i>', check: ['c'] })) }; break; }
+      // Markush tools: plan.markush / plan.ocsr hold the canned replies (set per scenario through S.plan)
+      case 'MK': out = plan.markush || '{}'; break;
+      case 'OC': out = plan.ocsr || '{"smiles":"CCN(C[*:1])C[*:2]","note":"[*:1]=R1, [*:2]=R2"}'; break;
       case 'Q': out = 'The claim protects a particle. <script>window.__xss=7</script> This is an explanation, not legal advice.'; break;
       default: out = 'plain';
     }
@@ -123,7 +129,7 @@ function initScript(cfg) {
       return { text: r.text, truncated: false, modelTierApplied: opt.modelTier || 'default' };
     });
   };
-  sample.limits = function () { return { maxPromptBytes: 262144, modelTiers: ['default', 'complex', 'quick'] }; };
+  sample.limits = function () { var l = { maxPromptBytes: 262144, modelTiers: ['default', 'complex', 'quick'] }; if (cfg.images) l.images = { maxCount: 5, maxInputBytes: 5000000, mediaTypes: ['image/png', 'image/jpeg'] }; return l; };
   sample.json = function (i, o) { return sample(i, o).then(function (r) { return JSON.parse(r.text); }); };
   var store = window.__e2e.db;
   function docRef(col, id) {
@@ -153,7 +159,7 @@ async function session(o = {}) {
   const srv = await serve({ dist: o.dist || DIST, mode: o.mode === 'bin' ? 'host' : (o.mode || 'host'), faults, bin: !!o.bin });
   const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, acceptDownloads: true, colorScheme: o.colorScheme || 'light', locale: 'de-DE' });
   const page = await ctx.newPage();
-  const st = { console: [], pageErrors: [], offOrigin: [], fonts: 0, failed: [], requests: 0, downloads: [], sample: makeSample(o.plan || {}) };
+  const st = { console: [], pageErrors: [], offOrigin: [], fonts: 0, failed: [], requests: 0, downloads: [], sample: makeSample(o.plan = o.plan || {}) };
   await ctx.route((u) => u.origin !== srv.origin && u.protocol !== 'blob:' && u.protocol !== 'data:', (route) => {
     const u = new URL(route.request().url());
     if (u.hostname === 'fonts.googleapis.com') { st.fonts++; return route.fulfill({ status: 200, contentType: 'text/css', body: '/* fonts answered by the test */' }); }
@@ -166,9 +172,9 @@ async function session(o = {}) {
   page.on('pageerror', (e) => st.pageErrors.push(String(e && e.stack || e).slice(0, 500)));
   page.on('download', (d) => { st.downloads.push(d.suggestedFilename()); d.cancel().catch(() => {}); });
   await page.exposeFunction('__e2eSample', (s) => { const m = JSON.parse(s); return JSON.stringify(st.sample.fn(m.input, m.opt)); });
-  await page.addInitScript(initScript, { claude: o.claude || 'absent', lowMem: !!o.lowMem || flag('lowmem') });
+  await page.addInitScript(initScript, { claude: o.claude || 'absent', lowMem: !!o.lowMem || flag('lowmem'), images: !!o.images });
   const S = {
-    page, ctx, srv, st, faults, origin: srv.origin,
+    page, ctx, srv, st, faults, origin: srv.origin, plan: o.plan,
     async boot(hash, opt = {}) {
       const t0 = Date.now();
       await page.goto(srv.origin + '/' + (hash || ''), { waitUntil: 'commit' });
@@ -777,6 +783,203 @@ async function partNoClaude(kind) {
   } finally { await S.close(); }
 }
 
+/* ------------------------------------------------------------------------------------------------ part: tools (docs/TOOLS_PLAN.md) */
+const SM102_SMILES = 'CCCCCCCCCCCOC(=O)CCCCCN(CCCCCCCC(=O)OC(CCCCCCCC)CCCCCCCC)CCO';
+const MK_TOY_CORE = 'CCN(C[*:1])C[*:2]';
+const MK_CURATED = ['EP3350157B1', 'EP3368507B1', 'EP3766916B1', 'EP2350043B9', 'EP3221293B1'];
+// a valid mk-1 reply of the mocked model: toy core, two alkyl groups, quotes copied from the claim text (checked by the app)
+const mkTranslation = (quote) => JSON.stringify({ v: 'mk-1', core: { smiles: MK_TOY_CORE, note: 'toy core read from the mocked image' },
+  vars: [{ name: 'R1', attach: [1], kind: 'substituent', optional: false, quote, alts: [{ type: 'alkyl', cMin: 1, cMax: 12, substituted: false }] },
+    { name: 'R2', attach: [2], kind: 'substituent', optional: false, quote, alts: [{ type: 'alkyl', cMin: 1, cMax: 12, substituted: false }] }],
+  provisos: [], unsupported: [] });
+const mkOverall = (S) => S.page.evaluate(() => { const e = document.querySelector('#mk-overall'); return e ? e.dataset.v : null; });
+async function mkWait(S, want, ms) {
+  await S.wait((w) => { const e = document.querySelector('#mk-overall'); return e && (!w || e.dataset.v === w); }, want || null, ms || 60000).catch(() => {});
+  return mkOverall(S);
+}
+const elText = (S, sel) => S.page.evaluate((s) => { const e = document.querySelector(s); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; }, sel);
+// routes of the tool views and the condition that says the view has drawn its content
+async function toolRoutes(S) {
+  return [
+    ['#tools', () => document.querySelectorAll('.tl-card').length >= 10],
+    [await S.hashOf({ view: 'markush', arg: 'EP3350157B1', params: { c: '1', q: SM102_SMILES } }), () => !!document.querySelector('#mk-overall')],
+    ['#screen', () => !!document.getElementById('sc-input')],
+    ['#ranges', () => !!document.querySelector('.rg-page .rg-row')],
+    ['#designs', () => !!document.querySelector('.da-page')],
+    ['#disclosure-SM-2d102', () => !!document.querySelector('.cm-tl .cm-m')],
+    ['#whitespace', () => !!document.querySelector('.ws-grid .ws-cell')],
+    ['#expiry--spns--lEP3532103B1-xUS10000445B2-xEP3394030B2', () => !!document.querySelector('.ex-tl-row[data-pn]')],
+    ['#similar-EP3532103B1', () => !!document.querySelector('.sm-hit')],
+    ['#legal-EP3350157B1', () => !!document.querySelector('.lg-page .lg-tl') || !!document.querySelector('#view .empty')]
+  ];
+}
+
+async function partTools() {
+  section('tools: every new tool with a mocked window.claude (Markush translation and OCSR answered with canned JSON)');
+  const S = await session({ claude: 'mock', images: true });   // the mocked sample() accepts images (limits().images)
+  try {
+    const b = await S.boot(''); ok(b.ready, 'boots');
+    await S.wait(() => window.LnpAI && window.LnpAI.available(), null, 20000).catch(() => {});
+    const reg = await S.page.evaluate(() => ({ views: Object.keys(window.LnpApp.views || {}), eng: ['LnpMarkush', 'LnpScreen', 'LnpRanges', 'LnpDesign', 'LnpDisclosure', 'LnpExpiry', 'LnpSimilar', 'LnpTags', 'LnpLinks', 'LnpLegal', 'LnpAPI', 'LnpContext'].filter((n) => !window[n]),
+      x: Object.keys((window.LnpData.manifest || {}).x || {}), rail: Array.from(document.querySelectorAll('#rail a')).map((a) => a.getAttribute('href')), ai: window.LnpAI.available() }));
+    ok(['markush', 'screen', 'ranges', 'designs', 'disclosure', 'whitespace', 'expiry', 'similar', 'tools', 'legal'].every((v) => reg.views.indexOf(v) >= 0), 'all tool views are registered', reg.views);
+    ok(reg.eng.length === 0, 'all tool engines are loaded (LnpMarkush ... LnpContext)', reg.eng);
+    ok(['markush', 'ranges', 'tags'].every((n) => reg.x.indexOf(n) >= 0), 'extra datasets markush, ranges, tags are in this build (' + reg.x.join(', ') + ')', reg.x);
+    ok(reg.rail.indexOf('#tools') >= 0 && reg.rail.filter((h) => /^#(markush|screen|ranges|designs|disclosure|whitespace|expiry|similar|legal)/.test(h)).length === 0, 'one new rail entry (Tools); the tool views are reached through the hub', reg.rail);
+    ok(reg.ai, 'LnpAI is available with the mock');
+
+    await step('tools hub', async () => {
+      await S.go('#tools'); await S.wait(() => document.querySelectorAll('.tl-card').length >= 10, null, 60000);
+      const hub = await S.page.evaluate(() => Array.from(document.querySelectorAll('.tl-card')).map((c) => ({ id: c.dataset.tool, state: c.dataset.state, ai: c.dataset.ai, link: (c.querySelector('a.btn') || {}).getAttribute ? c.querySelector('a.btn').getAttribute('href') : null })));
+      ok(hub.length === 10 && hub.every((c) => c.state === 'ready'), 'hub: ten tool cards, every tool ready in this build', hub.filter((c) => c.state !== 'ready'));
+      ok(hub.filter((c) => c.ai === 'available').map((c) => c.id).sort().join() === 'designs,markush' && !hub.some((c) => c.ai === 'manual'), 'hub: Markush and design-around report Claude available, no tool in manual mode', hub.map((c) => c.id + ':' + c.ai));
+    });
+
+    await step('markush curated', async () => {
+      await S.go(await S.hashOf({ view: 'markush', arg: 'EP3350157B1', params: { c: '1', q: SM102_SMILES } }));
+      const v = await mkWait(S, 'covered', 90000);
+      ok(v === 'covered', 'Markush: SM-102 against the curated record of EP3350157B1 claim 1 is covered (code-verified)', v);
+      const rows = await S.page.evaluate(() => Array.from(document.querySelectorAll('#mk-groups tbody tr')).map((r) => ({ v: r.dataset.v, q: r.querySelector('.mk-qs') ? r.querySelector('.mk-qs').dataset.s : null })));
+      ok(rows.length >= 9 && rows.filter((r) => r.v === 'met').every((r) => r.q === 'ok'), 'Markush: one row per variable, every met variable with a verified quote (' + rows.length + ' rows)', rows);
+      ok(/not legal advice/i.test(await elText(S, '#mk-limits') || ''), 'Markush: limits box says pre-screening, not legal advice');
+      ok(!(await S.page.$('#mk-manual')) && !!(await S.page.$('.mk-fig .btn, #mk-translate')), 'Markush: Claude buttons offered, no manual-mode notice');
+      await S.shot('tools-markush');
+    });
+
+    await step('markush translate (mock)', async () => {
+      const T = await S.page.evaluate(async (cur) => {
+        const skip = new Set(cur);
+        const r = await LnpSearch.search('', { filters: { hasImg: true, textOnly: true }, limit: 60 });
+        for (const hit of r.hits) {
+          const P = await LnpData.patent(hit.p); if (skip.has(P.pn)) continue;
+          let cl = []; try { cl = await LnpMarkush.claimsWithFormula(hit.p); } catch (e) { continue; }
+          const c = cl.find((x) => x.images.length && String(x.text).length > 200);
+          if (c) return { pn: P.pn, claim: c.n, text: c.text };
+        }
+        return null;
+      }, MK_CURATED);
+      if (!ok(!!T, 'Markush: an uncurated formula claim with its image is in this build', T)) return;
+      S.plan.markush = mkTranslation(T.text.replace(/\s+/g, ' ').trim().slice(20, 70));
+      const before = S.st.sample.calls.length;
+      await S.go(await S.hashOf({ view: 'markush', arg: T.pn, params: { c: String(T.claim), q: 'CCN(CCC)CCCC' } }));
+      await S.wait(() => !!document.getElementById('mk-translate'), null, 60000);
+      await S.page.click('#mk-translate');
+      const v = await mkWait(S, null, 60000);
+      const calls = S.st.sample.calls.slice(before);
+      ok(v === 'covered', 'Markush translate: the toy molecule is covered under the mocked translation of ' + T.pn + ' claim ' + T.claim, v);
+      ok(/not reviewed/.test(await elText(S, '#mk-caveat') || ''), 'Markush translate: result carries the "translation not reviewed" caveat');
+      const qs = await S.page.evaluate(() => Array.from(document.querySelectorAll('#mk-groups .mk-qs')).map((e) => e.dataset.s));
+      ok(qs.length >= 2 && qs.every((s) => s === 'ok'), 'Markush translate: the quotes were verified against the claim text by code', qs);
+      ok(calls.length === 1 && calls[0].step === 'MK' && calls[0].images >= 1, 'Markush translate: exactly one model call, with the formula image', calls.map((c) => [c.step, c.images]));
+      ok(/ignore|untrusted|instructions/i.test(calls[0] ? calls[0].prompt : ''), 'Markush translate: the prompt tells the model to ignore instructions inside the patent text');
+      // OCSR on the curated claim (image in the build)
+      S.plan.ocsr = JSON.stringify({ smiles: MK_TOY_CORE, note: '[*:1]=R1, [*:2]=R2' });
+      await S.go(await S.hashOf({ view: 'markush', arg: 'EP3350157B1', params: { c: '1', q: 'CCN(CCC)CCCC' } }));
+      const fig = await S.wait(() => !!document.querySelector('.mk-fig .btn'), null, 60000).then(() => true, () => false);
+      if (ok(fig, 'Markush OCSR: "Read structure with Claude" offered next to the formula image')) {
+        const n0 = S.st.sample.calls.length;
+        await S.page.click('.mk-fig .btn');
+        await S.wait(() => !!document.querySelector('.mk-ocsr-ok') || !!document.querySelector('.mk-ocsr .notice.err'), null, 30000);
+        ok(/machine-extracted/.test(await elText(S, '.mk-ocsr-ok') || ''), 'Markush OCSR: the OpenChemLib-validated SMILES is labelled machine-extracted', await elText(S, '.mk-ocsr'));
+        ok(await S.page.evaluate((c) => (document.querySelector('#mk-core') || {}).value === c, MK_TOY_CORE), 'Markush OCSR: the core SMILES field is filled');
+        const oc = S.st.sample.calls.slice(n0);
+        ok(oc.length === 1 && oc[0].step === 'OC' && oc[0].images === 1, 'Markush OCSR: one call with one image', oc.map((c) => [c.step, c.images]));
+      }
+      await S.shot('tools-markush-translate');
+    });
+
+    await step('screen', async () => {
+      await S.go('#screen'); await S.wait(() => !!document.getElementById('sc-input'), null, 60000);
+      await S.page.fill('#sc-input', 'SM-102\nALC-0315\nC(C\n' + SM102_SMILES);
+      await S.wait(() => /recognised as structures/.test((document.querySelector('.sc-pv') || {}).textContent || ''), null, 120000);
+      await S.page.click('#sc-run');
+      await S.wait(() => /^(Done|Cancelled)/.test((document.querySelector('.sc-prog') || {}).textContent || ''), null, 240000);
+      const r = await S.page.evaluate(() => ({ prog: document.querySelector('.sc-prog').textContent, rows: document.querySelectorAll('tr.sc-row').length, text: document.getElementById('view').innerText, lim: (document.querySelector('.sc-limits') || {}).textContent || '' }));
+      ok(/^Done/.test(r.prog) && r.rows >= 3, 'screen: run finished with a row per valid compound (' + r.rows + ')', r.prog);
+      ok(/covered/i.test(r.text), 'screen: SM-102 is reported as covered by a curated Markush record');
+      ok(/not legal advice/.test(r.lim), 'screen: limits box');
+      await S.shot('tools-screen');
+    });
+
+    await step('ranges', async () => {
+      await S.go('#ranges'); await S.wait(() => !!document.querySelector('.rg-page .rg-row'), null, 60000);
+      await S.page.click('#view button:has-text("Fill an example")');
+      await S.page.click('#view button:has-text("Check claims")');
+      await S.wait(() => !!document.querySelector('.rg-claim, .rg-empty'), null, 90000);
+      const r = await S.page.evaluate(() => ({ claims: document.querySelectorAll('.rg-claim').length, lim: document.querySelectorAll('details.rg-limits').length, bad: Array.from(document.querySelectorAll('.rg-q *')).filter((e) => e.tagName !== 'MARK' && e.tagName !== 'SPAN').length }));
+      ok(r.claims > 0 && r.lim === 1, 'ranges: example profile gives claim cards (' + r.claims + ') and a limits box', r);
+      ok(r.bad === 0, 'ranges: quotes are text with marks only');
+      await S.shot('tools-ranges');
+    });
+
+    await step('designs', async () => {
+      await S.go('#designs'); await S.wait(() => !!document.querySelector('.da-page'), null, 60000);
+      await S.page.fill('#da-q', SM102_SMILES); await S.page.fill('#da-pn', 'EP3350157B1'); await S.page.fill('#da-c', '1');
+      await S.page.click('.da-form .btn.primary');
+      await S.wait(() => { const b = document.querySelector('.da-body'), s = document.querySelector('.da-status'); return b && b.querySelector('.da-card') && s && !s.textContent.trim(); }, null, 180000);
+      const r = await S.page.evaluate(() => ({ cards: document.querySelectorAll('.da-card').length, banner: (document.querySelector('.da-banner') || {}).textContent || '' }));
+      ok(r.cards > 0, 'design-around: ranked variant cards (' + r.cards + ')');
+      ok(/not advice|idea generator/i.test(r.banner) && /equivalence/i.test(r.banner), 'design-around: disclaimer banner (idea generator, equivalence)', r.banner.slice(0, 200));
+      await S.shot('tools-designs');
+    });
+
+    await step('disclosure + whitespace', async () => {
+      await S.go('#disclosure-SM-2d102'); await S.wait(() => !!document.querySelector('.cm-tl .cm-m'), null, 120000);
+      const d = await S.page.evaluate(() => ({ marks: document.querySelectorAll('.cm-m').length, stats: (document.querySelector('.k-stats') || {}).textContent || '', lim: (document.querySelector('.cm-limits') || {}).textContent || '' }));
+      ok(d.marks > 5 && /Earliest priority/.test(d.stats) && /not legal advice/.test(d.lim), 'disclosure: SM-102 timeline with earliest dates and limits (' + d.marks + ' marks)', d.stats.slice(0, 160));
+      await S.go('#whitespace'); await S.wait(() => !!document.querySelector('.ws-grid .ws-cell'), null, 120000);
+      const n = await count(S, '.ws-cell'); ok(n > 10, 'white-space: heat map with ' + n + ' cells');
+      await S.shot('tools-whitespace');
+    });
+
+    await step('expiry + similar + legal', async () => {
+      await S.go('#expiry--spns--lEP3532103B1-xUS10000445B2-xEP3394030B2'); await S.wait(() => !!document.querySelector('.ex-tl-row[data-pn]'), null, 120000);
+      const e = await S.page.evaluate(() => ({ lanes: document.querySelectorAll('.ex-tl-row[data-pn]').length, text: (document.querySelector('.ex-page') || {}).textContent || '' }));
+      ok(e.lanes >= 2 && /not checked/.test(e.text), 'expiry: lanes for the pasted rights, PTE/SPC marked not checked (' + e.lanes + ')');
+      await S.go('#similar-EP3532103B1'); await S.wait(() => !!document.querySelector('.sm-hit'), null, 120000);
+      ok(await count(S, '.sm-hit') >= 5, 'similar: hits for EP3532103B1');
+      await S.go('#legal-EP3350157B1'); await S.wait(() => !!document.querySelector('.lg-page .lg-tl') || !!document.querySelector('#view .empty'), null, 60000);
+      ok(!!(await S.page.$('.lg-page .lg-tl')), 'legal: event timeline for EP3350157B1');
+    });
+
+    await step('api facade', async () => {
+      const r = await S.page.evaluate(async () => { const c = await window.LnpAPI.corpus(); const m = await window.LnpAPI.markush.check({ pn: 'EP3350157B1', claim: 1 }, 'CCCCCCCCCCCOC(=O)CCCCCN(CCCCCCCC(=O)OC(CCCCCCCC)CCCCCCCC)CCO'); return { c: JSON.parse(JSON.stringify(c)), m: JSON.parse(JSON.stringify(m)) }; });
+      ok(r.c && r.c.counts && r.c.counts.patents > 1000, 'LnpAPI.corpus() returns plain counts', r.c && r.c.counts);
+      ok(r.m && r.m.result && r.m.result.overall === 'covered', 'LnpAPI.markush.check() gives the same verdict as the view', r.m);
+    });
+    await S.clean('tools');
+  } finally { await S.close(); }
+}
+
+/* every tool view without Claude (absent or null capabilities), and at 390 px in dark mode */
+async function partToolsNoClaude(kind) {
+  section('tools-' + kind + ': ' + (kind === 'null' ? 'claude.use() resolves null' : 'window.claude absent') + ', manual mode; 390 px dark');
+  const S = await session({ claude: kind === 'null' ? 'null' : 'absent', viewport: { width: 390, height: 844 }, colorScheme: 'dark' });
+  try {
+    const b = await S.boot(''); ok(b.ready, 'boots at 390 px, dark');
+    ok(!(await S.page.evaluate(() => window.LnpAI.available())), 'LnpAI is not available');
+    for (const [h, cond] of await toolRoutes(S)) {
+      await S.go(h);
+      const drawn = await S.wait(cond, null, 120000).then(() => true, () => false);
+      ok(drawn, decodeURIComponent(h).slice(0, 48) + ': renders without Claude');
+      await sleep(500);
+      const hs = await S.hscroll();
+      ok(hs.length === 0, decodeURIComponent(h).slice(0, 48) + ': fits 390 px without horizontal scroll', hs);
+      await S.shot('tools-' + kind + '-' + h.replace(/[^a-z0-9]/gi, '_').slice(0, 24));
+    }
+    await S.go(await S.hashOf({ view: 'markush', arg: 'EP3350157B1', params: { c: '1', q: SM102_SMILES } }));
+    const v = await mkWait(S, 'covered', 90000);
+    ok(v === 'covered', 'Markush works in manual mode: the curated record still decides by code (covered)', v);
+    ok(/Manual mode/.test(await elText(S, '#mk-manual') || '') && !(await S.page.$('#mk-translate')) && !(await S.page.$('.mk-fig .btn')), 'Markush: one-line manual-mode notice, no Claude buttons', await elText(S, '#mk-manual'));
+    await S.go('#tools'); await S.wait(() => document.querySelectorAll('.tl-card').length >= 10, null, 60000);
+    const hub = await S.page.evaluate(() => Array.from(document.querySelectorAll('.tl-card')).map((c) => c.dataset.tool + ':' + c.dataset.ai));
+    ok(hub.filter((x) => /:manual$/.test(x)).map((x) => x.split(':')[0]).sort().join() === 'designs,markush', 'hub: Markush and design-around report manual mode', hub);
+    const bg = await S.page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    ok(/rgb\((\d+), (\d+), (\d+)\)/.test(bg) && Number(/rgb\((\d+)/.exec(bg)[1]) < 90, 'dark colour scheme is applied (' + bg + ')');
+    await S.clean('tools-' + kind);
+  } finally { await S.close(); }
+}
+
 /* ------------------------------------------------------------------------------------------------ part: fallbacks */
 async function partFallback(mode, dist) {
   section(mode === 'blob' ? 'blob: file workers answer 404, blob: workers take over' : 'strict: worker-src \'none\', *.bin 404, base64 build, main-thread engines');
@@ -1164,6 +1367,9 @@ async function partPerf() {
   await run('mobile', partMobile);
   await run('noclaude', () => partNoClaude('absent'));
   await run('nullcaps', () => partNoClaude('null'));
+  await run('tools', partTools);
+  await run('toolsnoclaude', () => partToolsNoClaude('absent'));
+  await run('toolsnull', () => partToolsNoClaude('null'));
   await run('blob', () => partFallback('blob', DIST));
   await run('strict', async () => {
     let b64 = arg('b64', null);

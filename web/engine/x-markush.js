@@ -728,7 +728,7 @@
   // ------------------------------------------------------------------------------------------------ check
   var DEF_LIMITS = [
     'Stereochemistry is ignored (structures are compared without R/S and E/Z).',
-    'Salts, solvates, charges and tautomers are not considered; only the largest fragment of the molecule is checked.',
+    'Salts, solvates and charges are not considered. When the largest fragment is not covered, the other fragments (5 or more heavy atoms) and the tautomers reached by one or two 1,3 / 1,5 hydrogen shifts are checked too; other tautomers are not.',
     'Pre-screening only, not legal advice: the record is a reading of the claim, and claim construction is for a patent attorney.'
   ];
   /* code decides: with source text the quote is always verified again (a stored status is ignored, it may be stale or
@@ -756,8 +756,113 @@
     });
     return { byVar: byVar, general: general };
   }
-  /* check(record, molecule, {maxCores, maxMappings, relax}) -> result (see docs/MARKUSH.md) */
+  /* check(record, molecule, {maxCores, maxMappings, relax}) -> result (see docs/MARKUSH.md)
+     A "not covered" for the largest fragment is not final: the other fragments of the input (a mixture, a salt with a large
+     counter-ion) and common prototropic tautomers are checked as well, and the worst verdict wins (covered > unclear >
+     not covered). A covered tautomer counts as covered (same compound); a covered other fragment makes the input covered. */
+  var FRAG_MIN = 5, TAUT_MAX = 12;
   function checkSync(rec, molecule, opts) {
+    opts = opts || {};
+    var res = checkOne(rec, molecule, opts);
+    if (opts._one || res.raw !== 'not_covered' || res.caveat === 'no_core' || res.overall === 'covered') return res;
+    var OCL = oclSync(), m;
+    try { m = toMol(molecule); } catch (e) { return res; }
+    var alts = [], capped = false, frags;
+    try { frags = m.getFragments(); } catch (e) { frags = [m]; }
+    var sized = frags.map(function (f) { var n = 0; for (var i = 0; i < f.getAllAtoms(); i++) if (f.getAtomicNo(i) > 1) n++; return { f: f, n: n }; }).sort(function (a, b) { return b.n - a.n; });
+    sized.forEach(function (x, k) {
+      if (k > 0 && x.n < FRAG_MIN) return;
+      if (k > 0) alts.push({ mol: x.f, kind: 'fragment' });
+      var t = tautomers(x.f, OCL, TAUT_MAX);
+      if (t.capped) capped = true;
+      t.list.forEach(function (tm) { alts.push({ mol: tm, kind: k > 0 ? 'fragment tautomer' : 'tautomer' }); });
+    });
+    if (alts.length > 3 * TAUT_MAX) { alts = alts.slice(0, 3 * TAUT_MAX); capped = true; }
+    var o2 = {}; for (var k in opts) o2[k] = opts[k]; o2._one = true; o2.relax = false;
+    var hit = null, unc = null, nChecked = 0;
+    for (var i = 0; i < alts.length && !hit; i++) {
+      var r2; try { r2 = checkOne(rec, alts[i].mol, o2); } catch (e) { continue; }
+      nChecked++;
+      if (r2.overall === 'covered' || (r2.raw === 'covered' && r2.overall === 'unclear')) hit = { r: r2, a: alts[i] };
+      else if (!unc && r2.overall === 'unclear') unc = { r: r2, a: alts[i] };
+    }
+    function smi(x) { try { return x.mol.toSmiles(); } catch (e) { return '?'; } }
+    var nT = alts.filter(function (a) { return /tautomer/.test(a.kind); }).length, nF = alts.filter(function (a) { return a.kind === 'fragment'; }).length;
+    if (hit) {
+      var r = hit.r, what = hit.a.kind === 'tautomer' ? 'the tautomer ' + smi(hit.a) + ' of the molecule' : hit.a.kind === 'fragment' ? 'the fragment ' + smi(hit.a) + ' of the input (not its largest fragment)' : 'a tautomer (' + smi(hit.a) + ') of the fragment of the input that is not the largest';
+      r.reasons.unshift('the input as given is not covered, but ' + what + ' is ' + (r.overall === 'covered' ? 'covered' : 'read as covered with a caveat') + (/tautomer/.test(hit.a.kind) ? ' (tautomers are the same compound)' : ''));
+      r.limits.push('Checked as given and as ' + nF + ' further fragment(s) and ' + nT + ' tautomer(s); the result shown is for ' + what + '.');
+      r.input = { smiles: res.molecule && res.molecule.smiles, kind: hit.a.kind };
+      r.ms = res.ms + (r.ms || 0);
+      return r;
+    }
+    if (unc) {
+      res.overall = 'unclear';
+      res.reasons.push('the largest fragment as given is not covered, but ' + (unc.a.kind === 'fragment' ? 'the fragment ' : 'the ' + unc.a.kind + ' ') + smi(unc.a) + ' reads as unclear: ' + (unc.r.reasons[0] || 'see its rules'));
+    } else if (capped) {
+      res.overall = 'unclear';
+      res.reasons.push('the input has more tautomers or fragments than are checked (' + nChecked + ' checked); a form that was not checked could be covered');
+    }
+    if (nChecked) res.limits.push(nF + ' further fragment(s) and ' + nT + ' tautomer(s) were checked as well' + (unc || capped ? '' : '; none is covered') + '.');
+    return res;
+  }
+  /* prototropic tautomers by 1,3 and 1,5 hydrogen shifts over alternating single/double bonds (Kekule form): hydroxy-
+     heteroarene / oxo, enol / keto, amide / imidic acid, amidine and imidazole H shifts. Donor: N, O, S with H, or C with H
+     next to a ketone, aldehyde or imine carbon (keto -> enol, 1,3 only); acceptor: C, N, O, S. Up to two steps. -> {list: [Molecule], capped} */
+  function tautomers(m0, OCL, cap) {
+    var M = OCL.Molecule, seen = {}, out = [], capped = false;
+    function key(x) { try { var c = x.getCompactCopy(); c.stripStereoInformation(); return c.getCanonizedIDCode(0); } catch (e) { return x.getIDCode(); } }
+    var base = m0.getCompactCopy(); base.ensureHelperArrays(M.cHelperRings);
+    seen[key(base)] = 1;
+    function steps(m) {
+      var res = [], n = m.getAtoms();
+      function nb(a) { var r = []; for (var j = 0; j < m.getConnAtoms(a); j++) r.push([m.getConnAtom(a, j), m.getConnBond(a, j), m.getConnBondOrder(a, j)]); return r; }
+      function okAcc(z, dz) { return (z === 6 || z === 7 || z === 8 || z === 16) && (dz !== 6 || z === 7 || z === 8); }
+      for (var d = 0; d < n; d++) {
+        var dz = m.getAtomicNo(d);
+        if (!(dz === 6 || dz === 7 || dz === 8 || dz === 16) || m.getAllHydrogens(d) < 1 || m.getAtomCharge(d) !== 0) continue;
+        nb(d).forEach(function (A) {
+          if (A[2] !== 1) return;
+          nb(A[0]).forEach(function (B) {
+            if (B[0] === d || B[2] !== 2) return;
+            // a C-H donor only for ketones, aldehydes and imines: ester, acid and amide enols are not useful forms
+            if (dz === 6 && nb(A[0]).some(function (X) { var xz = m.getAtomicNo(X[0]); return X[0] !== B[0] && xz !== 6 && xz !== 1; })) return;
+            if (okAcc(m.getAtomicNo(B[0]), dz) && m.getAtomCharge(B[0]) === 0) res.push([[A[1], 2], [B[1], 1]]);
+            if (dz === 6) return;     // 1,5 shifts from hetero donors only
+            nb(B[0]).forEach(function (Cc) {
+              if (Cc[0] === A[0] || Cc[2] !== 1) return;
+              nb(Cc[0]).forEach(function (E) {
+                if (E[0] === B[0] || E[0] === d || E[2] !== 2) return;
+                if (okAcc(m.getAtomicNo(E[0]), dz) && m.getAtomCharge(E[0]) === 0) res.push([[A[1], 2], [B[1], 1], [Cc[1], 2], [E[1], 1]]);
+              });
+            });
+          });
+        });
+      }
+      return res;
+    }
+    var frontier = [base];
+    for (var depth = 0; depth < 2 && frontier.length; depth++) {
+      var next = [];
+      for (var f = 0; f < frontier.length; f++) {
+        var m = frontier[f], sh = steps(m);
+        for (var s = 0; s < sh.length; s++) {
+          if (out.length >= cap) { capped = true; break; }
+          var c = m.getCompactCopy();
+          sh[s].forEach(function (bo) { c.setBondType(bo[0], bo[1] === 2 ? M.cBondTypeDouble : M.cBondTypeSingle); });
+          try { c.ensureHelperArrays(M.cHelperRings); } catch (e) { continue; }
+          var bad = false; for (var a = 0; a < c.getAtoms() && !bad; a++) if (c.getFreeValence(a) < 0) bad = true;
+          if (bad) continue;
+          var kk = key(c); if (seen[kk]) continue; seen[kk] = 1;
+          out.push(c); next.push(c);
+        }
+        if (capped) break;
+      }
+      frontier = next;
+    }
+    return { list: out, capped: capped };
+  }
+  function checkOne(rec, molecule, opts) {
     opts = opts || {};
     var t0 = clock(), OCL = oclSync();
     if (!OCL) throw mkErr('no_ocl', 'OpenChemLib is not loaded');

@@ -25,7 +25,8 @@
 
   var LIMITS = [
     'Ranges were found by pattern rules in the claim text; ranges that sit only in formula images or tables are not seen.',
-    'Units are normalised (mol %, wt %, nm, Da, mg/mL, ratio a:b as a/b); "about" is treated as the stated number.',
+    'Units are normalised (mol %, wt %, nm, Da, mg/mL, ratio a:b as a/b); "about" is treated as the stated number, although it can widen the claimed range.',
+    'A claim range with a bare "%" does not state whether it is by mol or by weight: it is compared with values of either basis and marked "basis not stated".',
     'The component (ionizable lipid, PEG lipid, ...) is attributed by the nearest component word in the same clause: a heuristic. A value with a component is compared with the ranges attributed to that component; if the claim has none, with ranges whose component could not be identified (marked "component not identified": the range may belong to another component).',
     'A dependent claim takes over the ranges of the claims it refers to unless it states the same parameter itself.',
     'A value inside a stated range is not an infringement finding: other claim features decide. Pre-screening, not legal advice.'
@@ -44,9 +45,13 @@
     var last = -1;
     for (i = 0; i < n; i++) { if (R.pi[i] !== last) { for (var k = last + 1; k <= R.pi[i]; k++) S.start[k] = i; last = R.pi[i]; } }
     for (i = last + 1; i <= d.pn.length; i++) S.start[i] = n;
-    S.paramIdx = {}; d.params.forEach(function (p, j) { S.paramIdx[p.id] = j; });
-    S.compIdx = {}; (d.compIds || []).forEach(function (c, j) { S.compIdx[c] = j; });
-    S.compAlias = d.compAlias || {};
+    // lookup tables without a prototype: user input such as "__proto__" or "toString" must not hit inherited keys
+    S.paramIdx = Object.create(null); d.params.forEach(function (p, j) { S.paramIdx[p.id] = j; });
+    S.compIdx = Object.create(null); (d.compIds || []).forEach(function (c, j) { S.compIdx[c] = j; });
+    S.compAlias = Object.create(null); Object.keys(d.compAlias || {}).forEach(function (k) { S.compAlias[k] = d.compAlias[k]; });
+    // percent parameters with a stated basis (mol %, wt %): a claim row with a bare "%" was filed under one of them by the
+    // extractor although the claim does not say which basis; such rows are compared with values of every basis and flagged
+    S.pctBasis = Object.create(null); d.params.forEach(function (p, j) { var u = normUnit(p.unit); if (u.length > 1 && u.charAt(u.length - 1) === '%') S.pctBasis[j] = 1; });
     S.compLoose = {}; (d.compFallback || []).forEach(function (i) { S.compLoose[i] = 1; }); S.compLoose[-1] = 1;
     S.compHide = {}; (d.compAmbiguous || []).forEach(function (i) { S.compHide[i] = 1; });
     S.win = d.win || { lead: 40, max: 140 };
@@ -104,8 +109,8 @@
     if (c == null || c === '' || c === 'any') return null;
     if (typeof c === 'number') return c;
     var s = String(c).toLowerCase();
-    if (S.compIdx[s] != null) return S.compIdx[s];
-    if (S.compAlias[s] && S.compIdx[S.compAlias[s]] != null) return S.compIdx[S.compAlias[s]];
+    if (typeof S.compIdx[s] === 'number') return S.compIdx[s];
+    if (typeof S.compAlias[s] === 'string' && typeof S.compIdx[S.compAlias[s]] === 'number') return S.compIdx[S.compAlias[s]];
     var j = S.doc.comps.findIndex(function (l) { return l.toLowerCase() === s; });
     return j >= 0 ? j : null;
   }
@@ -249,8 +254,8 @@
     var out = [], skipped = [];
     (values || []).forEach(function (v, k) {
       if (!v) return;
-      var pj = S.paramIdx[v.param], x = num(v.value);
-      if (pj == null) { skipped.push({ index: k, reason: 'unknown parameter ' + v.param }); return; }
+      var pj = typeof v.param === 'string' ? S.paramIdx[v.param] : undefined, x = num(v.value);
+      if (typeof pj !== 'number') { skipped.push({ index: k, reason: 'unknown parameter ' + String(v.param).slice(0, 40) }); return; }
       if (x == null) { skipped.push({ index: k, reason: 'no number for ' + v.param }); return; }
       var ci = compOf(v.comp);
       out.push({ param: v.param, pj: pj, paramLabel: S.doc.params[pj].label, comp: ci, compLabel: ci != null && ci >= 0 ? S.doc.comps[ci] : '', value: x, unit: v.unit || S.doc.params[pj].unit || '' });
@@ -260,7 +265,7 @@
   function judge(eff, v, pi, strict) {
     // eff: [{i, from, inherited}] of the claim (wanted parameters only); returns {status, row}
     var R = S.cols, cand = [], j, e, i, unknown = false;
-    for (j = 0; j < eff.length; j++) { e = eff[j]; i = e.i; if (R.param[i] === v.pj && unitOk(R.unit[i], v.unit)) cand.push(e); }
+    for (j = 0; j < eff.length; j++) { e = eff[j]; i = e.i; if ((R.param[i] === v.pj && unitOk(R.unit[i], v.unit)) || basisOpen(i, v)) cand.push(e); }
     if (v.comp != null && v.comp >= 0) {
       // ranges attributed to the component; when there are none, ranges whose component is unknown or "total" (compUnknown), unless strict
       var exact = cand.filter(function (x) { return R.comp[x.i] === v.comp; });
@@ -277,10 +282,14 @@
     });
     if (ins.length) {
       ins.sort(function (a, b) { return (a.x.inherited - b.x.inherited) || (a.w - b.w); });
-      return { status: 'inside', row: mkRow(ins[0].x, pi), compUnknown: unknown };
+      return { status: 'inside', row: mkRow(ins[0].x, pi), compUnknown: unknown, basisUnknown: bareBasis(ins[0].x.i, v) };
     }
-    return { status: 'outside', row: mkRow(near || cand[0], pi), compUnknown: unknown };
+    var nx = near || cand[0];
+    return { status: 'outside', row: mkRow(nx, pi), compUnknown: unknown, basisUnknown: bareBasis(nx.i, v) };
   }
+  // a row with a bare "%" under a percent parameter of another basis (claim "10 to 20 %" vs a wt % value)
+  function basisOpen(i, v) { var R = S.cols; return R.param[i] !== v.pj && !!S.pctBasis[R.param[i]] && !!S.pctBasis[v.pj] && normUnit(R.unit[i]) === '%'; }
+  function bareBasis(i, v) { return !!S.pctBasis[v.pj] && normUnit(S.cols.unit[i]) === '%'; }
   function rawRange(i) { var R = S.cols; return { lo: R.lo[i], hi: R.hi[i], loInc: !!R.loInc[i], hiInc: !!R.hiInc[i] }; }
   function width(r) { return r.lo != null && r.hi != null ? r.hi - r.lo : 1e12; }
   function mkRow(e, pi) { var r = row(e.i, pi); r.inherited = e.inherited; r.fromClaim = e.from; return r; }
@@ -294,13 +303,17 @@
       var scope = null;
       return Promise.resolve(o.pns ? o.pns : (o.ps ? Promise.all(o.ps.map(function (p) { return typeof p === 'number' ? g.LnpData.patent(p).then(function (x) { return x.pn; }) : p; })) : null)).then(function (pns) {
         if (pns) { scope = []; pns.forEach(function (pn) { if (S.pnIdx.has(pn)) scope.push(S.pnIdx.get(pn)); }); }
-        var want = {}; V.forEach(function (v) { want[v.pj] = 1; });
-        var nWant = Object.keys(want).length, max = o.max || MAX_ROWS;
+        // want: parameters whose rows are read; grp: the value group a row parameter counts for (all basis percent
+        // parameters form one group as soon as a value is one of them, because bare "%" rows serve every basis)
+        var want = {}, grp = {}, anyPct = V.some(function (v) { return S.pctBasis[v.pj]; });
+        V.forEach(function (v) { want[v.pj] = 1; grp[v.pj] = S.pctBasis[v.pj] ? 'pct' : v.pj; });
+        if (anyPct) Object.keys(S.pctBasis).forEach(function (j) { want[j] = 1; grp[j] = 'pct'; });
+        var nWant = new Set(V.map(function (v) { return grp[v.pj]; })).size, max = o.max || MAX_ROWS;
         var order = scope || (function () { var a = []; for (var i = 0; i < S.doc.pn.length; i++) a.push(i); return a; })();
         var R = S.cols, pAll = new Set(), pPart = new Set();
         for (var oi = 0; oi < order.length; oi++) {
           var pi = order[oi], a = S.start[pi], b = S.start[pi + 1], seenP = {}, k, nSeen = 0;
-          for (k = a; k < b; k++) { var pj = R.param[k]; if (want[pj] && !seenP[pj]) { seenP[pj] = 1; nSeen++; if (nSeen === nWant) break; } }
+          for (k = a; k < b; k++) { var pj = R.param[k]; if (want[pj] && !seenP[grp[pj]]) { seenP[grp[pj]] = 1; nSeen++; if (nSeen === nWant) break; } }
           res.counts.patentsScanned++;
           if (nSeen === 0) continue;
           if (nSeen === nWant) res.counts.patentsWithAllParams++;
@@ -310,7 +323,7 @@
           while (stack.length) { var cc = stack.pop(); (ctx.children.get(cc) || []).forEach(function (ch) { if (!cand.has(ch)) { cand.add(ch); stack.push(ch); } }); }
           Array.from(cand).sort(function (x, y) { return x - y; }).forEach(function (cl) {
             var eff = effWanted(ctx, cl, want, memo, 0);
-            var vs = V.map(function (v) { var j = judge(eff, v, pi, strict); return { param: v.param, paramLabel: v.paramLabel, comp: v.compLabel, value: v.value, unit: v.unit, status: j.status, row: j.row, compUnknown: !!j.compUnknown }; });
+            var vs = V.map(function (v) { var j = judge(eff, v, pi, strict); return { param: v.param, paramLabel: v.paramLabel, comp: v.compLabel, value: v.value, unit: v.unit, status: j.status, row: j.row, compUnknown: !!j.compUnknown, basisUnknown: !!j.basisUnknown }; });
             var nIn = vs.filter(function (x) { return x.status === 'inside'; }).length;
             if (!nIn) return;
             var item = { pn: S.doc.pn[pi], pi: pi, claim: cl, indep: isIndep(ctx, cl), nInside: nIn, nValues: V.length, values: vs, inheritedAny: vs.some(function (x) { return x.row && x.row.inherited; }), lang: (S.doc.lang && S.doc.lang[pi]) || 'en' };
@@ -318,7 +331,9 @@
             else { item.verdict = 'partial'; res.counts.claimsPartial++; pPart.add(pi); if (res.partial.length < max) res.partial.push(item); else res.truncated = true; }
           });
         }
-        function srt(a, b) { return (b.nInside - a.nInside) || ((b.indep ? 1 : 0) - (a.indep ? 1 : 0)) || (a.pn < b.pn ? -1 : a.pn > b.pn ? 1 : 0) || (a.claim - b.claim); }
+        // more values inside first; then claims whose hits rest on identified components and stated units
+        function vague(c) { return c.values.filter(function (x) { return x.status === 'inside' && (x.compUnknown || x.basisUnknown); }).length; }
+        function srt(a, b) { return (b.nInside - a.nInside) || (vague(a) - vague(b)) || ((b.indep ? 1 : 0) - (a.indep ? 1 : 0)) || (a.pn < b.pn ? -1 : a.pn > b.pn ? 1 : 0) || (a.claim - b.claim); }
         res.all.sort(srt); res.partial.sort(srt);
         res.counts.patentsAll = pAll.size; res.counts.patentsPartial = pPart.size; res.counts.patents = new Set(Array.from(pAll).concat(Array.from(pPart))).size;
         res.matches = mode === 'all' ? res.all : res.all.concat(res.partial);

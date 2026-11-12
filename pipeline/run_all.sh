@@ -3,9 +3,10 @@
 # (pipeline/fetch_ep.py, pipeline/fetch_us.py, pipeline/status.py --fetch-only) are still running; this script never
 # starts or stops a download.
 #
-#   pipeline/run_all.sh                 normalize -> status (cache only) -> chemistry (if stale) -> dist (base64)
+#   pipeline/run_all.sh                 normalize -> status (cache only) -> chemistry (if stale) -> ranges, tags, markush
+#                                       (xdata extractors) -> dist (base64)
 #   pipeline/run_all.sh batches [-v]    list the publish batches of dist/ (-v: with file names)
-#   pipeline/run_all.sh check           the engine tests and the end-to-end test against dist/
+#   pipeline/run_all.sh check           the engine tests, the end-to-end test and the tool tests against dist/
 # Environment: ENC=bin builds the raw-binary variant into data/dist-bin/ for local tests (the Artifact host refuses *.bin).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -46,6 +47,13 @@ case "${1:-build}" in
     stage "chemistry test" node tests/chem_test.cjs
     stage "FTO engine test" node tests/fto_test.mjs
     stage "end-to-end test" node tests/e2e.cjs
+    # tool tests (docs/TOOLS_PLAN.md); the browser parts run against dist/
+    stage "markush engine test" node tests/markush_test.cjs
+    stage "FTO evidence test" node tests/fto_evidence_test.mjs
+    stage "ranges test" node tests/ranges_test.cjs        # builds and edits its own scratch dist
+    for t in markush_view screen designaround disclosure expiry_similar api hooks; do
+      stage "$t test" node "tests/${t}_test.cjs" --dist dist
+    done
     ;;
   build)
     T0=$SECONDS

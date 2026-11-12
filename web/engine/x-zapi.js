@@ -327,7 +327,7 @@
     return run(function () {
       var d = need('markush'); if (d) return d;
       var s = vPn(pn), c = vClaim(claim);
-      return eng('markush').get(s, c).then(function (r) { if (!r) throw { code: 'not_found', message: 'no Markush record for ' + s + ' claim ' + c + ' (see markush.list)' }; return r; });
+      return eng('markush').get(s, c).then(function (r) { return r || null; });   // docs/LNPAPI.md: record | null
     });
   }
   function mkList(opts) {

@@ -40,7 +40,8 @@ Risk scale 0-4: `#3b7b34`, `#8a9a2a`, `#b45309`, `#dc2b05`, `#97260c` (dark them
 - Status and verdicts are shown in form as well as colour: pill with a dot or icon and a word.
 
 ## Language
-UI copy is German (Sie-frei, neutral imperatives and nouns: "Suche", "Analyse starten").
-Legal terms as in German practice: Schutzbereich, Merkmalsanalyse, wortsinngemaesse /
-aequivalente Verletzung, Rechtsstand, Versuchsprivileg. Patent text stays in its
-original language.
+UI copy is English: concise and professional, neutral imperatives and nouns ("Search",
+"Run analysis"). Legal terms as used in the views: scope of protection, claim feature
+analysis, literal / equivalent infringement, legal status, research exemption,
+pre-screening (never "clearance" or "freedom to operate" as a finding). Route ids keep
+their original names (#suche, #struktur, ...). Patent text stays in its original language.

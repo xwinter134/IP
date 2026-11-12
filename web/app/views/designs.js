@@ -67,7 +67,7 @@
 
     var page = h('div.page.k-page.da-page');
     host.appendChild(page);
-    var head = K.head('Design-around ideas', 'Ideas outside', 'the claimed scope', 'Code generates candidate structures that sit just outside one claimed Markush rule, verifies each against the claim, re-checks it across the corpus and ranks what remains by a risk score. An idea generator for discussion with counsel, not legal advice.');
+    var head = K.head('Design-around ideas', 'Ideas outside', 'the claimed scope', 'Code generates candidate structures that sit just outside one claimed Markush rule, verifies each against the claim, re-checks it across the corpus and ranks what remains by a risk score.');
     page.appendChild(head);
     page.appendChild(h('p.da-banner', null, U.icon('help'), h('span', { text: BANNER })));
 
@@ -110,7 +110,7 @@
       busy('Reading the claim and the molecule …');
       Dz.ready().then(function () { return Ch ? Ch.parse(st.q) : { ok: true, smiles: st.q }; }).then(function (pm) {
         if (my !== seq || dead) return;
-        if (pm && pm.ok === false) throw { message: 'the molecule was not recognised (' + (pm.error || 'parse error') + '). Give a SMILES, a reference-lipid name or a SCHEMBL number.' };
+        if (pm && pm.ok === false) throw { message: 'the molecule was not recognised (' + (K.chemErr(pm.error) || 'parse error') + '). Give a SMILES, a reference-lipid name or a SCHEMBL number.' };
         var smiles = (pm && pm.smiles) || st.q;
         return Mk.get(st.pn, Number(st.claim)).then(function (rec) {
           if (my !== seq || dead) return;
@@ -118,6 +118,7 @@
           busy('Checking the molecule against the claim …');
           return Mk.check(rec, smiles).then(function (res) {
             if (my !== seq || dead) return;
+            if (res.overall === 'unclear') { unclearStart(res, rec, smiles); return; }
             if (res.overall !== 'covered') { notCovered(res, rec, smiles); return; }
             busy('Generating variants outside the claimed scope …');
             return Dz.fromMarkush(smiles, rec, res).then(function (start) {
@@ -181,6 +182,19 @@
         h('p', null, h('a', { href: R.build({ view: 'markush', arg: st.pn, params: { c: st.claim, q: smiles } }), text: 'See the full Markush analysis' }))));
     }
 
+    // "unclear" is not "outside": code could not decide, so nothing is said about the scope
+    function unclearStart(res, rec, smiles) {
+      clearBusy(); U.clear(body);
+      var why = [];
+      (res.groups || []).forEach(function (gr) { if (gr.verdict === 'unclear') why.push(str(gr.name) + ': ' + str(gr.why || 'unclear')); });
+      (res.reasons || []).forEach(function (r) { var t = str(r); if (t && why.indexOf(t) < 0) why.push(t); });
+      body.appendChild(h('div.empty.da-empty', null, h('p.overline', { text: 'Unclear' }), h('h3', { text: 'Code could not decide whether the molecule is inside this claim' }),
+        h('p', { text: 'The Markush check of ' + U.pnPretty(st.pn) + ' claim ' + st.claim + ' ends in "unclear" for this molecule. That is not a finding that it is outside: the reasons below need a person who reads the claim. Design-around ideas start from a molecule the check reads as covered.' }),
+        why.length ? h('ul.da-why', null, why.slice(0, 8).map(function (t) { return h('li', { text: t }); })) : null,
+        h('p', null, h('a', { href: R.build({ view: 'markush', arg: st.pn, params: { c: st.claim, q: smiles } }), text: 'Open the full Markush analysis' }), ' to review the unclear rules (for example confirm the translation or the quotes), then come back.'),
+        h('p.faint', { text: 'Pre-screening, not legal advice.' })));
+    }
+
     /* ---------- render ---------- */
     function filtered() {
       return (st.variants || []).filter(function (v) {
@@ -218,8 +232,7 @@
     function startCard(start) {
       var met = h('div.da-rules');
       (start.met || []).forEach(function (m) {
-        var cls = m.verdict === 'met' ? 'good' : m.verdict === 'not_met' ? 'crit' : 'warn';
-        met.appendChild(h('div.da-rule', null, h('span.mono.da-rname', { text: m.name }), h('span.pill.' + cls, { text: m.verdict }), h('span.da-rrule', { text: m.rule || '' })));
+        met.appendChild(h('div.da-rule', null, h('span.mono.da-rname', { text: m.name }), K.ruleVerdictPill(m.verdict), h('span.da-rrule', { text: m.rule || '' })));
       });
       return h('section.sec.da-start', null,
         h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Starting point' }), h('h2.sec-title', { text: 'The molecule and the claim it falls under' })),
@@ -393,6 +406,6 @@
     };
   }
 
-  // a "Design-around ideas" action on the Markush view would be added by that task's hooks; we only register the route.
+  // entry points: the Markush result links here when the molecule is covered (markush.js), and the Tools hub
   g.LnpApp.registerView({ id: 'designs', title: 'Design-around ideas', icon: 'spark', rail: false, parent: 'tools', mount: g.LnpLazyView('designs', ['app/views/views.css', 'app/views/lib/kit.js'], mount) });
 })(window);

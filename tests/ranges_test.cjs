@@ -216,7 +216,9 @@ async function real() {
   ok(bad === 0 && openBoth === 0, 'rows well formed (lo <= hi, quotes <= 160 chars, sorted by publication)');
   console.log('  info: rows ' + n + ', rows with a quote in the main file ' + qs + ', quotes dropped for ' + JSON.stringify(meta.counts.quotesDroppedFor) + ', load ' + ms + ' ms');
   // a real claim: first row with a pH or mol % in a dependent claim chain
-  let k = -1; for (let i = 0; i < n; i++) { if (doc.params[R.param[i]].id === 'mol_pct' && R.q[i] && R.lo[i] != null && R.hi[i] != null && R.comp[i] >= 0) { k = i; break; } }
+  // (the quote is not required: as the corpus grows the builder drops more quote columns from the main file and the engine cuts them from the claim text)
+  let k = -1; for (let i = 0; i < n; i++) { if (doc.params[R.param[i]].id === 'mol_pct' && R.lo[i] != null && R.hi[i] != null && R.comp[i] >= 0) { k = i; break; } }
+  ok(k >= 0, 'the built file has a mol % row with both bounds and a lipid component');
   const pn = doc.pn[R.pi[k]], mid = (R.lo[k] + R.hi[k]) / 2;
   const compId = doc.compIds[R.comp[k]];
   const t1 = Date.now();

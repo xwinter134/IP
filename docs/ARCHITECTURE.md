@@ -740,12 +740,52 @@ all but the last waiter now receive a copy, the last takes the buffer by transfe
 inside the worker and the caller never got an answer (seen when `LnpData.patents()` touched more chunks than the
 chunk LRU holds, e.g. in `LnpFto.candidates`).
 
+## Tools (branch `lnp-tools`, plan: `docs/TOOLS_PLAN.md`)
+
+Extension files only: the shell loads every `engine/x-*.js` listed in `manifest.files` (name order) before the views,
+every `app/views/*.js` and every `app/*.css`. The tool views register with `rail: false, parent: 'tools'`; the only new
+rail entry is the hub `#tools`. Every tool runs without Claude (manual mode or no model needed) and states its limits.
+
+| Engine (global, file) | View (route) | Data | Claude |
+|---|---|---|---|
+| `LnpMarkush` (`x-markush.js`, `docs/MARKUSH.md`) | `markush.js` (`#markush-<pn>--c<claim>--q<molecule>[--b1]`) | xdata `markush` (curated `mk-1` records), store kind `markush` | translate claim -> `mk-1`, OCSR of the formula image; code checks quotes, SMILES and the match |
+| `LnpScreen` (`x-screen.js`) | `screen.js` (`#screen[-<id>]`) | chemistry set, Markush records, store kind `screens` | none |
+| `LnpRanges` (`x-ranges.js`) | `ranges.js` (`#ranges[--p<profile id>]`) | xdata `ranges` (`rg-1`) | none |
+| `LnpDesign` (`x-designaround.js`) | `designs.js` (`#designs[-<id>]`) | `data/seed/design_space.json` (shipped as `data/seed/design_space.json`), store kind `designs` | optional explanation; variants and risk are computed |
+| `LnpDisclosure` (`x-disclosure.js`) | `disclosure.js` (`#disclosure-<query>`), `whitespace.js` (`#whitespace[--x<axis>][--y<axis>]`) | chemistry set (descriptor columns read again through `LnpLoader`) | none |
+| `LnpExpiry` (`x-expiry.js`) | `expiry.js` (`#expiry[--p<profile>][--s<source>]`) | patent table, status | none |
+| `LnpSimilar` (`x-similar.js`) | `similar.js` (`#similar-<pn>`) | text index (BM25), chemistry, CPC, families | none |
+| `LnpTags` (`x-tags.js`) | facets in `#suche` (`facets.js`, route `--f<facetId>:<value>`) | xdata `tags` (`tg-1`) | none |
+| `LnpLinks` (`x-links.js`), `LnpLegal` (`x-legal.js`) | patent page panel, `legal.js` (`#legal-<pn>`) | status records, `tags` legal bits | none |
+| `LnpAPI` (`x-zapi.js`, `docs/LNPAPI.md`), `LnpContext` (`x-context.js`) | `tools.js` (`#tools`, hub, context packs) | all of the above | never calls Claude |
+
+Shell hooks `LnpApp.ext` (`app.js`; used by the patent page, `#suche`, `#struktur`): `patentAction`, `claimAction`,
+`patentPanel`, `links`, `compoundAction`, `searchFacet`, `resultAction` (`docs/TOOLS_PLAN.md` 2.1). The FTO chain
+(`fto.js`) adds code-verified Markush and range evidence when `LnpMarkush` / `LnpRanges` are present
+(`docs/method/FTO_METHOD.md`). The MCP server `mcp/` (Node, stdio, `docs/INTEGRATION.md`) runs the same engines over the
+files of a build.
+
+Data files of the tools in a build:
+
+```
+data/x/markush/curated.json            curated mk-1 records (pipeline/markush_seed.py from data/seed/markush/*.json)
+data/x/ranges/ranges.gz.b64.txt        rg-1 ranges (pipeline/ranges_build.py; vocabulary data/seed/range_params.json)
+data/x/ranges/ranges-q.gz.bin          all range quotes, website build only (files_pages)
+data/x/tags/tags.gz.b64.txt            tg-1 tags, legal bits, canonical assignees (pipeline/tags_build.py)
+data/seed/design_space.json            design-around vocabulary (build_dist.py SHIP_SEED; the engine has an embedded copy)
+```
+
+Files built for the website only are listed in `manifest.cut.websiteOnly.xdata` of the Artifact build (now
+`ranges/ranges-q.gz.bin`); the formula images beyond `--img-budget-mb` are counted in `manifest.img.cut`.
+
 ## Build and test entry points
 
 ```
-pipeline/run_all.sh                 normalize -> status --no-fetch -> chemistry (if an input is newer) -> build_dist (b64)
+pipeline/run_all.sh                 normalize -> status --no-fetch -> chemistry (if an input is newer)
+                                    -> ranges_build, tags_build, markush_seed (xdata) -> build_dist (b64)
+pipeline/build_pages.sh             the plain website into dist-pages/ (--enc bin --target pages, larger budgets)
 pipeline/run_all.sh batches [-v]    the publish batches of dist/ (reads dist/publish_batches.json)
-pipeline/run_all.sh check           the three engine tests and the end-to-end test
+pipeline/run_all.sh check           the engine tests, the end-to-end test and the tool tests
 make dist | batches | test | e2e | serve
 ```
 Measured on the build machine (4 cores), 125,104 publications, 15,148 to 17,995 full texts, 381,533 to 453,234 claims:
@@ -758,9 +798,15 @@ host's Content-Security-Policy on every response, `*.bin` answered with 404 (unl
 per path: `404`, `corrupt`, `truncate`, `slow`.
 
 `tests/e2e.cjs` (Playwright, Chromium) drives the published form of the page: `node tests/e2e.cjs [--dist dist]
-[--only main,mobile,noclaude,nullcaps,blob,strict,bin,faults,fixture,perf] [--shots DIR] [--report FILE] [--bin DIR]`.
+[--only main,mobile,noclaude,nullcaps,tools,toolsnoclaude,toolsnull,blob,strict,bin,faults,fixture,perf] [--shots DIR] [--report FILE] [--bin DIR]`.
 `window.claude` is mocked in the page (sample with canned JSON per FTO step, db, downloads); requests leaving the
 origin are aborted and counted, Google Fonts are answered locally. `bin` (only on request) checks the raw-binary build.
+`tools` drives every tool view with the mock (the Markush translation and the OCSR reply are canned `mk-1` / SMILES
+JSON; the page verifies quotes and SMILES itself); `toolsnoclaude` / `toolsnull` open every tool view without Claude at
+390 px in dark mode. Tool tests of their own: `tests/markush_test.cjs`, `markush_view_test.cjs`, `ranges_test.cjs`
+(+ `ranges_test.py`), `tags_test.py`, `xdata_test.py`, `screen_test.cjs`, `designaround_test.cjs`, `disclosure_test.cjs`,
+`expiry_similar_test.cjs`, `api_test.cjs`, `hooks_test.cjs`, `fto_evidence_test.mjs`, `mcp_test.mjs` (the `.cjs` browser
+tests take `--dist DIR`).
 
 Measured by `tests/e2e.cjs --only perf` (headless Chromium, local server, base64 build, 125,104 publications): cold boot
 to ready 220-380 ms, first result list painted about 0.5-0.65 s after 47 requests / 7.8 MB (the first list touches 15 of

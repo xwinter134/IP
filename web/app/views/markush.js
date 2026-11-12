@@ -31,7 +31,7 @@
 
   /* ------------------------------------------------------------ vocabulary */
   var VERDICT = { covered: ['Covered', 'crit'], not_covered: ['Not covered', 'good'], unclear: ['Unclear', 'warn'] };
-  var GROUP = { met: ['met', 'crit'], not_met: ['not met', 'good'], unclear: ['unclear', 'warn'], 'n/a': ['not present', 'hollow'] };
+  var GROUP = { met: ['met', 'crit'], not_met: ['not met', 'good'], unclear: ['unclear', 'warn'], 'n/a': ['not present', 'hollow'] };   // same as LnpKit.RULE_VERDICT (kit may load later)
   var QS = { ok: 'verified in the claim text', elided: 'elided quote, not verified', approx: 'wording differs, not verified', fail: 'not found in the claim text', empty: 'no quote', manual: 'your own rule', unverified: 'not verified' };
   var ORIGIN = { curated: ['curated', 'info'], claude: ['Claude', 'warn'], manual: ['manual', 'hollow'] };
   var KINDS = [['substituent', 'substituent'], ['divalent', 'divalent (linker)'], ['repeat', 'repeat unit']];
@@ -157,7 +157,7 @@
       if (!quiet) push();
       return (st.molP = Ch.parse(st.q)).then(function (p) {
         if (my !== seq.mol || dead) return;
-        if (!p || !p.ok) { U.set(molPrev, h('p.notice.err', { text: 'The input was not recognised as a structure' + (p && p.error ? ': ' + p.error : '') + '. Accepted are SMILES, the name of a reference lipid or a SCHEMBL number.' })); runCheck(); return; }
+        if (!p || !p.ok) { U.set(molPrev, h('p.notice.err', { text: 'The input was not recognised as a structure' + (p && p.error ? ': ' + K.chemErr(p.error) : '') + '. Accepted are SMILES, the name of a reference lipid or a SCHEMBL number.' })); runCheck(); return; }
         st.parsed = p;
         U.set(molPrev, h('div.mk-molbox', null, K.mol(p.smiles || st.q, 260, 120, p.formula), h('p.k-sub', { text: (p.name ? p.name + ' - ' : p.id ? p.id + ' - ' : '') + (p.formula || '') + (p.mw ? ' - ' + U.num(Math.round(p.mw * 10) / 10) + ' g/mol' : '') })));
         setEditorSmiles(p.smiles);
@@ -519,7 +519,7 @@
       if (!validBox) return;
       var errs = []; try { errs = Mk.validate(st.rec); } catch (e) { errs = [U.errText(e)]; }
       U.clear(validBox);
-      if (!errs.length) validBox.appendChild(h('p.k-row', null, h('span.pill.good', { text: 'valid' }), h('span.k-hint', { text: 'The record passes LnpMarkush.validate.' })));
+      if (!errs.length) validBox.appendChild(h('p.k-row', null, h('span.pill.good', { text: 'valid' }), h('span.k-hint', { text: 'The record is valid.' })));
       else validBox.appendChild(h('div.notice.err', null, h('p', { text: errs.length + ' problem' + (errs.length === 1 ? '' : 's') + ' in the record' }), h('ul', null, errs.slice(0, 12).map(function (m) { return h('li', { text: m }); }))));
     }
     function drawEditor(open) {
@@ -613,6 +613,10 @@
         res.caveat === 'translation_not_reviewed' ? h('span.pill.warn.hollow', { id: 'mk-caveat', text: 'translation not reviewed' }) : res.caveat === 'no_core' ? h('span.pill.warn.hollow', { id: 'mk-caveat', text: 'core not available' }) : null,
         pill(ORIGIN, res.origin || (st.rec && st.rec.origin), ''), h('span.k-hint', { text: (res.ms != null ? Math.round(res.ms) + ' ms' : '') }));
       resBox.appendChild(head);
+      // a met claim is the natural starting point of a design-around (#designs); only offered for "covered"
+      if (res.overall === 'covered' && st.pn && st.claim != null && st.parsed && st.parsed.smiles) resBox.appendChild(h('p.k-row.mk-next', null,
+        h('a.btn.sm', { id: 'mk-designs', href: R.build({ view: 'designs', params: { n: st.pn, c: String(st.claim), q: st.parsed.smiles } }) }, U.icon('spark'), 'Design-around ideas'),
+        h('span.k-hint', { text: 'Variants just outside the met rules, re-checked by code. Ideas for counsel, not advice.' })));
       if (st.coreMachine) resBox.appendChild(h('p.notice.warn', { id: 'mk-machine-note', text: 'The core was read from the image by Claude and is not confirmed. A "not covered" result is held as unclear until you check the core against the image and confirm it (button in the core section) or enter it by hand.' }));
       if (raw && res.caveat === 'translation_not_reviewed') resBox.appendChild(h('p.k-hint', { text: 'Code result before the caveat: ' + String(raw).replace(/_/g, ' ') + '. An unreviewed Claude translation never reports "not covered", because a translation error could hide a covered molecule.' }));
       if ((res.reasons || []).length) resBox.appendChild(h('ul.mk-reasons', null, res.reasons.map(function (r) { return h('li', { text: r }); })));
@@ -640,7 +644,7 @@
         var frag = gr.value != null && !gr.fragment ? h('span.mono', { text: 'n = ' + gr.value }) : gr.fragment ? h('div.mk-frag', null, depict(gr.fragment, 120, 56, gr.fragment), h('span.mono.mk-smi', { text: gr.value != null ? 'n = ' + gr.value + ' ' + gr.fragment : gr.fragment })) : h('span.faint', { text: na ? '-' : 'H / none' });
         tb.appendChild(h('tr.mk-grow', { data: { v: gr.verdict, name: gr.name } },
           h('td', { data: { l: 'Variable' } }, h('b.mono', { text: str(gr.name) }), h('span.k-hint', { text: ' ' + str(gr.kind || '') })),
-          h('td', { data: { l: 'Verdict' } }, pill(GROUP, gr.verdict)),
+          h('td', { data: { l: 'Verdict' } }, pill((g.LnpKit && g.LnpKit.RULE_VERDICT) || GROUP, gr.verdict)),
           h('td', { data: { l: 'Your fragment' } }, frag),
           h('td', { data: { l: 'Rule' } }, h('span', { text: ruleText(v) || '-' })),
           h('td', { data: { l: 'Why' } }, h('span', { text: str(gr.why) + (gr.relaxed ? ' (explanation only, not part of the verdict)' : '') })),
@@ -649,10 +653,17 @@
       return h('div.mk-tablewrap', null, h('table.mk-table', { id: 'mk-groups' }, h('thead', null, h('tr', null, ['Variable', 'Verdict', 'Your fragment', 'Rule', 'Why', 'Claim text'].map(function (t) { return h('th', { scope: 'col', text: t }); }))), tb));
     }
     function limitsBox(res) {
-      var items = ['Pre-screening, not legal advice.', 'The formula translated by Claude must be checked against the original; the quotes show what each rule is based on.', 'Stereochemistry, salts and claim interpretation are not assessed.', 'Corpus snapshot ' + snapshotDate() + '.'];
+      // the translation sentence follows the record's origin: only a Claude translation that nobody reviewed needs the warning
+      var origin = (res && res.origin) || (st.rec && st.rec.origin) || '', reviewed = !!((res && res.reviewed) || (st.rec && st.rec.reviewed));
+      var tr = origin === 'curated' ? 'The rules are a curated reading of the claim; claim construction is for a patent attorney.'
+        : origin === 'manual' ? 'The rules were entered by hand; check them against the original claim.'
+          : reviewed ? 'The formula was translated by Claude and marked as reviewed; the quotes show what each rule is based on.'
+            : 'The formula translated by Claude must be checked against the original; the quotes show what each rule is based on.';
+      var trShort = origin === 'curated' ? 'curated reading of the claim' : origin === 'manual' ? 'rules entered by hand' : reviewed ? 'reviewed Claude translation' : 'formula translated by Claude must be checked against the original';
+      var items = ['Pre-screening, not legal advice.', tr, 'Stereochemistry, salts, charges, tautomers, extra fragments and claim interpretation are not fully assessed: where they could matter, the check says "unclear" rather than "not covered".', 'Corpus snapshot ' + snapshotDate() + '.'];
       var extra = (res && res.limits) || [];
       var ul = h('ul', null, items.map(function (t) { return h('li', { text: t }); }), extra.filter(function (t) { return !/legal advice/i.test(t); }).map(function (t) { return h('li', { text: str(t) }); }));
-      return h('div.mk-limits', { id: 'mk-limits' }, h('p.mk-limits-t', null, U.icon('help'), h('span', { text: 'Pre-screening, not legal advice; formula translated by Claude must be checked against the original; stereo, salts and claim interpretation not assessed; corpus snapshot ' + snapshotDate() })), h('details', null, h('summary', { text: 'All limits of this check' }), ul));
+      return h('div.mk-limits', { id: 'mk-limits' }, h('p.mk-limits-t', null, U.icon('help'), h('span', { text: 'Pre-screening, not legal advice; ' + trShort + '; stereo, salts, charges, tautomers, extra fragments and claim interpretation not fully assessed; corpus snapshot ' + snapshotDate() })), h('details', null, h('summary', { text: 'All limits of this check' }), ul));
     }
 
     /* ---------------------------------------------------------- batch */

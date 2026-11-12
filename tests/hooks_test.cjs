@@ -139,7 +139,8 @@ async function openPage(B, srv, o) {
     if (u.hostname === 'fonts.googleapis.com') return route.fulfill({ status: 200, contentType: 'text/css', body: '/* answered by the test */' });
     st.offOrigin.push(route.request().url()); return route.abort();
   });
-  if (o.blank) await ctx.route(/\/(engine\/x-links\.js|app\/views\/legal\.js|app\/views\/facets\.js|engine\/x-tags\.js|app\/views\/ranges\.js)$/, (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+  // blank: every extension file (engine/x-*.js and every view that is not one of the nine built-in views) answers empty
+  if (o.blank) await ctx.route(/\/(engine\/x-[a-z0-9._-]+\.js|app\/views\/(?!(?:suche|patent|familie|struktur|produkte|fto|landschaft|merkliste|system)\.js)[a-z0-9_-]+\.js)$/, (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   if (o.blankTags) await ctx.route(/\/engine\/x-tags\.js$/, (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   if (o.claude === 'null') await ctx.addInitScript('window.claude = { use: function () { return Promise.resolve(null); } };');
   if (o.init) for (const s of [].concat(o.init)) await ctx.addInitScript(s);
@@ -272,12 +273,13 @@ async function partExt(B, srv) {
     await route(S, '#patent-' + T.op.pn, '.claim'); await S.page.waitForSelector('[data-ext-panel="legal"] .lg-it:not([hidden])', { timeout: 30000 }); await settle(S, 600);
     const d = await S.page.evaluate(() => {
       const acts = Array.from(document.querySelectorAll('.pt-actions > *')), meta = Array.from(document.querySelectorAll('.claim-meta')), main = document.querySelector('.pt-main'), secs = Array.from(main.children).map((e) => e.getAttribute('data-ext-panel') || (e.querySelector('h2') || {}).textContent || e.className);
-      return { actTxt: acts.map((a) => a.textContent.trim()), lastAct: acts.length && acts[acts.length - 1].classList.contains('xt-act'), nClaims: document.querySelectorAll('article.claim').length, nMeta: meta.length, nXt: meta.filter((m) => m.lastElementChild && m.lastElementChild.classList.contains('xt-claim')).length, secs,
+      return { actTxt: acts.map((a) => a.textContent.trim()), lastAct: acts.length && acts[acts.length - 1].classList.contains('xt-act'), xtIdx: acts.findIndex((a) => a.classList.contains('xt-act')), nClaims: document.querySelectorAll('article.claim').length, nMeta: meta.length, nXt: meta.filter((m) => m.lastElementChild && m.lastElementChild.classList.contains('xt-claim')).length, secs,
         panel: (document.querySelector('[data-ext-panel="xtpanel"]') || {}).textContent, hidden: !!document.querySelector('[data-ext-panel="xthidden"]'), whenBoom: !!document.querySelector('[data-ext-panel="xtwhen"]'), renderBoom: !!document.querySelector('[data-ext-panel="xtrender"]'),
         links: Array.from(document.querySelectorAll('.links a')).map((a) => [a.textContent.trim(), a.getAttribute('href'), a.getAttribute('rel'), a.getAttribute('target')]),
         errs: LnpApp.errors.map((e) => e.where) };
     });
-    ok(d.actTxt.slice(0, 4).join('|').indexOf('Watch') === 0 && d.lastAct && d.actTxt.length === 5, 'patentAction node follows the built-in buttons', d.actTxt);
+    // the build also carries the real tool extensions (context pack, expiry, similar): every extension node follows the four built-ins
+    ok(d.actTxt.slice(0, 4).join('|') === 'Watch|Compare family|Check FTO|Number' && d.xtIdx >= 4 && d.actTxt.filter((t) => t === 'XT action').length === 1, 'patentAction node follows the built-in buttons', d.actTxt);
     ok(d.nClaims > 0 && d.nMeta === d.nClaims && d.nXt === d.nClaims, 'claimAction node in the meta row of every claim, after the built-in buttons (' + d.nXt + '/' + d.nClaims + ')', d);
     ok(/XT panel for/.test(d.panel || '') && /lang/.test(d.panel), 'patentPanel rendered with (P, el, ctx)', d.panel);
     const i1 = d.secs.indexOf('Claims') >= 0 ? d.secs.indexOf('Claims') : 0, iX = d.secs.indexOf('xtpanel'), iL = d.secs.indexOf('legal');
