@@ -45,7 +45,7 @@
         { text: 'The buttons under the box write the search syntax for you: AND, OR, NOT, "phrase", NEAR/5 (words close together), * (any ending) and fields such as title:, claims:, indep: (independent claims only), asg: (owner), cpc:, year: and status:. Example: title:"lipid nanoparticle" asg:Moderna. Switch the order with Relevance, Date or Expiry; save the search with the disk button; export the list with CSV.', img: 'search-3', alt: 'Results for a field search combining a title phrase with an owner name' },
         { text: 'Click a title to open the patent page (next tutorial). The star puts a patent on your watchlist; tick the boxes to select several: a bar at the bottom then offers Watch (all selected) and Check FTO (hand them to the FTO section).', route: '#suche' }
       ],
-      limits: ['Search covers only patents with a full text in the corpus; a patent shown without claim passages is listed from its bibliographic data only.', 'Words are matched as written (with simple stemming). A concept described with other words is not found: try synonyms and chemical names.', 'The number of hits is the number in the corpus, not the number of patents in the world.']
+      limits: ['Search covers only patents with a full text in the corpus; a patent shown without claim passages is listed from its bibliographic data only.', 'Words are matched as written (no stemming). A concept described with other words is not found: try synonyms and chemical names.', 'The number of hits is the number in the corpus, not the number of patents in the world.']
     },
     {
       id: 'patent', title: 'Reading a patent page', route: '#patent-EP3532103B1',

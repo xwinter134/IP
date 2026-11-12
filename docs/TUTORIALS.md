@@ -85,7 +85,7 @@ Try it in the app: `#suche`
 **Limits**
 
 - Search covers only patents with a full text in the corpus; a patent shown without claim passages is listed from its bibliographic data only.
-- Words are matched as written (with simple stemming). A concept described with other words is not found: try synonyms and chemical names.
+- Words are matched as written (no stemming). A concept described with other words is not found: try synonyms and chemical names.
 - The number of hits is the number in the corpus, not the number of patents in the world.
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
