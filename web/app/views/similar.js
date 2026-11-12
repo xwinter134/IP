@@ -166,7 +166,7 @@
   if (g.LnpApp.ext && typeof g.LnpApp.ext.patentAction === 'function') {
     g.LnpApp.ext.patentAction(function (P) {
       if (!P || !P.pn) return null;
-      return h('a.btn.sm', { href: R.build({ view: 'similar', arg: P.pn }), title: 'Publications with similar claims, compounds and classes' }, U.icon('search'), 'Similar patents');
+      return h('a.btn', { href: R.build({ view: 'similar', arg: P.pn }), title: 'Publications with similar claims, compounds and classes' }, U.icon('search'), 'Similar patents');
     });
   }
 })(window);

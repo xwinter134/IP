@@ -202,7 +202,7 @@ async function unit() {
     // resolve() of a preview
     const rr = Sc.parseInput('A\nBAD2\nCCO smiles-name');
     await Sc.resolve(rr);
-    ok(rr[0].parsed && rr[1].error && /not recognised/.test(rr[1].error) && rr[2].parsed, 'resolve(): parsed or error per row; ".smi" fallback used when the whole line fails', rr.map((x) => !!x.parsed));
+    ok(rr[0].parsed && rr[1].error && /not recognised/i.test(rr[1].error) && rr[2].parsed, 'resolve(): parsed or error per row; ".smi" fallback used when the whole line fails', rr.map((x) => !!x.parsed));
     // store
     section('store: save / load / compact');
     const full = await Sc.run(rows.slice(0, 4), { modes: ['exact', 'sim'], today: T });
@@ -298,7 +298,7 @@ async function browser() {
     ok(/10 rows read \(header found\)/.test(pv) && /3 rows with errors/.test(pv) || /rows with errors/.test(pv), 'preview counts rows and says a header was found', pv.slice(0, 200));
     const listText = await S.page.evaluate(() => Array.from(document.querySelectorAll('.sc-pv li, .sc-pv tr.sc-bad')).map((n) => n.textContent).join(' | '));
     ok(/unbalanced/.test(pv) || /unbalanced/.test(listText), 'a syntax error is shown in the preview (unbalanced bracket)', listText.slice(0, 300));
-    ok(/not recognised|not a valid SMILES/.test(pv + listText), 'an invalid ring SMILES is reported after resolving', listText.slice(0, 300));
+    ok(/not recognised|not a valid SMILES/i.test(pv + listText), 'an invalid ring SMILES is reported after resolving', listText.slice(0, 300));
 
     section('browser: run exact + similar, results');
     const ms = await runAndWait(S, 'ui_10_compounds_exact_sim_total_ms');

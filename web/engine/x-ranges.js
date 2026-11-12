@@ -311,11 +311,11 @@
         var nWant = new Set(V.map(function (v) { return grp[v.pj]; })).size, max = o.max || MAX_ROWS;
         var order = scope || (function () { var a = []; for (var i = 0; i < S.doc.pn.length; i++) a.push(i); return a; })();
         var R = S.cols, pAll = new Set(), pPart = new Set();
-        for (var oi = 0; oi < order.length; oi++) {
-          var pi = order[oi], a = S.start[pi], b = S.start[pi + 1], seenP = {}, k, nSeen = 0;
+        function one(pi) {
+          var a = S.start[pi], b = S.start[pi + 1], seenP = {}, k, nSeen = 0;
           for (k = a; k < b; k++) { var pj = R.param[k]; if (want[pj] && !seenP[grp[pj]]) { seenP[grp[pj]] = 1; nSeen++; if (nSeen === nWant) break; } }
           res.counts.patentsScanned++;
-          if (nSeen === 0) continue;
+          if (nSeen === 0) return;
           if (nSeen === nWant) res.counts.patentsWithAllParams++;
           if (mode === 'all' && nSeen < nWant) { /* a claim can only be inside everywhere if the patent has every parameter; partial claims still count below */ }
           var ctx = patCtx(pi), cand = new Set(), stack = [], memo = new Map();
@@ -331,6 +331,16 @@
             else { item.verdict = 'partial'; res.counts.claimsPartial++; pPart.add(pi); if (res.partial.length < max) res.partial.push(item); else res.truncated = true; }
           });
         }
+        // the scan over all publications yields to the event loop about every 40 ms (a page stays responsive)
+        function tick() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
+        function scan(from) {
+          var t0 = tick(), oi = from;
+          for (; oi < order.length; oi++) { one(order[oi]); if ((oi & 63) === 63 && tick() - t0 > 40) { oi++; break; } }
+          if (oi < order.length) return new Promise(function (r) { setTimeout(r, 0); }).then(function () { return scan(oi); });
+          return Promise.resolve();
+        }
+        return scan(0).then(finish);
+        function finish() {
         // more values inside first; then claims whose hits rest on identified components and stated units
         function vague(c) { return c.values.filter(function (x) { return x.status === 'inside' && (x.compUnknown || x.basisUnknown); }).length; }
         function srt(a, b) { return (b.nInside - a.nInside) || (vague(a) - vague(b)) || ((b.indep ? 1 : 0) - (a.indep ? 1 : 0)) || (a.pn < b.pn ? -1 : a.pn > b.pn ? 1 : 0) || (a.claim - b.claim); }
@@ -338,6 +348,7 @@
         res.counts.patentsAll = pAll.size; res.counts.patentsPartial = pPart.size; res.counts.patents = new Set(Array.from(pAll).concat(Array.from(pPart))).size;
         res.matches = mode === 'all' ? res.all : res.all.concat(res.partial);
         return res;
+        }
       });
     });
   }

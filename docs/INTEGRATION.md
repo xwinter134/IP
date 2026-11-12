@@ -96,6 +96,9 @@ The server then waits for MCP messages on stdin (one JSON-RPC message per line) 
 You normally do not start it by hand: the client does, from its configuration. Options: `--check` (print what the build contains
 and exit), `--preload`, `--full-cache`, `--timeout S`, `--verbose`, `--engines DIR`, `--help`; `$LNP_DIST` sets the default `--dist`.
 
+`--dist` must be a build you made or trust: the server runs the engine scripts of that build (`<dist>/engine/*.js`) in its
+own process, so pointing it at an unknown folder can execute arbitrary code. Reads stay inside the build folder.
+
 Use absolute paths in every configuration: the client's working directory is not yours.
 
 ### 5.3 Claude Desktop

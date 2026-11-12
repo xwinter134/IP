@@ -102,7 +102,9 @@
         res = r; draw();
       }, function (e) {
         if (my !== seq || dead) return;
-        U.set(body, e && e.code === 'no_chem' ? h('p.notice', { text: 'This build contains no structure data, so no structure can be looked up.' }) : K.errBox(e, e && e.code === 'bad_query' ? 'The structure could not be read' : 'The timeline could not be built'));
+        // a structure that cannot be read is already explained under the input: say it once
+        U.set(body, e && e.code === 'no_chem' ? h('p.notice', { text: 'This build contains no structure data, so no structure can be looked up.' })
+          : e && e.code === 'bad_query' ? h('p.k-hint', { text: 'No timeline: the input above is not a structure that can be read.' }) : K.errBox(e, 'The timeline could not be built'));
       });
     }
 
@@ -179,7 +181,9 @@
       r.entries.forEach(function (e) { if (e.prio) dates.push(e.prio); if (e.pub) dates.push(e.pub); });
       if (!dates.length) { box.appendChild(h('p.faint', { text: 'The publications carry no dates in the patent table.' })); return; }
       dates.sort();
-      var y0 = +dates[0].slice(0, 4), y1 = +dates[dates.length - 1].slice(0, 4) + 1, span = Math.max(1, y1 - y0), step = span <= 8 ? 1 : span <= 16 ? 2 : 5;
+      var y0 = +dates[0].slice(0, 4), y1 = +dates[dates.length - 1].slice(0, 4) + 1, span = Math.max(1, y1 - y0), narrow = (box.clientWidth || (g.innerWidth || 1000)) < 560;
+      // fewer year ticks on a phone, so the labels do not run into each other
+      var step = narrow ? (span <= 6 ? 1 : span <= 12 ? 2 : span <= 24 ? 4 : 10) : (span <= 8 ? 1 : span <= 16 ? 2 : 5);
       var a = tms(y0 + '-01-01'), b = tms(y1 + '-01-01');
       function pos(iso) { return Math.max(0, Math.min(100, (tms(iso) - a) / (b - a) * 100)); }
       var inner = h('div.cm-tl-in', { role: 'group', 'aria-label': 'Timeline of priority and publication dates, one lane per patent family' }), axis = h('div.cm-tl-row.cm-tl-axis', null, h('span.cm-tl-lab'));

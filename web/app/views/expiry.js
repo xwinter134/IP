@@ -156,6 +156,7 @@
     /* ---------------------------------------------------------- drawing */
     function statusPill(r) {
       if (r.dead) return h('span.pill.hollow', { text: r.deadReason === 'expired' ? 'expired (est.)' : r.deadReason, title: 'No longer in force according to the dataset' });
+      if (r.expiredEst) return h('span.pill.warn.hollow', { text: 'expired (est.)', title: 'Past the estimated expiry date; an SPC or a PTE (not checked) can extend protection by up to 5.5 years' });
       if (r.pending) return h('span.pill.warn', { text: 'pending', title: 'Application: may still be granted, narrowed or refused' });
       return h('span.pill.good', { text: 'in force', title: r.stale || r.noRecord ? 'Treated as in force; status record old or missing' : 'Granted, no lapse or revocation in the dataset' });
     }
@@ -168,11 +169,11 @@
         U.set(body, srcInfo(info, rows), h('div.empty', null, h('p.overline', { text: 'No rights' }), h('h3', { text: res.ps.length ? 'No right in the selected jurisdictions' : 'No publication found' }),
           h('p', { text: res.ps.length ? 'The set only holds publications outside EP, DE and US, or the jurisdiction filter removed all of them.' : 'The source gave no publication of this corpus. The notes above say what was searched.' })), limitsBox(rows)); return;
       }
-      var nIn = live.filter(function (r) { return r.inForce; }).length, nPend = live.filter(function (r) { return r.pending; }).length, nDead = live.filter(function (r) { return r.dead; }).length;
-      var maxExp = live.filter(function (r) { return !r.dead && r.expiry.date; }).map(function (r) { return r.expiry.date; }).sort().pop();
-      var nStale = live.filter(function (r) { return !r.dead && (r.stale || r.noRecord); }).length;
+      var nIn = live.filter(function (r) { return r.inForce; }).length, nPend = live.filter(function (r) { return r.pending; }).length, nDead = live.filter(function (r) { return r.dead; }).length, nEst = live.filter(function (r) { return r.expiredEst; }).length;
+      var maxExp = live.filter(function (r) { return (r.inForce || r.pending) && r.expiry.date; }).map(function (r) { return r.expiry.date; }).sort().pop();
+      var nStale = live.filter(function (r) { return (r.inForce || r.pending) && (r.stale || r.noRecord); }).length;
       var stats = h('dl.stats.k-stats', null, tile('Rights', U.num(live.length), K.plural(rows.families.length, 'family', 'families')), tile('In force (estimate)', U.num(nIn), nStale ? U.num(nStale) + ' with an old or missing status' : 'status as per the register snapshot'),
-        tile('Pending', U.num(nPend), 'applications, may still grant'), tile('No longer in force', U.num(nDead), 'lapsed, revoked, withdrawn or expired'), tile('Latest estimated expiry', maxExp ? U.date(maxExp) : '–', 'of the rights still in force or pending'));
+        tile('Pending', U.num(nPend), 'applications, may still grant'), tile('No longer in force', U.num(nDead), 'lapsed, revoked or withdrawn per register'), tile('Expired (estimate)', U.num(nEst), 'term passed; SPC / PTE not checked'), tile('Latest estimated expiry', maxExp ? U.date(maxExp) : '–', 'of the rights still in force or pending'));
       var tl = h('div.ex-tlbox'), cliffBox = h('div.ex-cliff'), tblBox = h('div.ex-tbl');
       var secT = K.sec('Timeline', 'Filing date to estimated expiry', null, h('p.k-note', { text: 'One lane per right, grouped by patent family, oldest family on top. The solid bar runs from the filing date to the estimated expiry; the hatched end is the patent term adjustment (US). Dashed bars are applications, grey bars rights that are no longer in force. The red line is today.' }), tl);
       drawTimeline(tl, rows);
@@ -186,7 +187,7 @@
     }
 
     function srcInfo(info, rows) {
-      var parts = [h('p.k-sub', null, h('b', { text: info.label || 'Source' }), ' · ' + (info.routes || []).map(function (r) { return r.n + ' ' + r.name; }).join(' · ') + ' · ' + info.ms + ' ms')];
+      var parts = [h('p.k-sub', null, h('b', { text: info.label || 'Source' }), ' · ' + (info.routes || []).map(function (r) { var nm = String(r.name || ''), one = { 'publication numbers': 'publication number', 'charted rights': 'charted right', 'family members added': 'family member added' }[nm]; return U.num(r.n) + ' ' + (r.n === 1 && one ? one : nm); }).join(' · ') + ' · ' + info.ms + ' ms')];
       (info.notes || []).forEach(function (n) { parts.push(h('p.k-hint.ex-note', { text: n })); });
       if (info.unknown && info.unknown.length) parts.push(h('p.notice', { text: 'Not found in this corpus: ' + info.unknown.slice(0, 8).join(', ') + (info.unknown.length > 8 ? ' and ' + (info.unknown.length - 8) + ' more' : '') + '.' }));
       if (rows && rows.skippedWo) parts.push(h('p.k-hint.ex-note', { text: K.plural(rows.skippedWo, 'PCT publication', 'PCT publications') + ' left out: a WO publication is not a right; its national and regional members are.' }));
@@ -203,7 +204,8 @@
       if (yMin > yMax) { yMin = +today.slice(0, 4) - 5; yMax = yMin + 20; }
       var span = yMax - yMin, a0 = Date.UTC(yMin, 0, 1), b0 = Date.UTC(yMax, 0, 1);
       function pos(d) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); if (!m) return null; return Math.max(0, Math.min(100, (Date.UTC(+m[1], +m[2] - 1, +m[3]) - a0) / (b0 - a0) * 100)); }
-      var stepY = span > 30 ? 5 : span > 16 ? 2 : 1, nowP = pos(today);
+      var narrow = (box.clientWidth || (g.innerWidth || 1000)) < 560;
+      var stepY = narrow ? (span > 40 ? 10 : span > 20 ? 5 : 4) : (span > 30 ? 5 : span > 16 ? 2 : 1), nowP = pos(today);
       var inner = h('div.ex-tl-in', { role: 'img', 'aria-label': 'Timeline of estimated expiry dates, one lane per right' });
       var axis = h('div.ex-tl-row.ex-tl-axis', null, h('span.ex-tl-lab', { text: 'Publication' }), h('div.ex-tl-track'));
       for (var y = yMin; y <= yMax; y += stepY) axis.lastChild.appendChild(h('span.ex-tl-y', { style: { left: pos(y + '-01-01') + '%' }, text: String(y) }));
@@ -216,9 +218,9 @@
         var s = pos(r.filing || r.pub), e = pos(r.expiry.date);
         if (s != null && e != null && e >= s) {
           var pta = r.expiry.ptaDays > 0 ? r.expiry.ptaDays : 0, baseEnd = pta ? pos(addDaysIso(r.expiry.date, -pta)) : e;
-          var cls = r.dead ? 'dead' : r.pending ? 'pending' : 'live';
+          var cls = r.dead || r.expiredEst ? 'dead' : r.pending ? 'pending' : 'live';
           track.appendChild(h('span.ex-bar.' + cls, { style: { left: s + '%', width: Math.max(.4, baseEnd - s) + '%' } }));
-          if (pta && baseEnd < e) track.appendChild(h('span.ex-bar.pta' + (r.dead ? '.dead' : r.pending ? '.pending' : ''), { style: { left: baseEnd + '%', width: Math.max(.3, e - baseEnd) + '%' } }));
+          if (pta && baseEnd < e) track.appendChild(h('span.ex-bar.pta' + (r.dead || r.expiredEst ? '.dead' : r.pending ? '.pending' : ''), { style: { left: baseEnd + '%', width: Math.max(.3, e - baseEnd) + '%' } }));
           track.appendChild(h('span.ex-end' + (e > 85 ? '.left' : ''), { style: { left: e + '%' }, text: r.expiry.date.slice(0, 4) }));
         } else track.appendChild(h('span.ex-none', { style: { left: (s || 0) + '%' }, text: 'no expiry estimate' }));
         if (nowP != null) track.appendChild(h('i.ex-tl-now', { style: { left: nowP + '%' } }));
@@ -230,13 +232,13 @@
         inner.appendChild(row);
       });
       box.appendChild(h('div.ex-tl', null, inner));
-      var leg = h('div.ex-legend', null, h('span', null, h('i.ex-key.live'), 'in force or granted'), h('span', null, h('i.ex-key.pta'), 'PTA (US)'), h('span', null, h('i.ex-key.pending'), 'pending application'), h('span', null, h('i.ex-key.dead'), 'no longer in force'), h('span', null, h('i.ex-key.now'), 'today'));
+      var leg = h('div.ex-legend', null, h('span', null, h('i.ex-key.live'), 'in force or granted'), h('span', null, h('i.ex-key.pta'), 'PTA (US)'), h('span', null, h('i.ex-key.pending'), 'pending application'), h('span', null, h('i.ex-key.dead'), 'no longer in force or expired (est.)'), h('span', null, h('i.ex-key.now'), 'today'));
       box.appendChild(leg);
       if (fams.length > shown.length) box.appendChild(h('p.k-hint', null, 'Showing the ' + shown.length + ' oldest of ' + fams.length + ' families. ', h('button.btn.quiet.sm', { type: 'button', onclick: function () { st.all = true; draw(); } }, 'Show all')));
     }
     function addDaysIso(d, n) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d); var t = Date.UTC(+m[1], +m[2] - 1, +m[3]) + n * 864e5, x = new Date(t); return x.getUTCFullYear() + '-' + ('0' + (x.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + x.getUTCDate()).slice(-2); }
     function tipRows(r) {
-      var ex = r.expiry, out = [['Status', r.dead ? r.deadReason : r.pending ? 'pending' : 'in force', null], ['Filing', r.filing ? U.date(r.filing) : '–', null], ['Expiry (estimate)', ex.date ? U.date(ex.date) : '–', null], ['Basis', ex.basis, null]];
+      var ex = r.expiry, out = [['Status', r.dead ? r.deadReason : r.expiredEst ? 'expired (estimate; SPC / PTE not checked)' : r.pending ? 'pending' : 'in force', null], ['Filing', r.filing ? U.date(r.filing) : '–', null], ['Expiry (estimate)', ex.date ? U.date(ex.date) : '–', null], ['Basis', ex.basis, null]];
       if (ex.ptaDays) out.push(['PTA', ex.ptaDays + ' days', null]);
       out.push(['PTE / SPC', 'not checked', null]);
       if (r.stale || r.noRecord) out.push(['Status record', r.noRecord ? 'missing' : 'from ' + U.date(r.asof), null]);
@@ -305,7 +307,7 @@
   if (g.LnpApp.ext && typeof g.LnpApp.ext.patentAction === 'function') {
     g.LnpApp.ext.patentAction(function (P) {
       if (!P || !P.pn || P.auth === 'WO' && !P.fam) return null;
-      return h('a.btn.sm', { href: R.build({ view: 'expiry', params: { s: 'pns', l: [P.pn], f: '1' } }), title: 'Estimated expiry of this patent family' }, U.icon('landscape'), 'Expiry timeline');
+      return h('a.btn', { href: R.build({ view: 'expiry', params: { s: 'pns', l: [P.pn], f: '1' } }), title: 'Estimated expiry of this patent family' }, U.icon('landscape'), 'Expiry timeline');
     });
   }
 })(window);

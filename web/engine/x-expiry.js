@@ -17,7 +17,8 @@
         pns        : a list of publication numbers (array or text; separators: newline , ;)
         opts.family = true adds every family member of the table (WO publications are never rights and are skipped).
      timeline(ps, {jurisdictions: ['EP','DE','US'], today?, includeWo?}) -> Promise<rows[]>; rows.families = [{family, rows[], filing, expiry, inForce, pending, dead}]
-        row = {p, pn, auth, kind, family, title, assignee, status, granted, pending, inForce, inForceDe, dead, deadReason, superseded, jur[], filing,
+        row = {p, pn, auth, kind, family, title, assignee, status, granted, pending, inForce, inForceDe, dead, deadReason, expiredEst, superseded, jur[], filing,
+               (dead: lapsed / revoked / withdrawn / refused per register; expiredEst: past the estimated date, SPC / PTE not checked)
                expiry: {date, basis, basisKind: 'filing'|'pta'|'register'|'computed', ptaDays, baseDate, pte: 'not checked', spc: 'not checked',
                         terminalDisclaimer: true|null, note}, stale, asof, src, noRecord, flags[], opposition, appeal}
         One row per right: when one application has several publications (A1 and B1, B1 and B2) the best one is the row, the others are
@@ -54,7 +55,8 @@
   function todayIso(o) { return (o && o.today) || (S.cfg.now ? S.cfg.now() : new Date().toISOString().slice(0, 10)); }
 
   var LIMITS = [
-    'Estimates only: filing date + 20 years, plus patent term adjustment (PTA) where the US calculation of the dataset has one. Real terms can differ.',
+    'Estimates only: filing date + 20 years, plus patent term adjustment (PTA) where the US calculation of the dataset has one; US patents filed before 8 June 1995 run until the later of grant + 17 years and filing + 20 years. For continuations the date depends on the earliest non-provisional filing in the status file. Real terms can differ.',
+    'A right past its estimated date is shown as "expired (estimate)", apart from rights the register shows as lapsed, revoked or withdrawn: an SPC or PTE can extend protection by up to 5 (+0.5) years.',
     'Not checked: patent term extension (PTE, 35 U.S.C. 156), supplementary protection certificates (SPC), paediatric extensions, terminal disclaimers, maintenance and renewal fees after the snapshot, assignments, licences and legal events after the snapshot.',
     'The register snapshot has a date; a status older than six months is marked stale. A missing record means the right is treated as in force but unverified.',
     'Pending applications may still be granted, narrowed or refused; their dates are the latest possible expiry, not a prediction.',
@@ -244,12 +246,19 @@
     } else if (filing) {
       base = addYears(filing, 20); ex.date = base; ex.basis = 'filing + 20 y'; ex.basisKind = 'computed'; ex.note = 'Computed from the filing date; no legal-status record.';
     }
+    // US applications filed before 8 June 1995: the term is the longer of grant + 17 years and filing + 20 years
+    if (auth === 'US' && granted && filing && filing < '1995-06-08' && ex.basisKind !== 'register' && row.pub) {
+      var g17 = addYears(row.pub, 17);
+      if (g17 && (!ex.date || g17 > ex.date)) { ex.date = g17; ex.basis = 'grant + 17 y (filed before 8 June 1995)'; ex.basisKind = 'computed'; ex.note = (ex.note ? ex.note + ' ' : '') + 'Pre-1995 US term rule: the longer of grant + 17 years and filing + 20 years.'; }
+    }
     if (st && st.terminal_disclaimer === true) ex.terminalDisclaimer = true;
     if (!ex.date) ex.note = 'No filing date or expiry in the corpus.';
     var opp = st && st.opposition ? st.opposition : null; row.opposition = opp && opp.filed ? (opp.outcome || 'filed') : null; row.appeal = st && st.appeal === true ? true : (st && st.appeal === false ? false : null);
     var appealOpen = code === 'revoked' && (row.appeal === true || (opp && opp.outcome === 'pending'));
     if (DEAD[code] && st && st.src && st.asof && !appealOpen) { row.dead = true; row.deadReason = code; }
-    else if (ex.date && ex.date < today) { row.dead = true; row.deadReason = 'expired'; }
+    // past the estimated date: kept apart from rights the register shows as dead, because an SPC or a PTE (not checked)
+    // can extend protection by up to 5 (+0.5) years beyond it
+    else if (ex.date && ex.date < today) { row.expiredEst = true; row.flags.push('expired by estimate; SPC / PTE not checked'); }
     if (appealOpen) row.flags.push('revoked, appeal on record: treated as in force');
     if (row.opposition === 'pending' || (opp && opp.filed && !opp.outcome)) row.flags.push('opposition pending');
     else if (row.opposition === 'revoked') row.flags.push('revoked after opposition');
@@ -257,8 +266,8 @@
     if (auth === 'EP' && granted && !row.dead && row.inForceDe === false) row.flags.push('not in force in DE per register; may be in force in other states');
     if (!st) row.flags.push('no register record: status unverified');
     else if (row.stale) row.flags.push('status snapshot older than 6 months');
-    row.pending = !granted && !row.dead;
-    row.inForce = granted && !row.dead;
+    row.pending = !granted && !row.dead && !row.expiredEst;
+    row.inForce = granted && !row.dead && !row.expiredEst;
     row.jur = jurOf(row);
     return row;
   }
@@ -302,6 +311,7 @@
         var f = fams[k], live = f.rows.filter(function (r) { return !r.superseded; });
         var fil = live.map(function (r) { return r.filing; }).filter(Boolean).sort()[0] || '', ex = live.map(function (r) { return r.expiry.date; }).filter(Boolean).sort().pop() || '';
         f.filing = fil; f.expiry = ex; f.inForce = live.some(function (r) { return r.inForce; }); f.pending = live.some(function (r) { return r.pending; }); f.dead = live.length > 0 && live.every(function (r) { return r.dead; });
+        f.expiredEst = live.length > 0 && !f.dead && live.every(function (r) { return r.dead || r.expiredEst; });
         return f;
       }).sort(function (a, b) { return (a.filing || '9').localeCompare(b.filing || '9') || (a.family - b.family); });
       kept.today = today; kept.jurisdictions = jur; kept.skippedWo = skippedWo; kept.missing = missing; kept.snapshot = { ep_register: snap.ep_register || null, us_text: snap.us_text || null };
@@ -313,10 +323,11 @@
   /* ------------------------------------------------------------------------------------------ cliff */
   function cliff(rows, o) {
     o = o || {}; var today = (rows && rows.today) || todayIso(o);
-    var live = arr(rows).filter(function (r) { return !r.superseded; }), years = {}, nDead = 0, nNoDate = 0;
+    var live = arr(rows).filter(function (r) { return !r.superseded; }), years = {}, nDead = 0, nNoDate = 0, nExpiredEst = 0;
     var J = { EP: [], DE: [], US: [] };
     live.forEach(function (r) {
       if (r.dead) { nDead++; return; }
+      if (r.expiredEst) { nExpiredEst++; return; }
       if (!r.expiry.date) { nNoDate++; return; }
       var y = +r.expiry.date.slice(0, 4), yy = years[y] || (years[y] = { year: y, EP: 0, US: 0, pending: 0, other: 0, total: 0 });
       if (r.pending) yy.pending++; else if (r.auth === 'EP') yy.EP++; else if (r.auth === 'US') yy.US++; else yy.other++;
@@ -338,7 +349,7 @@
       if (unverified) text += ' ' + unverified + ' of the granted right' + (unverified === 1 ? ' has' : 's have') + ' an old or missing status record.';
       jur[j] = { lastExpiry: last ? last.expiry.date : null, pn: last ? last.pn : null, nInForce: gr.length, nPending: pe.length, pendingLatest: pl ? pl.expiry.date : null, unverified: unverified, text: text };
     });
-    return { years: out, jurisdictions: jur, nRights: live.length, nDead: nDead, nSuperseded: arr(rows).length - live.length, nNoDate: nNoDate, today: today,
+    return { years: out, jurisdictions: jur, nRights: live.length, nDead: nDead, nExpiredEst: nExpiredEst, nSuperseded: arr(rows).length - live.length, nNoDate: nNoDate, today: today,
       caveats: ['Pending applications may still be granted and then run until their estimated date.', 'Dates are estimates: PTE, SPC, paediatric extensions, terminal disclaimers and later fee lapses are not checked.', 'The set only contains the publications you selected or that the source found; other family members or later filings may extend protection.'] };
   }
 
@@ -372,10 +383,10 @@
     var seen = {};
     arr(rows).forEach(function (r) {
       if (!r || r.superseded || !r.expiry || !r.expiry.date || !/^\d{4}-\d{2}-\d{2}$/.test(r.expiry.date)) return;
-      if (r.dead && !o.includeDead) return;
+      if ((r.dead || r.expiredEst) && !o.includeDead) return;
       var uid = 'expiry-' + str(r.pn).replace(/[^A-Za-z0-9]/g, '') + '@lnp-patent-desk';
       if (seen[uid]) return; seen[uid] = 1;
-      var desc = ['Basis: ' + r.expiry.basis + ' (estimate; PTE/SPC not checked; verify at the register).', 'Status: ' + r.status + (r.pending ? ' (application)' : '') + (r.dead ? ' (' + r.deadReason + ')' : '') + '.'];
+      var desc = ['Basis: ' + r.expiry.basis + ' (estimate; PTE/SPC not checked; verify at the register).', 'Status: ' + r.status + (r.pending ? ' (application)' : '') + (r.dead ? ' (' + r.deadReason + ')' : r.expiredEst ? ' (expired by estimate; SPC / PTE not checked)' : '') + '.'];
       if (r.title) desc.push('Title: ' + str(r.title).slice(0, 200));
       add('BEGIN:VEVENT'); add('UID:' + uid); add('DTSTAMP:' + stamp);
       add('DTSTART;VALUE=DATE:' + dateVal(r.expiry.date)); add('DTEND;VALUE=DATE:' + dateVal(addDays(r.expiry.date, 1)));
@@ -401,7 +412,7 @@
     o = o || {}; var sep = o.sep || ';', out = [CSV_HEAD.join(sep)];
     arr(rows).forEach(function (r) {
       var ex = r.expiry || {};
-      out.push([r.pn, r.auth, r.kind, r.family, r.status, r.inForce ? 'yes' : 'no', r.pending ? 'yes' : 'no', r.deadReason || '', r.filing, ex.date || '', ex.basis || '', ex.ptaDays == null ? '' : ex.ptaDays, ex.pte || 'not checked', ex.spc || 'not checked',
+      out.push([r.pn, r.auth, r.kind, r.family, r.status, r.inForce ? 'yes' : 'no', r.pending ? 'yes' : 'no', r.deadReason || (r.expiredEst ? 'expired (estimate; SPC/PTE not checked)' : ''), r.filing, ex.date || '', ex.basis || '', ex.ptaDays == null ? '' : ex.ptaDays, ex.pte || 'not checked', ex.spc || 'not checked',
         ex.terminalDisclaimer === true ? 'yes' : 'not visible', r.inForceDe == null ? '' : (r.inForceDe ? 'yes' : 'no'), r.asof || '', r.stale ? 'yes' : 'no', r.superseded ? 'yes' : 'no', r.title, r.assignee, arr(r.flags).join(' | ')].map(function (c) { return csvCell(c, sep); }).join(sep));
     });
     out.push(csvCell('# Estimates only (filing date + 20 years, plus PTA where known); PTE, SPC, paediatric extensions, terminal disclaimers and later fee lapses are not checked. Verify at the register. Not legal advice.', sep));

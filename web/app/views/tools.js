@@ -174,5 +174,7 @@
     return { update: function () { return true; }, destroy: function () { dead = true; unsub.forEach(function (f) { try { f(); } catch (e) { /* ignore */ } }); } };
   }
 
-  g.LnpApp.registerView({ id: 'tools', title: 'Tools', icon: 'rows', rail: true, mount: g.LnpLazyView('tools', ['app/views/views.css', 'app/views/lib/kit.js'], mount) });
+  // a toolbox glyph (the "rows" icon reads as a menu); added to the shared icon set without changing ui.js
+  if (U.ICONS && !U.ICONS.toolbox) U.ICONS.toolbox = 'M3 7.5h14v8.5H3zM7.5 7.5V5h5v2.5M3 11h14M9 11v1.8h2V11';
+  g.LnpApp.registerView({ id: 'tools', title: 'Tools', icon: 'toolbox', rail: true, mount: g.LnpLazyView('tools', ['app/views/views.css', 'app/views/lib/kit.js'], mount) });
 })(window);

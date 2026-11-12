@@ -642,44 +642,56 @@
   }
   /* round-robin over move types, each queue verified lazily (verified ideas before unverified ones within a type) so that
      one prolific move type cannot crowd out the others; combinations take at most `combCap` slots */
+  /* -> Promise<picked>. Every verification is a full Markush check (tens of ms): the loop yields to the event loop about
+     every 30 ms, so a page stays responsive while the variants are verified. */
   function pickBalanced(queues, max, combCap, rec, M, o) {
     var out = [], taken = {}, types = TYPE_ORDER.filter(function (t) { return queues[t] && queues[t].length; });
     var held = {}; // unverified-but-kept candidates per type, used only after the verified ones of that type
     types.forEach(function (t) { held[t] = []; taken[t] = 0; });
+    var lastYield = tick();
+    function tick() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
+    function pause() { return new Promise(function (r) { setTimeout(function () { lastYield = tick(); r(); }, 0); }); }
     function nextOf(t) {
       var q = queues[t];
-      while (q.length) {
-        if (o && o.signal && o.signal.aborted) throw mkErr('cancelled', 'cancelled');
-        var c = q.shift();
-        if (c._v === undefined) c._v = verifyOne(c, rec, M);
-        if (!c._v) continue;
-        if (c._v.verified) return c;
-        held[t].push(c);
+      function loop() {
+        while (q.length) {
+          if (o && o.signal && o.signal.aborted) return Promise.reject(mkErr('cancelled', 'cancelled'));
+          if (tick() - lastYield > 30) return pause().then(loop);
+          var c = q.shift();
+          if (c._v === undefined) c._v = verifyOne(c, rec, M);
+          if (!c._v) continue;
+          if (c._v.verified) return Promise.resolve(c);
+          held[t].push(c);
+        }
+        return Promise.resolve(held[t].length ? held[t].shift() : null);
       }
-      return held[t].length ? held[t].shift() : null;
+      return loop();
     }
-    var progress = true;
-    while (out.length < max && progress) {
-      progress = false;
-      for (var i = 0; i < types.length && out.length < max; i++) {
-        var t = types[i];
-        if (t === 'combination' && taken[t] >= combCap) continue;
-        var c = nextOf(t);
-        if (c) { out.push(c); taken[t]++; progress = true; }
+    function round() {
+      if (out.length >= max) return Promise.resolve(out);
+      var progress = false, i = 0;
+      function step() {
+        if (i >= types.length || out.length >= max) return progress ? round() : Promise.resolve(out);
+        var t = types[i++];
+        if (t === 'combination' && taken[t] >= combCap) return step();
+        return nextOf(t).then(function (c) { if (c) { out.push(c); taken[t]++; progress = true; } return step(); });
       }
+      return step();
     }
-    return out;
+    return round();
   }
   function byType(list) { var q = {}; list.forEach(function (c) { (q[c.move.type] || (q[c.move.type] = [])).push(c); }); return q; }
 
   function finalizeVariants(cands, baseMol, start, sp, max, invalid, M, o, perType, seen) {
-    var rec = start.record;
+    var rec = start.record, combCap = Math.floor(max * (sp.combinations.share || 0.3));
     return Promise.resolve().then(function () {
       // 1. verified single moves, balanced over move types
-      var singles = pickBalanced(byType(cands), max, 0, rec, M, o);
+      return pickBalanced(byType(cands), max, 0, rec, M, o);
+    }).then(function (singles) {
       // 2. combinations of two verified single moves on different atoms of different variables, at their own sites
-      var combCap = Math.floor(max * (sp.combinations.share || 0.3));
-      var pool = pickBalanced(byType(singles.filter(function (c) { return c._v && c._v.verified; })), sp.combinations.maxSingles || 14, 0, rec, M, o);
+      return pickBalanced(byType(singles.filter(function (c) { return c._v && c._v.verified; })), sp.combinations.maxSingles || 14, 0, rec, M, o).then(function (pool) { return [singles, pool]; });
+    }).then(function (sp2) {
+      var singles = sp2[0], pool = sp2[1];
       var combos = [];
       for (var i = 0; i < pool.length && combos.length < combCap * 2; i++) {
         for (var j = i + 1; j < pool.length && combos.length < combCap * 2; j++) {
@@ -696,7 +708,9 @@
       perType.combination = combos.length;
       // 3. final balanced pick (singles keep their verification; combinations are verified here)
       var q = byType(singles); q.combination = combos;
-      var picked = pickBalanced(q, max, combCap, rec, M, o);
+      return pickBalanced(q, max, combCap, rec, M, o).then(function (picked) { return [picked, combos]; });
+    }).then(function (pc) {
+      var picked = pc[0], combos = pc[1];
       picked.forEach(function (v) {
         v.verified = !!v._v.verified; v.sourceVerdict = v._v.verdict; v.sourceReason = v._v.reason;
         v.moveLabel = moveLabel(v.move);
@@ -716,7 +730,7 @@
       var lim = /^at most 0 /.test(str(mv.rule)) ? 'claim allows none' : 'claim allows ' + str(mv.rule);
       return (mv.dir === 'fewer' ? 'Remove ' + w + ' from ' : 'Add ' + w + ' to ') + mv.var + ' (' + lim + ')';
     }
-    if (mv.type === 'branching') return (mv.dir === 'branched' ? 'Branch ' : 'Linearise ') + mv.var + ' (' + mv.rule + ')';
+    if (mv.type === 'branching') return (mv.dir === 'branched' ? 'Branch ' : 'Linearise ') + mv.var + ' (claim requires ' + str(mv.rule).replace(/ required$/, '') + ')';
     if (mv.type === 'linker') return 'Swap ' + mv.from + ' linker -> ' + mv.to + (mv.orient ? ' (reversed)' : '');
     if (mv.type === 'head') return 'Swap head group ' + mv.from + ' -> ' + mv.to;
     if (mv.type === 'combination') return (mv.moves || []).join(' + ');

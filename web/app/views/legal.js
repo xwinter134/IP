@@ -75,9 +75,17 @@
 
   /* ------------------------------------------------------------------ full view */
   function mount(host, route, App) {
-    var D = g.LnpData, L = g.LnpLegal, dead = false, pn0 = route.arg;
+    var D = g.LnpData, L = g.LnpLegal, dead = false, pn0 = String(route.arg || '').trim();
     var page = h('div.page.lg-page');
     host.appendChild(page);
+    // no number in the route (command palette, typed #legal): ask for one instead of an error
+    if (!pn0) {
+      var inp = h('input.input.mono', { id: 'lg-pn', type: 'text', placeholder: 'e.g. EP3532103B1', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Publication number' });
+      var form = h('form.k-row', { onsubmit: function (ev) { ev.preventDefault(); var v = inp.value.trim(); if (v) R.go({ view: 'legal', arg: v }); } }, inp, h('button.btn.primary', { type: 'submit' }, 'Show timeline'));
+      U.set(page, h('div.empty', null, h('p.overline', { text: 'Legal timeline' }), h('h3', { text: 'Which publication should be shown?' }),
+        h('p', { text: 'Enter a publication number. The timeline covers the whole family: filing, grant, opposition, appeal, lapses and the estimated expiry, from the register snapshot of this build.' }), form));
+      return { update: function (r) { if (r.arg) return false; return true; }, destroy: function () { dead = true; } };
+    }
     U.set(page, h('div.empty', null, h('p.overline', { text: 'Legal timeline' }), h('h3', { text: U.pnPretty(pn0) || 'Patent' }), h('p', null, h('span.spin'), ' Loading data')));
     function back(P) { return h('p', { style: { 'margin-bottom': '14px' } }, h('a.btn.quiet.sm', { href: P ? App.patentHref(P.pn) : R.build({ view: 'suche', arg: '' }) }, U.icon('back'), P ? 'Patent ' + U.pnPretty(P.pn) : 'Search')); }
     D.byPn(pn0).then(function (p) {
@@ -111,24 +119,27 @@
         chips.appendChild(b);
       });
       var tb = h('tbody');
-      members.slice().sort(function (a, b) { return String(a.P.pub).localeCompare(String(b.P.pub)); }).forEach(function (m) {
-        var s = L.summarise(m.P, m.st);
+      // jurisdiction (EP, then DE, US, WO, others), then publication date
+      var JORD = { EP: 0, DE: 1, US: 2, WO: 3 };
+      function jur(m) { return String(m.P.auth || String(m.P.pn).slice(0, 2)); }
+      members.slice().sort(function (a, b) { var ja = jur(a), jb = jur(b), oa = JORD[ja] != null ? JORD[ja] : 9, ob = JORD[jb] != null ? JORD[jb] : 9; return (oa - ob) || ja.localeCompare(jb) || String(a.P.pub).localeCompare(String(b.P.pub)) || String(a.P.pn).localeCompare(String(b.P.pn)); }).forEach(function (m) {
+        var s = L.summarise(m.P, m.st), noSt = !m.P.status || m.P.status === 'unknown';
         tb.appendChild(h('tr', null,
-          h('td', null, h('a.mono', { href: App.patentHref(m.P.pn), text: m.P.pn })),
-          h('td', null, m.P.status ? U.statusPill(m.P.status) : h('span.pill.hollow', { text: 'No status' })),
-          h('td', null, s.opposed ? h('span.pill.warn', { text: s.outcome && L.OUTCOME[s.outcome] ? L.OUTCOME[s.outcome] : 'filed' }) : h('span.faint', { text: s.hasStatus ? 'none' : '–' })),
-          h('td', null, s.appealed ? h('span.pill.crit', { text: 'on record' }) : h('span.faint', { text: s.hasStatus ? 'none' : '–' })),
-          h('td', null, s.lapsedCc.length ? h('span', { text: s.lapsedCc.length + ' states', title: s.lapsedCc.join(', ') }) : h('span.faint', { text: s.hasStatus ? 'none' : '–' })),
-          h('td.mono', { text: s.asof ? U.date(s.asof) : '–' })));
+          h('td', { 'data-l': 'Publication' }, h('a.mono.k-pn', { href: App.patentHref(m.P.pn, { q: '' }), text: U.pnPretty(m.P.pn) })),
+          h('td', { 'data-l': 'Status' }, noSt ? h('span.pill.hollow', { text: 'No status', title: 'No legal status for this publication in the dataset' }) : U.statusPill(m.P.status)),
+          h('td', { 'data-l': 'Opposition' }, s.opposed ? h('span.pill.warn', { text: s.outcome && L.OUTCOME[s.outcome] ? L.OUTCOME[s.outcome] : 'filed' }) : h('span.faint', { text: s.hasStatus ? 'none' : '–' })),
+          h('td', { 'data-l': 'Appeal' }, s.appealed ? h('span.pill.crit', { text: 'on record' }) : h('span.faint', { text: s.hasStatus ? 'none' : '–' })),
+          h('td', { 'data-l': 'Lapses' }, s.lapsedCc.length ? h('span', { text: s.lapsedCc.length + ' states', title: s.lapsedCc.join(', ') }) : h('span.faint', { text: s.hasStatus ? 'none' : '–' })),
+          h('td.mono', { 'data-l': 'Snapshot', text: s.asof ? U.date(s.asof) : '–' })));
       });
       var lim = h('details.lg-limits-box', null, h('summary', null, U.icon('help'), h('span', { text: 'Limits of this timeline' })), h('ul', null, L.limits().map(function (t) { return h('li', { text: t }); })));
       U.set(page, back(P),
         h('header.page-head', null, h('p.overline', { text: 'Legal timeline' }), h('h1.page-title', { text: 'Family of ' + U.pnPretty(P.pn) }),
           h('p.faint', { text: (P.title || '') }),
-          h('p.lg-asof', null, asof ? 'Register snapshot of ' : 'No snapshot date. ', asof ? h('span.mono', { text: U.date(asof) }) : null, stale ? h('span.pill.warn', { style: { 'margin-left': '8px' }, text: 'older than 6 months' }) : null, ' · ', LIM)),
+          h('p.lg-asof', null, asof ? 'Register snapshot of ' : 'No snapshot date. ', asof ? h('span.mono', { text: U.date(asof) }) : null, stale ? h('span.pill.warn', { style: { 'margin-left': '8px' }, text: 'older than 6 months' }) : null, ' · ', asof ? 'Later events are not seen; not a full file history.' : LIM)),
         h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Summary' }), h('h2.sec-title', { text: 'This publication' }))), summaryNode(sum)),
         h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Family' }), h('h2.sec-title', { text: members.length + (members.length === 1 ? ' member' : ' members') }))),
-          h('div.table-wrap', null, h('table.data', null, h('thead', null, h('tr', null, ['Publication', 'Status', 'Opposition', 'Appeal', 'Lapses', 'Snapshot'].map(function (t) { return h('th', { text: t }); }))), tb))),
+          h('div.table-wrap', null, h('table.data.lg-fam', null, h('thead', null, h('tr', null, ['Publication', 'Status', 'Opposition', 'Appeal', 'Lapses', 'Snapshot'].map(function (t) { return h('th', { text: t }); }))), tb))),
         h('section.sec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Timeline' }), h('h2.sec-title', { text: 'All dated events of the family' }))), chips, listHost, lim));
       redraw();
     }

@@ -280,8 +280,9 @@
     if (App.booted) { drawRail(); if (App.route && App.route.view === v.id) show(App.route, true); }
   };
   function railIds() {
-    var ids = RAIL.filter(function (id) { return App.views[id]; });
-    Object.keys(App.views).forEach(function (id) { if (App.views[id].rail && ids.indexOf(id) < 0) ids.push(id); });
+    var ids = RAIL.filter(function (id) { return App.views[id] && id !== 'system'; });
+    Object.keys(App.views).forEach(function (id) { if (App.views[id].rail && ids.indexOf(id) < 0 && id !== 'system') ids.push(id); });
+    if (App.views.system) ids.push('system');      // extension entries sit before System, so they stay visible on a phone
     return ids;
   }
   function drawRail() {

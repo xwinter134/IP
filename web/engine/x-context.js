@@ -506,9 +506,10 @@
     var A = g.LnpApp, U = g.LnpUI;
     if (!A || !A.ext || typeof A.ext.patentAction !== 'function' || !U || typeof U.h !== 'function') return false;
     S.reg = true;
-    function button(label, title, target, mode) {
-      var busy = false, b;
-      b = U.h('button.btn.sm' + (mode === 'download' ? '.quiet.icon' : ''), { type: 'button', title: title, 'aria-label': mode === 'download' ? 'Download ' + label : label }, U.icon(mode === 'download' ? 'download' : 'copy'), mode === 'download' ? null : label);
+    // full: the size of the base actions of the patent page, with a visible label (also on the download button)
+    function button(label, title, target, mode, full) {
+      var busy = false, b, dl = mode === 'download';
+      b = U.h(full ? 'button.btn' : 'button.btn.sm' + (dl ? '.quiet.icon' : ''), { type: 'button', title: title, 'aria-label': dl && !full ? 'Download ' + label : label }, U.icon(dl ? 'download' : 'copy'), dl && !full ? null : label);
       b.addEventListener('click', function () {
         if (busy) return; busy = true; b.disabled = true;
         var t = typeof target === 'function' ? target() : target;
@@ -522,8 +523,8 @@
     try {
       A.ext.patentAction(function (P) {
         if (!P || !P.pn) return null;
-        return [button('Context pack', 'Copy a Markdown bundle of this publication (claims, status, family, compounds) for an AI tool', { pn: P.pn }, 'copy'),
-          button('Context pack', 'Download the context pack as a Markdown file', { pn: P.pn }, 'download')];
+        return [button('Context pack', 'Copy a Markdown bundle of this publication (claims, status, family, compounds) for an AI tool', { pn: P.pn }, 'copy', true),
+          button('Download pack', 'Download the context pack as a Markdown file', { pn: P.pn }, 'download', true)];
       });
       if (typeof A.ext.resultAction === 'function') A.ext.resultAction(function (info) {
         if (!info || typeof info !== 'object') return null;

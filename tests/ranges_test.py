@@ -287,6 +287,35 @@ class T(unittest.TestCase):
         r = self.rng("an N/P ratio of 4 to 6:1", "np_ratio", 4, 6)
         self.assertEqual(len([x for x in ex("an N/P ratio of 4 to 6:1") if x["param"] == "np_ratio"]), 1)
 
+    # ---- two-sided ranges whose upper end carries its own comparator (one interval, both bounds kept)
+    def test_to_less_than(self):
+        self.rng("the pKa of the lipid is from 6.0 to less than 7.0", "pka", 6, 7, loInc=True, hiInc=False)
+        self.rng("at a pH of about 0 to less than 6", "ph", 0, 6, hiInc=False)
+        self.rng("the PEG lipid is present from 0.5 mol % to less than 3 mol %", "mol_pct", 0.5, 3, "mol%", hiInc=False)
+
+    def test_more_than_and_less_than(self):
+        r = self.rng("the PEG lipid is present at more than 0.5 mol % and less than 3 mol %", "mol_pct", 0.5, 3, "mol%", loInc=False, hiInc=False)
+        self.assertEqual(r["comp"], COMP["peg"])
+
+    def test_or_more_and_or_less(self):
+        self.rng("the PEG lipid is present at 0.5 mol % or more and 3 mol % or less", "mol_pct", 0.5, 3, "mol%", loInc=True, hiInc=True)
+
+    def test_greater_than_lower_end(self):
+        self.rng("the PEG lipid is present at greater than 0.5 mol % to 3 mol %", "mol_pct", 0.5, 3, "mol%", loInc=False, hiInc=True)
+
+    def test_reversed_bounds_joined(self):
+        r = self.rng("the ionizable lipid is present at 50 mol % or less but not less than 40 mol %", "mol_pct", 40, 50, "mol%")
+        self.assertEqual(r["comp"], COMP["ionizable_cationic"])
+        self.rng("the PEG lipid is present in an amount of at least 0.5 mol % and in an amount of at most 3 mol %", "mol_pct", 0.5, 3, "mol%")
+
+    def test_alternatives_and_other_components_not_joined(self):
+        rows = [r for r in ex("PEG lipid of at least 1 mol % or at most 3 mol %") if r["param"] == "mol_pct"]
+        self.assertEqual(len(rows), 2)          # "or": alternatives stay two rows
+        rows = [r for r in ex("at least 5 mol % of polymer Z and at most 10 mol % PEG lipid") if r["param"] == "mol_pct"]
+        self.assertEqual(len(rows), 2)          # a different (unknown) component before the second value
+        rows = [r for r in ex("cholesterol at 30 mol % and less than 5 mol % of PEG lipid") if r["param"] == "mol_pct"]
+        self.assertEqual([(r["lo"], r["hi"]) for r in rows], [(30, 30), (None, 5)])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

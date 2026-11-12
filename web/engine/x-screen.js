@@ -60,7 +60,7 @@
 
   // text -> records of cells. Quoted fields may hold the delimiter, doubled quotes and line breaks.
   function tokenize(text, delim) {
-    var rows = [], row = [], cell = '', q = false, i = 0, n = text.length, c, line = 1, startLine = 1, wasQuoted = false;
+    var rows = [], row = [], cell = '', q = false, i = 0, n = text.length, c, line = 1, startLine = 1, wasQuoted = false, qLine = 0;
     function endCell() { row.push(wasQuoted ? cell : cell.trim()); cell = ''; wasQuoted = false; }
     function endRow() { endCell(); rows.push({ line: startLine, cells: row }); row = []; }
     for (; i < n; i++) {
@@ -70,7 +70,7 @@
         else { cell += c; if (c === '\n') line++; }
         continue;
       }
-      if (c === '"' && cell.trim() === '') { q = true; wasQuoted = true; cell = ''; continue; }
+      if (c === '"' && cell.trim() === '') { q = true; wasQuoted = true; cell = ''; qLine = line; continue; }
       if (c === delim) { endCell(); continue; }
       if (c === '\r' || c === '\n') {
         if (c === '\r' && text.charAt(i + 1) === '\n') i++;
@@ -78,6 +78,7 @@
       }
       cell += c;
     }
+    if (q) rows.unclosed = qLine;      // end of input inside a quoted field: everything after the quote is one cell
     if (cell !== '' || row.length || q) endRow();
     return rows;
   }
@@ -110,6 +111,10 @@
     if (!src.trim()) return out;
     var delim = detectDelimiter(src), recs = tokenize(src, delim);
     out.delimiter = delim;
+    if (recs.unclosed) {
+      notes.push('Unclosed quote from line ' + recs.unclosed + ': the rest of the file was read as one cell, so fewer compounds than the file holds may be screened. Close the quote or remove it and load the file again.');
+      out.unclosedQuote = recs.unclosed;
+    }
     recs = recs.filter(function (r) { return !r.cells.every(function (c) { return c === ''; }) && !(r.cells[0] && r.cells[0].charAt(0) === '#'); });
     if (!recs.length) return out;
 
@@ -192,7 +197,7 @@
         delete row.error;
         if (!row.name && p.name) row.name = p.name;
         if (/^row \d+$/.test(row.id) && p.name) row.id = p.name;
-      } else { row.parsed = null; row.error = (p && p.error) ? 'not recognised: ' + p.error : 'not recognised as a structure, a reference lipid name or a SCHEMBL number'; }
+      } else { row.parsed = null; row.error = 'Not recognised (not a SMILES, a known lipid name or a SCHEMBL number)'; row.errorDetail = p && p.error ? str(p.error) : ''; }
       return row;
     });
   }
@@ -222,7 +227,7 @@
     o = o || {};
     var modes = arr(o.modes).length ? o.modes.filter(function (m) { return m === 'exact' || m === 'sub' || m === 'sim'; }) : ['exact', 'sim'];
     return { modes: modes.length ? modes : ['exact'], minSim: o.minSim != null ? o.minSim : 0.8, subMaxHits: o.subMaxHits || 200, simTop: o.simTop || 12, subPatentHits: o.subPatentHits || 25, patentCap: o.patentCap || 400,
-      commodityMin: o.commodityMin || 1000, markush: o.markush !== false, markushPatents: o.markushPatents || 40, signal: o.signal, onProgress: o.onProgress, onResult: o.onResult, today: o.today || todayNum() };
+      commodityMin: o.commodityMin || 1000, commodityMaxHeavy: o.commodityMaxHeavy || 16, markush: o.markush !== false, markushPatents: o.markushPatents || 40, signal: o.signal, onProgress: o.onProgress, onResult: o.onResult, today: o.today || todayNum() };
   }
 
   // one compound, all modes
@@ -293,6 +298,11 @@
     });
   }
 
+  function heavyAtoms(p) {      // heavy atoms from the molecular formula ("C2H6O" -> 3); 0 when unknown
+    var f = p && p.formula ? String(p.formula) : '', n = 0, m, re = /([A-Z][a-z]?)(\d*)/g;
+    while ((m = re.exec(f))) { if (m[1] !== 'H' && m[1] !== 'D' && m[1] !== 'T') n += m[2] ? +m[2] : 1; }
+    return n;
+  }
   function flagsOf(res, op) {
     var f = { inClaimsExact: false, inClaimsSim: false, grantedInForce: false, inForceAny: false, markushCovered: false, commodity: false, level: 0, label: 'no hit' };
     var exactForce = false, mkForce = false;
@@ -306,7 +316,10 @@
     });
     if (res.exact.some(function (h) { return h.inClaims; })) f.inClaimsExact = true;     // compound-level flag too: the publication list is capped
     if (res.sim.some(function (h) { return h.inClaims; })) f.inClaimsSim = true;
-    f.commodity = res.exact.some(function (h) { return h.nPatGlobal != null && h.nPatGlobal >= op.commodityMin; });
+    // widely published: many publications world-wide (neutral information, says nothing about relevance). Common building
+    // block: widely published AND small (reagents, solvents, simple acids), whose hits rarely concern the claimed invention
+    f.widely = res.exact.some(function (h) { return h.nPatGlobal != null && h.nPatGlobal >= op.commodityMin; });
+    f.commodity = f.widely && heavyAtoms(res.parsed) > 0 && heavyAtoms(res.parsed) <= op.commodityMaxHeavy;
     var any = res.exact.length || res.sim.length || res.sub.total;
     if (exactForce) { f.level = 4; f.label = 'exact match in the claims of a granted patent'; }
     else if (mkForce) { f.level = 4; f.label = 'covered by a Markush claim of a granted patent'; }

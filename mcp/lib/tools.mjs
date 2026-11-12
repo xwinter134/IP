@@ -6,13 +6,13 @@ import { ToolError, UNTRUSTED_NOTICE, isoDate } from './runtime.mjs';
 const PN_DESC = 'Publication number in any common form, e.g. EP3532103B1, "EP 3 532 103", US11,000,000, WO2017/075531. Without a kind code the best publication of that number is used.';
 
 const FILTER_PROPS = {
-  auth: { type: 'array', items: { type: 'string', enum: ['EP', 'US', 'WO'] }, description: 'Authority codes.' },
-  kinds: { type: 'array', items: { type: 'string', maxLength: 4 }, description: 'Kind codes, e.g. ["B1","B2"].' },
-  status: { type: 'array', items: { type: 'string', enum: ['granted', 'pending', 'lapsed', 'revoked', 'withdrawn', 'refused', 'expired', 'unknown'] }, description: 'Legal status codes of the build.' },
-  tiers: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 5 }, description: 'Corpus relevance tiers (1 = core LNP).' },
-  players: { type: 'array', items: { type: 'string', maxLength: 80 }, description: 'Normalised assignee groups as named in the build (substring match), e.g. "Moderna".' },
+  auth: { type: 'array', maxItems: 50, items: { type: 'string', enum: ['EP', 'US', 'WO'] }, description: 'Authority codes.' },
+  kinds: { type: 'array', maxItems: 50, items: { type: 'string', maxLength: 4 }, description: 'Kind codes, e.g. ["B1","B2"].' },
+  status: { type: 'array', maxItems: 50, items: { type: 'string', enum: ['granted', 'pending', 'lapsed', 'revoked', 'withdrawn', 'refused', 'expired', 'unknown'] }, description: 'Legal status codes of the build.' },
+  tiers: { type: 'array', maxItems: 50, items: { type: 'integer', minimum: 0, maximum: 5 }, description: 'Corpus relevance tiers (1 = core LNP).' },
+  players: { type: 'array', maxItems: 50, items: { type: 'string', maxLength: 80 }, description: 'Normalised assignee groups as named in the build (substring match), e.g. "Moderna".' },
   asg: { type: 'string', maxLength: 200, description: 'Assignee words (prefix match), e.g. "Acuitas".' },
-  cpc: { type: 'array', items: { type: 'string', maxLength: 20 }, description: 'CPC code prefixes, e.g. ["A61K9/5123"].' },
+  cpc: { type: 'array', maxItems: 50, items: { type: 'string', maxLength: 20 }, description: 'CPC code prefixes, e.g. ["A61K9/5123"].' },
   yearFrom: { type: 'integer', minimum: 1900, maximum: 2100, description: 'Publication year, from.' },
   yearTo: { type: 'integer', minimum: 1900, maximum: 2100, description: 'Publication year, to.' },
   prioFrom: { type: 'integer', minimum: 1900, maximum: 2100, description: 'Priority year, from.' },
@@ -24,6 +24,9 @@ const FILTER_PROPS = {
   indepOnly: { type: 'boolean', description: 'Match independent claims only.' },
   lang: { type: 'string', enum: ['en', 'de'], description: 'Claim language.' }
 };
+
+const MAX_QUERY_HEAVY = 300;
+function heavyAtoms(formula) { let n = 0; String(formula || '').replace(/([A-Z][a-z]?)(\d*)/g, (x, el, k) => { if (el !== 'H' && el !== 'D' && el !== 'T') n += k ? +k : 1; return x; }); return n; }
 
 const SEGMENT = (segs) => (Array.isArray(segs) ? segs.map((s) => (s[1] ? '«' + s[0] + '»' : s[0])).join('') : '');
 
@@ -154,9 +157,20 @@ export function buildTools(rt) {
     async handler(a, ctx) {
       const C = await rt.chem();
       const mode = a.mode || 'sim', limit = a.limit || 10, maxP = a.patents_per_compound == null ? 8 : a.patents_per_compound;
+      // cheap pre-check before OpenChemLib reads it (parsing thousands of atoms alone takes seconds)
+      const roughAtoms = /\n/.test(a.query) ? 0 : (String(a.query).replace(/^smarts:/i, '').match(/[A-Z]|\[|[cnosp](?![a-z])/g) || []).length;
+      if (mode !== 'exact' && roughAtoms > MAX_QUERY_HEAVY * 2) throw new ToolError('query_too_large', `The query has about ${roughAtoms} atoms; ${mode} search accepts up to ${MAX_QUERY_HEAVY} heavy atoms. Use mode "exact" or a smaller fragment.`);
       const parsed = await C.parse(a.query);
       if (!parsed.ok) throw new ToolError('bad_query', parsed.error || 'The structure could not be read.');
-      const res = await C.search({ query: a.query, mode, limit, minSim: a.min_sim == null ? 0.7 : a.min_sim, maxPatents: maxP, filters: a.in_claims_only ? { inClaims: true } : undefined, signal: ctx && ctx.signal });
+      // a very large query makes similarity and substructure search slow without being a real lipid query
+      const heavy = heavyAtoms(parsed.formula);
+      if (mode !== 'exact' && heavy > MAX_QUERY_HEAVY) throw new ToolError('query_too_large', `The query has ${heavy} heavy atoms; ${mode} search accepts up to ${MAX_QUERY_HEAVY}. Use mode "exact" or a smaller fragment.`);
+      // a cancelled or timed-out call stops the search thread (the next call starts a new one)
+      const th = rt.env.chemThread, onAbort = () => { if (th) th.abort(); };
+      if (ctx && ctx.signal) ctx.signal.addEventListener('abort', onAbort, { once: true });
+      let res;
+      try { res = await C.search({ query: a.query, mode, limit, minSim: a.min_sim == null ? 0.7 : a.min_sim, maxPatents: maxP, filters: a.in_claims_only ? { inClaims: true } : undefined, signal: ctx && ctx.signal }); }
+      finally { if (ctx && ctx.signal) ctx.signal.removeEventListener('abort', onAbort); }
       const compounds = res.map((h) => ({
         id: h.id, smiles: h.smiles, formula: h.formula, mw: h.mw, similarity: h.sim, match: h.match || null,
         in_claims: h.inClaims, patents_naming_in_claims: h.nClaims, patents: h.nPat, families: h.nFam, found_in: whereList(h.where),
@@ -194,6 +208,14 @@ export function buildTools(rt) {
       const K = await rt.markush();
       let canonicalPn = a.pn, found = null;
       try { found = await rt.findPatent(a.pn); canonicalPn = found.row.pn; } catch (e) { if (a.record) throw e; /* curated lookup tries the label as given */ }
+      if (a.record) {
+        // size and depth limits before the record reaches the engine
+        const js = JSON.stringify(a.record);
+        if (js.length > 200000) throw new ToolError('record_too_large', `The record is ${js.length} characters of JSON; at most 200000 are accepted.`);
+        if (Array.isArray(a.record.vars) && a.record.vars.length > 100) throw new ToolError('record_too_large', `The record has ${a.record.vars.length} variables; at most 100 are accepted.`);
+        const depth = (x, d) => (d > 12 ? d : x && typeof x === 'object' ? Math.max(d, ...Object.values(x).map((v) => depth(v, d + 1))) : d);
+        if (depth(a.record, 0) > 12) throw new ToolError('record_too_deep', 'The record is nested more than 12 levels deep.');
+      }
       let rec = a.record ? JSON.parse(JSON.stringify(a.record)) : null, source;
       if (rec) {
         // The caller's record is a translation by the caller: the build decides what the claim says. Text, origin and review
@@ -337,7 +359,7 @@ export function buildTools(rt) {
       const cliff = E.cliff(rows);
       const out = rows.map((r) => ({
         pn: r.pn, authority: r.auth, kind: r.kind, family_id: r.family, title: r.title, assignee: r.assignee, status: r.status, granted: r.granted, pending: r.pending, in_force: r.inForce, in_force_de: r.inForceDe,
-        dead: r.dead, dead_reason: r.deadReason || null, superseded_by_same_application: !!r.superseded, jurisdictions: r.jur, filing: r.filing, expiry: r.expiry, status_stale: !!r.stale, status_as_of: r.asof || null, status_source: r.src || null,
+        dead: r.dead, dead_reason: r.deadReason || null, expired_estimate: !!r.expiredEst, superseded_by_same_application: !!r.superseded, jurisdictions: r.jur, filing: r.filing, expiry: r.expiry, status_stale: !!r.stale, status_as_of: r.asof || null, status_source: r.src || null,
         no_register_record: !!r.noRecord, flags: r.flags, opposition: r.opposition || null, appeal: r.appeal == null ? null : r.appeal
       }));
       return {

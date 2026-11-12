@@ -13,6 +13,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { createChemThreadCore } from './chem-thread.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -28,8 +29,10 @@ function isFile(p) { try { return fs.statSync(p).isFile(); } catch (e) { return 
 const MIME = { '.json': 'application/json', '.txt': 'text/plain', '.js': 'text/javascript', '.bin': 'application/octet-stream' };
 
 // A fetch() that only knows files below `root`. Relative URLs ("data/manifest.json") are resolved against it.
+// Symbolic links are resolved before the prefix check, so a link inside the build cannot serve a file outside it.
 function makeFileFetch(root) {
-  const base = path.resolve(root);
+  let base = path.resolve(root);
+  try { base = fs.realpathSync(base); } catch (e) { /* keep the resolved path */ }
   return async function fileFetch(input) {
     const url = typeof input === 'string' ? input : (input && input.url) || String(input);
     if (/^[a-z][a-z0-9+.-]*:/i.test(url) && !/^file:/i.test(url)) {
@@ -37,7 +40,9 @@ function makeFileFetch(root) {
     }
     let rel = url.replace(/^file:\/\//i, '').replace(/[?#].*$/, '');
     try { rel = decodeURIComponent(rel); } catch (e) { /* keep */ }
-    const full = path.resolve(base, rel.replace(/^\/+/, ''));
+    let full = path.resolve(base, rel.replace(/^\/+/, ''));
+    if (full !== base && !full.startsWith(base + path.sep)) return new Response('forbidden', { status: 403 });
+    try { full = fs.realpathSync(full); } catch (e) { return new Response('not found', { status: 404 }); }
     if (full !== base && !full.startsWith(base + path.sep)) return new Response('forbidden', { status: 403 });
     let buf;
     try { buf = fs.readFileSync(full); } catch (e) { return new Response('not found', { status: 404 }); }
@@ -65,6 +70,7 @@ export function createEnv(o) {
   if (!manifest || !manifest.counts || !manifest.pat || !manifest.idx) throw new EnvError('bad_manifest', 'data/manifest.json lacks counts / pat / idx: is this a Patent Desk build?');
 
   // Engine files: the ones shipped in the build (they match its data format), else the repository's web/engine.
+  // They are executed in this process (vm.runInThisContext / require), so --dist must be a build you trust.
   const candidates = [o.engines, path.join(dist, 'engine'), path.join(REPO_ROOT, 'web', 'engine')].filter(Boolean).map((p) => path.resolve(p));
   const engDir = candidates.find((d) => isFile(path.join(d, 'search-worker.js')) && isFile(path.join(d, 'data.js')));
   if (!engDir) throw new EnvError('no_engines', 'engine files not found in ' + candidates.join(' or '));
@@ -97,7 +103,13 @@ export function createEnv(o) {
     const chem = require(E('chem.js'));               // in Node chem.js only exports (isNode); the others find it by global
     globalThis.LnpChem = chem;
     env.engines.LnpChem = chem;
-    env.chemCore = { create: require(E('chem-worker.js')).create, OCL: env.OCL, ChemFP: require(E('chemfp.js')) };
+    // the structure search runs in a worker thread (mcp/lib/chem-thread.mjs) so that it cannot block the protocol loop;
+    // LNP_MCP_CHEM_THREAD=0 runs it on the main thread as before
+    if (process.env.LNP_MCP_CHEM_THREAD === '0') env.chemCore = { create: require(E('chem-worker.js')).create, OCL: env.OCL, ChemFP: require(E('chemfp.js')) };
+    else {
+      env.chemThread = createChemThreadCore({ workerFile: E('chem-worker.js'), oclFile: ocl, fpFile: E('chemfp.js') });
+      env.chemCore = { create: env.chemThread.create, OCL: env.OCL, ChemFP: require(E('chemfp.js')) };
+    }
   } else env.notes.push('chemistry engine or OpenChemLib missing: chem_search, markush_check by name are not available');
   opt('x-ranges.js', 'LnpRanges');
   opt('x-markush.js', 'LnpMarkush');

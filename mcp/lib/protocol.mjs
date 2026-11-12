@@ -26,7 +26,7 @@ export function validate(schema, value, path = '') {
     if (!Number.isFinite(value)) errs.push(`${at} must be a finite number`);
   }
   if (typeof value === 'string') {
-    if (schema.minLength != null && value.trim().length < schema.minLength) errs.push(`${at} must not be empty`);
+    if (schema.minLength != null && value.trim().length < schema.minLength) errs.push(schema.minLength > 1 && value.trim().length ? `${at} must be at least ${schema.minLength} characters` : `${at} must not be empty`);
     if (schema.maxLength != null && value.length > schema.maxLength) errs.push(`${at} is too long (max ${schema.maxLength} characters)`);
     if (schema.pattern && !new RegExp(schema.pattern).test(value)) errs.push(`${at} does not match ${schema.pattern}`);
   }
@@ -141,8 +141,10 @@ export function serve(o) {
     } catch (e) { return fail(id, ERR.INTERNAL, 'Internal error: ' + String((e && e.message) || e).slice(0, 500)); }
   }
 
+  const MAX_LINE = o.maxLineBytes || 4 * 1024 * 1024;
   const rl = readline.createInterface({ input, crlfDelay: Infinity });
   rl.on('line', (line) => {
+    if (line.length > MAX_LINE) return fail(null, ERR.INVALID_REQUEST, `Message too large (${line.length} characters, max ${MAX_LINE})`);
     line = line.trim();
     if (!line) return;
     let msg;

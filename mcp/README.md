@@ -19,6 +19,10 @@ node mcp/server.mjs --dist dist-pages --check             # prints what the buil
 Other options: `--preload` (load everything at start), `--full-cache` (bigger search caches), `--timeout S`,
 `--verbose` (log calls to stderr), `--engines DIR`. Default for `--dist` is `dist-pages` next to `mcp/`, or `$LNP_DIST`.
 
+**Trust:** `--dist` (and `$LNP_DIST`, `--engines`) must point at a build you made or trust. The server executes the engine
+scripts it finds there (`<dist>/engine/*.js`) inside its own process; a foreign folder can run arbitrary code. File reads
+stay inside the build folder (symbolic links are resolved before the check).
+
 ## Tools
 
 | Tool | What it does |
@@ -43,8 +47,11 @@ structure set is loaded (first `chem_search` or `markush_check` by name), +100 M
 after every tool was used (the long test run in `tests/mcp_test.mjs` peaked at 691 MB). Data are loaded on first use of a tool:
 search 0.1-0.4 s, structure set 1 s, ranges 0.3 s. Typical calls: search 20-100 ms, patent record 0.2 s, similarity
 0.1 s, selective substructure 0.15-0.5 s, range scan over all patents 0.6-0.8 s. An unselective substructure query
-(the single atom `C` against all 84,691 compounds) takes about 8 s, on one thread; a tool call is stopped after 120 s
-(`--timeout`) and a client can cancel it. With `--full-cache` the search caches double.
+(the single atom `C` against all 84,691 compounds) takes about 8 s, on one thread. The structure search runs in a worker
+thread (`mcp/lib/chem-thread.mjs`), so ping, other requests and cancellation stay responsive while it runs; a cancelled or
+timed-out search terminates that thread, and the next call starts a new one (about 1 s to reload the structure set).
+Similarity, substructure and scaffold queries above 300 heavy atoms are refused. A tool call is stopped after 120 s
+(`--timeout`) and a client can cancel it. `LNP_MCP_CHEM_THREAD=0` runs the structure search on the main thread. With `--full-cache` the search caches double.
 
 ## Files
 

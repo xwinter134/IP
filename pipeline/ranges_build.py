@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.join(HERE, "lib"))
 import ranges_extract as RX  # noqa: E402
 
 T0 = time.time()
-EXTRACTOR_V = 1
+EXTRACTOR_V = 2
 
 
 def log(*a):

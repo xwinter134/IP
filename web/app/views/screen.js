@@ -150,9 +150,9 @@
       var show = rows.slice(0, 6), tb = h('tbody');
       show.forEach(function (r) {
         tb.appendChild(h('tr', { 'class': r.error ? 'sc-bad' : null }, h('td.mono', { text: String(r.row) }), h('td', null, r.parsed ? K.mol(r.parsed.smiles, 100, 48, '') : null),
-          h('td.sc-id', { text: r.id }), h('td.mono.sc-in', { text: r.input }), h('td', { text: r.error ? r.error : r.parsed ? (r.parsed.name || r.parsed.id || r.parsed.formula || 'ok') : '' })));
+          h('td.sc-id', { text: r.id }), h('td.mono.sc-in', { text: r.input }), h('td', { title: r.errorDetail || null, text: r.error ? r.error : r.parsed ? 'ok' + (r.parsed.name || r.parsed.id ? ' (' + (r.parsed.name || r.parsed.id) + ')' : r.parsed.formula ? ' (' + r.parsed.formula + ')' : '') : '' })));
       });
-      box.appendChild(h('div.table-wrap.sc-pvt', null, h('table.data', null, h('thead', null, h('tr', null, ['Row', 'Structure', 'Id', 'Input', 'State'].map(function (t) { return h('th', { text: t }); }))), tb)));
+      box.appendChild(h('div.table-wrap.sc-pvt', null, h('table.data', null, h('thead', null, h('tr', null, ['Row', 'Structure', 'Id', 'Input', 'Recognised as'].map(function (t) { return h('th', { text: t }); }))), tb)));
       if (rows.length > show.length) box.appendChild(h('p.k-hint', { text: 'Showing the first ' + show.length + ' of ' + U.num(rows.length) + ' rows.' }));
       var rest = bad.filter(function (r) { return show.indexOf(r) < 0; }).slice(0, 8);
       if (rest.length) box.appendChild(h('ul.sc-errs', null, rest.map(function (r) { return h('li', null, h('span.mono', { text: 'row ' + r.row }), ' ', h('span', { text: r.error + (r.input ? ': ' + r.input.slice(0, 60) : '') })); })));
@@ -169,6 +169,14 @@
       stored = false;
       if (!rows.length) { U.toast('No compounds found in the input', { error: true }); drawPreview(false); return; }
       drawPreview(false);
+      // a short list travels in the URL (#screen--l<line>-x<line>...), so the run can be shared and reloaded; a long list
+      // or a file only gets a link once it is saved
+      linkNote = '';
+      if (!fromSaved && !savedId) {
+        var lines = ta.value.split(/\r\n|\n|\r/).map(function (x) { return x.trim(); }).filter(Boolean);
+        if (lines.length <= LINK_ROWS && ta.value.length <= LINK_CHARS) { linkLines = lines; R.go({ view: 'screen', params: { l: lines } }, { silent: true, replace: true }); }
+        else { linkLines = null; R.go({ view: 'screen' }, { silent: true, replace: true }); linkNote = 'This list is too long for a link (more than ' + LINK_ROWS + ' rows): save the screen to get one.'; }
+      }
       var o = { modes: modes(), minSim: st.minSim / 100, markush: st.markush };
       ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       running = true; results = []; resultsFor = rows; expanded.clear(); shown = PAGE;
@@ -188,7 +196,7 @@
         if (dead) return;
         results = res.slice(); runInfo.finished = Date.now(); runInfo.cancelled = !!res.cancelled; runInfo.ms = Date.now() - t0;
         endRun();
-        U.set(progText, h('p.k-sub', null, res.cancelled ? 'Cancelled after ' + res.length + ' of ' + runRows.length + ' compounds.' : 'Done: ' + K.plural(res.length, 'compound', 'compounds') + ' in ' + (runInfo.ms / 1000).toFixed(1) + ' s.'));
+        U.set(progText, h('p.k-sub', null, res.cancelled ? 'Cancelled after ' + res.length + ' of ' + runRows.length + ' compounds.' : 'Done: ' + K.plural(res.length, 'compound', 'compounds') + ' in ' + (runInfo.ms / 1000).toFixed(1) + ' s.' + (linkNote ? ' ' + linkNote : linkLines ? ' The address of this page re-runs this list.' : '')));
       }, function (e) {
         if (dead) return;
         endRun(); U.set(progText, K.errBox(e, 'The screen failed'));
@@ -288,7 +296,9 @@
       }
       hitLine('Exact', r.exact, r.exact.length); hitLine('Similar', r.sim, r.simTotal || r.sim.length); hitLine('Substructure', r.sub.hits, r.sub.total);
       if (hl.firstChild) box.appendChild(hl);
-      if (f.commodity) box.appendChild(h('p.k-hint', { text: 'This compound appears in very many publications (' + U.num(Math.max.apply(null, r.exact.map(function (x) { return x.nPatGlobal || 0; }))) + ' in SureChEMBL): a common building block. Hits say little about LNP-specific claims.' }));
+      var nGlob = U.num(Math.max.apply(null, r.exact.map(function (x) { return x.nPatGlobal || 0; }).concat([0])));
+      if (f.commodity) box.appendChild(h('p.k-hint', { text: 'A small compound found in very many publications (' + nGlob + ' in SureChEMBL), such as a reagent or solvent: many of its hits mention it only in passing.' }));
+      else if (f.widely) box.appendChild(h('p.k-hint', { text: 'Widely published: ' + nGlob + ' publications in SureChEMBL name this compound. The hits below are listed in full; their relevance depends on the claims.' }));
       if (r.duplicateOf) box.appendChild(h('p.k-hint', { text: 'The same structure as the input in row ' + r.duplicateOf + '.' }));
       if (r.patents.length) {
         var tb = h('tbody'), cap = 60;
@@ -323,7 +333,7 @@
         r.ok ? cnt(r.simTotal != null ? r.simTotal : r.sim.length, 'Similar') : h('td.num', { 'data-l': 'Similar' }, h('span.faint', { text: '\u2013' })),
         r.ok ? cnt(r.sub.total, 'Substructure') : h('td.num', { 'data-l': 'Substructure' }, h('span.faint', { text: '\u2013' })),
         r.ok ? cnt(r.nPatents > r.patents.length ? r.nPatents : r.patents.length, 'Publications') : h('td.num', { 'data-l': 'Publications' }, h('span.faint', { text: '\u2013' })),
-        h('td.sc-flag', { 'data-l': 'Flag' }, r.ok ? h('span.sc-tags', null, pill(f ? f.level : 0, f, r), f && f.commodity ? h('span.tag', { text: 'commodity', title: 'Appears in very many publications' }) : null) : h('span.pill.crit', { text: 'invalid input', title: r.error || '' })),
+        h('td.sc-flag', { 'data-l': 'Flag' }, r.ok ? h('span.sc-tags', null, pill(f ? f.level : 0, f, r), f && f.commodity ? h('span.tag', { text: 'common building block', title: 'Small compound found in very many publications (reagent, solvent)' }) : f && f.widely ? h('span.tag', { text: 'widely published', title: 'Found in very many publications world-wide' }) : null) : h('span.pill.crit', { text: 'invalid input', title: r.error || '' })),
         h('td.sc-mkc', { 'data-l': 'Markush' }, r.ok ? mkPill(r.markush) : null));
       var out = [tr];
       if (open) { var dt = h('tr.sc-detail-row', null, h('td', { colspan: '8', id: id }, detail(r))); out.push(dt); }
@@ -397,11 +407,19 @@
         return g.LnpStore.put('settings', 'screen-inbox', { items: [] });
       }).then(null, function () { });
     }
-    if (route.arg) openSaved(route.arg); else takeInbox();
+    var LINK_ROWS = 20, LINK_CHARS = 2000, linkLines = null, linkNote = '';
+    function fromLink(r) {
+      var ls = R.list(r && r.params && r.params.l).map(String).filter(Boolean).slice(0, LINK_ROWS);
+      if (!ls.length) return false;
+      ta.value = ls.join('\n'); linkLines = ls; onInput(); startRun();
+      return true;
+    }
+    if (route.arg) openSaved(route.arg); else if (!fromLink(route)) takeInbox();
 
     return {
       update: function (r) {
         if (r.arg && r.arg !== savedId && !running) openSaved(r.arg);
+        else if (!r.arg && !running) { var ls = R.list(r.params && r.params.l).map(String); if (ls.length && ls.join('|') !== (linkLines || []).join('|')) fromLink(r); }
         return true;
       },
       destroy: function () {

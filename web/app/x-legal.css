@@ -34,6 +34,14 @@
 .x-links-l { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-right: 2px; }
 
 @media (max-width: 560px) {
+  /* family table as cards: one block per publication, labels from data-l */
+  .lg-fam thead { display: none; }
+  .lg-fam, .lg-fam tbody, .lg-fam tr { display: block; }
+  .lg-fam tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .lg-fam td { display: block; padding: 0; border: 0; min-width: 0; }
+  .lg-fam td[data-l]::before { content: attr(data-l); display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .lg-fam td[data-l="Publication"] { grid-column: 1 / -1; }
+  .lg-fam td[data-l="Publication"]::before { display: none; }
   .lg-it { grid-template-columns: auto 1fr; padding-left: 12px; }
   .lg-it .lg-d { grid-column: 1; }
   .lg-it .pill { grid-column: 2; }

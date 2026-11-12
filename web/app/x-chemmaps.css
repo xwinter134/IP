@@ -93,3 +93,11 @@ a.cm-m:hover::before, a.cm-m:focus-visible::before { outline: 2px solid var(--te
   .ws-cmps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cm-cmps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* phones: the family label sits on its own line above its lane, so the whole time span fits without sideways scrolling */
+@media (max-width: 560px) {
+  .cm-tl-in { min-width: 0; }
+  .cm-tl-row { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .cm-tl-lab { position: static; border-right: 0; padding: 4px 8px 0; min-height: 18px; }
+  .cm-tl-axis .cm-tl-lab { display: none; }
+}

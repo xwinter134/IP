@@ -163,8 +163,9 @@
 
   /* ------------------------------------------------------------------------------------------ CSV */
   function csvCell(v, sep) {
-    v = v == null ? '' : String(v);
-    if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+    // same rule as the other exporters: C0 controls become spaces, and a formula start after optional whitespace is neutralised
+    v = v == null ? '' : String(v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ');
+    if (/^[\t\r ]*[=+\-@]/.test(v) || /^[\t\r]/.test(v)) v = "'" + v;
     return (v.indexOf(sep) >= 0 || /["\n\r]/.test(v)) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function toCsv(res, o) {

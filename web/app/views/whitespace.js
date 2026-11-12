@@ -125,7 +125,8 @@
       box = box || mapBoxRef; mapBoxRef = box; if (!box || !res) return;
       var r = res, M = metric(), key = M[2], max = r.max[key] || 1, cap = M[3];
       function step(x) { return x <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil(5 * Math.sqrt(x / max)))); }
-      var table = h('table.ws-grid', { role: 'grid', 'aria-label': 'Count of ' + cap + ' by ' + axLabel(st.y) + ' and ' + axLabel(st.x) }), hr = h('tr', null, h('th.ws-corner', { scope: 'col', text: axLabel(st.y) + ' \\ ' + axLabel(st.x) }));
+      // a plain table of buttons (no ARIA grid: it would promise arrow-key navigation); the axis names are in the section title
+      var table = h('table.ws-grid', { 'aria-label': 'Count of ' + cap + ' by ' + axLabel(st.y) + ' and ' + axLabel(st.x) }), hr = h('tr', null, h('th.ws-corner', { scope: 'col', title: 'Rows: ' + axLabel(st.y) + '; columns: ' + axLabel(st.x), 'aria-label': 'Rows: ' + axLabel(st.y) + '; columns: ' + axLabel(st.x) }));
       r.xs.forEach(function (x, xi) { hr.appendChild(h('th', { scope: 'col', 'class': st.sx === xi ? 'ws-sel-h' : null, text: x, title: x })); });
       table.appendChild(h('thead', null, hr));
       var tb = h('tbody');
@@ -174,7 +175,7 @@
         });
         var pl = h('div.ws-plist');
         d.patents.forEach(function (p) {
-          pl.appendChild(h('div.ws-prow', null, p.p >= 0 ? K.patentLink(p.pn, App) : h('span.mono', { text: U.pnPretty(p.pn) }), h('span.faint.mono', { text: p.prio ? U.date(p.prio) : (p.pub ? U.date(p.pub) + ' (pub.)' : '\u2013') }), p.status ? h('span.tag', { text: p.status }) : h('span'), p.title ? h('span.ws-ptitle', { text: p.title }) : null));
+          pl.appendChild(h('div.ws-prow', null, p.p >= 0 ? K.patentLink(p.pn, App) : h('span.mono', { text: U.pnPretty(p.pn) }), h('span.faint.mono', { text: p.prio ? U.date(p.prio) : (p.pub ? U.date(p.pub) + ' (pub.)' : '\u2013') }), statusOf(p), p.title ? h('span.ws-ptitle', { text: p.title }) : null));
         });
         U.set(detail, K.sec('Cell', title, h('div.k-row', null, h('span.k-hint', { text: U.num(c.nCompounds) + ' compounds · ' + U.num(c.nPatents) + ' publications · ' + U.num(c.nFamilies) + ' families · ' + U.num(c.nInClaims) + ' compounds in claims' })),
           h('div.ws-detail', null, h('div.ws-detail-cols', null,
@@ -183,6 +184,13 @@
       }, function (e) { if (my === detSeq && !dead) U.set(detail, K.sec('Cell', title, null, K.errBox(e, 'The cell could not be listed'))); });
     }
 
+    // status with its limits: a dataset status older than the term (priority + 21 years) is not current, an unknown one is open
+    function statusOf(p) {
+      var code = String(p.status || ''), d = K.iso(p.prio || p.pub), old = d && Number(d.slice(0, 4)) + 21 < new Date().getFullYear();
+      if (!code || code === 'unknown') return h('span.pill.hollow', { text: 'status open', title: 'No legal status for this publication in the dataset' });
+      if ((code === 'pending' || code === 'granted') && old) return h('span.pill.hollow', { text: 'expired (estimate)', title: 'The dataset says "' + code + '", but more than 20 years have passed since the earliest date; status not current, SPC / PTE not checked' });
+      return U.statusPill(code);
+    }
     function gridCsv() {
       var r = res, rows = [['# white-space map: ' + axLabel(st.y) + ' (rows) by ' + axLabel(st.x) + ' (columns)'], ['# ' + r.limits.join(' | ')], [axLabel(st.y), axLabel(st.x), 'compounds', 'publications', 'families', 'compounds_in_claims']];
       r.cells.forEach(function (row, yi) { row.forEach(function (c, xi) { rows.push([r.ys[yi], r.xs[xi], c.nCompounds, c.nPatents, c.nFamilies, c.nInClaims]); }); });

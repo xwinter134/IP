@@ -110,7 +110,7 @@
       busy('Reading the claim and the molecule …');
       Dz.ready().then(function () { return Ch ? Ch.parse(st.q) : { ok: true, smiles: st.q }; }).then(function (pm) {
         if (my !== seq || dead) return;
-        if (pm && pm.ok === false) throw { message: 'the molecule was not recognised (' + (K.chemErr(pm.error) || 'parse error') + '). Give a SMILES, a reference-lipid name or a SCHEMBL number.' };
+        if (pm && pm.ok === false) throw { message: 'the molecule was not recognised: ' + (K.chemErr(pm.error) || 'parse error') + '. Give a SMILES, a reference-lipid name or a SCHEMBL number.' };
         var smiles = (pm && pm.smiles) || st.q;
         return Mk.get(st.pn, Number(st.claim)).then(function (rec) {
           if (my !== seq || dead) return;
