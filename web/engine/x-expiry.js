@@ -69,7 +69,7 @@
   /* ------------------------------------------------------------------------------------------ sources */
   function splitList(x) {
     if (Array.isArray(x)) return x.map(str).map(function (s) { return s.trim(); }).filter(Boolean);
-    return str(x).split(/[\r\n,;]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    return str(x).split(/[\r\n;]+|,(?!\d{3}(?!\d))/).map(function (s) { return s.trim(); }).filter(Boolean);
   }
   function resolvePns(list) {
     var D = eng('data'), out = [], unknown = [];
@@ -214,7 +214,7 @@
   /* ------------------------------------------------------------------------------------------ timeline */
   var DEAD = { lapsed: 1, revoked: 1, withdrawn: 1, refused: 1, expired: 1 };
   function jurOf(row) {
-    if (row.auth === 'EP') { var j = ['EP']; if (row.inForceDe !== false) j.push('DE'); return j; }
+    if (row.auth === 'EP') { var j = ['EP']; if (row.inForceDe !== false || (row.pending && !row.dead)) j.push('DE'); return j; }
     return row.auth ? [row.auth] : [];
   }
   function makeRow(pat, st, snap, today) {

@@ -521,6 +521,55 @@ einschlägig`, `Rechtsstand ungeprüft`, `Anmeldung – Ansprüche veränderlich
 `Familie mit anhängigen Teilanmeldungen/Continuations`, `Einspruch/IPR anhängig`.
 Confidence (hoch/mittel/niedrig) is reported separately from risk.
 
+### 14.1 App-computed evidence (ranges, Markush)
+
+Two kinds of evidence are computed by code, not by the model, and attached to every charted patent as
+`app.evidence` (`web/engine/fto.js`, only when the engines `LnpRanges` / `LnpMarkush` are loaded; without them
+the chain behaves exactly as before):
+
+- **Markush**: every profile lipid with a structure is checked by `LnpMarkush.batch` against the stored and
+  curated `mk-1` records of the patent (per variable: verdict, group found, verbatim definition quote and its
+  quote state). In the candidate search (Step 3) a `covered` result adds the patent with route `markush` and the
+  reason "Markush check: covered by claim N (code-verified, translation reviewed / not reviewed)"; an `unclear`
+  result adds only the reason (no weight). The search record lists records, checks and hits.
+- **Ranges**: the profile values (mol-% per lipid role, N/P, size, PDI, pKa, PEG mass, ...) are compared with the
+  numeric ranges found in the claims (`LnpRanges.checkProfile`, restricted to the patent): per claim
+  `inside` / `outside` / `no range`, with the deciding range, whether it is inherited from a parent claim, and the
+  verbatim quote.
+
+Rules, applied in code after the claim chart (B) and before the red team (E):
+
+1. A Markush `covered` result with a **reviewed** translation (curated record, the user's own record, or a Claude
+   translation marked reviewed) on an **independent** claim of a right **in force** raises the risk floor to the
+   level of a literally met independent claim: 5 for a granted right, 3 for a pending application (section 14).
+2. A `covered` result with an **unreviewed** Claude translation raises the floor to at least 3 ("possible").
+3. A floor never lowers a risk: a higher level, including "cannot be assessed" against floor 3, stays. The red-team
+   result cannot go below the floor (final = the more adverse of B and E, as always).
+4. `unclear` and `not covered` Markush results change nothing; covered on a dependent claim or on a right that is
+   no longer in force adds a flag only. When the chart finds a literal miss on the claim the code finds covered,
+   the flag `markush_contradicts_chart` and a question for counsel are added.
+5. A product value **outside** a range of an independent claim adds the flag `range_outside` and a question for
+   counsel; it does **not** lower the risk and never turns a feature from `unklar` into `nicht_erfuellt` ("about",
+   the basis and measurement method of the value, and equivalence are open). Values inside every range that an
+   independent claim states for them add the flag `ranges_all_inside` (other features decide; no risk change).
+6. The opinion id includes the evidence inputs (Markush record ids with their `updated` time, the build of the range
+   dataset), so a changed record or a rebuilt dataset starts a new opinion instead of reusing the old one.
+7. The model cannot drop a code-verified hit. The Markush check runs before the triage for every candidate with a
+   record. A right in force with a `covered` result is never removed by triage C (its class is raised to B, the
+   flag `triage_c_ueberstimmt` is set, and the model's reason is kept), is never cut by the depth limit (it is
+   analysed first, beyond the limit if needed), and is not dropped for missing claim text.
+8. When the claim chart fails or no independent-claim text is available, the risk is "cannot be assessed" and rules
+   1 to 4 still apply without a chart. When claim independence cannot be checked (no claim text), the floor is
+   applied as a precaution, and the rule text says so.
+9. Without Claude (no triage, no chart), every right that is not analysed but has a `covered` result lists that
+   code result in its "not analysed" reason and carries the evidence.
+10. In the digest for the synthesis, the code-verified questions come first among the open questions (at most 10).
+
+Every rendering shows the block "Evidence computed by the app" per patent with the rules applied, the Markush
+table and per-variable verdicts with quotes, the range table with quotes, and the limits of the evidence verbatim
+(pattern rules see only ranges in the claim text; only patents with a stored or curated record are tested by the
+Markush route; pre-screening, not legal advice).
+
 ## 15. Structure of the generated pre-opinion (Step 14)
 
 1. Titel, Datum, Korpusstand (snapshot dates of text and legal status), **Hinweisblock** (below).

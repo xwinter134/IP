@@ -57,7 +57,7 @@
   function mount(host, route, App) {
     var K = g.LnpKit, Ch = g.LnpChem, Sc = g.LnpScreen, Mk = g.LnpMarkush;
     var dead = false, rows = [], parseInfo = null, results = [], runInfo = null, savedId = '', savedName = '', savedAt = '', stored = false;
-    var ctl = null, running = false, resolveSeq = 0, renderTimer = 0, shown = PAGE, expanded = new Set();
+    var ctl = null, resultsFor = null, running = false, resolveSeq = 0, renderTimer = 0, shown = PAGE, expanded = new Set();
     var st = { modes: { exact: true, sim: true, sub: false }, minSim: 80, markush: true, onlyClaims: false, onlyForce: false, flag: '', sort: 'flag' };
     App.chemUsed = true;
 
@@ -107,8 +107,16 @@
     }
     function modes() { return ['exact', 'sim', 'sub'].filter(function (k) { return st.modes[k]; }); }
     function snapshot() { return Sc.snapshotText(); }
-    function pill(level) { var f = FLAG[level] || FLAG[0]; return h('span.pill.' + f[1], { text: f[0], title: level === 0 ? 'No structure match found. This does not mean the compound is free to use: generic claims are not searched by structure.' : 'Structure match from the SureChEMBL extraction; not a claim analysis' }); }
-    function mkHref(pn, claim) { return R.build({ view: 'markush', arg: pn, params: { c: String(claim) } }); }
+    function pill(level, fl, r) {
+      var f = FLAG[level] || FLAG[0], text = f[0], title = level === 0 ? 'No structure match found. This does not mean the compound is free to use: generic claims are not searched by structure.' : 'Structure match from the SureChEMBL extraction; not a claim analysis';
+      if (fl && level >= 3 && /Markush/i.test(fl.label || '')) {     // covered by a formula record, not by a structure hit in a claim
+        text = level === 4 ? 'Markush claim, granted' : 'Markush claim';
+        if (r && r.markush && r.markush.covered.some(function (x) { return x.caveat; })) text += ' (translation not reviewed)';
+        title = 'Covered by a Markush record under a translated formula; there is no exact structure hit in a claim. The result depends on that translation.';
+      }
+      return h('span.pill.' + f[1], { text: text, title: title });
+    }
+    function mkHref(pn, claim, r) { var q = r && r.parsed && r.parsed.smiles; return R.build({ view: 'markush', arg: pn, params: q ? { c: String(claim), q: q } : { c: String(claim) } }); }
     function hitHref(id) { return R.build({ view: 'struktur', arg: '', params: { c: id } }); }
     function mkPill(m) {
       if (!m) return h('span.faint', { text: '\u2013' });
@@ -119,10 +127,13 @@
     }
 
     /* ---------------------------------------------------------- input and preview */
-    var onInput = U.debounce(function () { parseNow(); }, 250);
+    var onInputDeb = U.debounce(function () { parseNow(); }, 250);
+    function onInput() { fromSaved = false; onInputDeb(); }
+    var fromSaved = false;           // true while rows come from a saved screen and the text was not edited: run those rows, do not re-parse the text
     ta.addEventListener('input', onInput);
     function parseNow() {
       var my = ++resolveSeq;
+      fromSaved = false;
       parseInfo = Sc.parseInput(ta.value);
       rows = parseInfo.slice();
       stored = false;
@@ -131,6 +142,7 @@
       if (Ch) Sc.resolve(rows).then(function () { if (my === resolveSeq && !dead) drawPreview(true); }, function () { /* the run reports engine errors */ });
     }
     function drawPreview(resolved) {
+      drawActions();
       if (!rows.length) { U.set(preview, parseInfo && parseInfo.total === 0 ? h('p.k-hint', { text: 'No compounds yet.' }) : null); return; }
       var bad = rows.filter(function (r) { return r.error; }), box = h('div.sc-pv');
       box.appendChild(h('p.k-sub', null, h('b', { text: K.plural(rows.length, 'row', 'rows') }), ' read' + (parseInfo.header ? ' (header found)' : '') + (resolved ? ' \u00b7 ' + (rows.length - bad.length) + ' recognised as structures' : ' \u00b7 checking structures \u2026') + (bad.length ? ' \u00b7 ' + K.plural(bad.length, 'row with an error', 'rows with errors') : '')));
@@ -148,15 +160,18 @@
     }
 
     /* ---------------------------------------------------------- run */
+    function cloneRow(r) { var c = { row: r.row, id: r.id, name: r.name || '', input: r.input || '' }; if (r.alt) c.alt = r.alt; if (!c.input) c.error = 'empty structure field'; return c; }
     function startRun() {
       if (running) return;
       if (!ta.value.trim() && !rows.length) { U.toast('Paste or load a list of compounds first', { error: true }); return; }
-      parseInfo = Sc.parseInput(ta.value); rows = parseInfo.slice(); stored = false;
+      if (fromSaved && rows.length) { rows = rows.map(cloneRow); parseInfo = Object.assign(rows.slice(), { total: rows.length, notes: [], header: false }); }
+      else { fromSaved = false; parseInfo = Sc.parseInput(ta.value); rows = parseInfo.slice(); }
+      stored = false;
       if (!rows.length) { U.toast('No compounds found in the input', { error: true }); drawPreview(false); return; }
       drawPreview(false);
       var o = { modes: modes(), minSim: st.minSim / 100, markush: st.markush };
       ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      running = true; results = []; expanded.clear(); shown = PAGE;
+      running = true; results = []; resultsFor = rows; expanded.clear(); shown = PAGE;
       runBtn.disabled = true; cancelBtn.hidden = false; bar.hidden = false; bar.firstChild.style.width = '0%'; ta.readOnly = true;
       runInfo = { started: Date.now(), total: rows.length, opts: o, finished: null, cancelled: false, snapshot: snapshot() };
       U.set(progText, K.busy('Loading the structure data \u2026'));
@@ -189,10 +204,10 @@
     function filtered() {
       var list = results.filter(Boolean);
       return list.filter(function (r) {
-        if (st.flag === 'invalid') return !r.ok;
-        if (st.flag === 'nohit') return r.ok && r.flags && r.flags.level === 0;
-        if (st.flag === 'markush') return !!(r.markush && (r.markush.covered.length || r.markush.unclear.length || r.markush.queue.length));
-        if (st.onlyClaims && !(r.flags && (r.flags.inClaimsExact || r.flags.inClaimsSim))) return false;
+        if (st.flag === 'invalid' && r.ok) return false;
+        if (st.flag === 'nohit' && !(r.ok && r.flags && r.flags.level === 0)) return false;
+        if (st.flag === 'markush' && !(r.markush && (r.markush.covered.length || r.markush.unclear.length || r.markush.queue.length))) return false;
+        if (st.onlyClaims && !(r.flags && (r.flags.inClaimsExact || r.flags.inClaimsSim || r.flags.markushCovered))) return false;
         if (st.onlyForce && !(r.flags && r.flags.grantedInForce)) return false;
         return true;
       }).sort(function (a, b) {
@@ -228,13 +243,13 @@
     }
     function saveRun() {
       var inp = h('input.input', { type: 'text', id: 'sc-name', value: savedName || 'Screen ' + K.fileStamp(), maxlength: '120', 'aria-label': 'Name of the saved screen' });
-      var body = h('div.sc-savedlg', null, h('p.k-hint', { text: 'Saves the list and the options' + (results.length ? ' and, when small enough, the results' : '') + '. Results of larger runs are recomputed when the screen is opened.' }), inp,
+      var body = h('div.sc-savedlg', null, h('p.k-hint', { text: 'Saves the list and the options' + (results.length && resultsFor === rows ? ' and, when small enough, the results' : '') + '. Results of larger runs are recomputed when the screen is opened.' }), inp,
         h('div.k-row', null, h('button.btn.primary', { type: 'button', id: 'sc-save-ok', onclick: function () { go(); } }, 'Save'), h('button.btn', { type: 'button', onclick: function () { d.close(); } }, 'Cancel')));
       var d = U.dialog('Save screen', body, {});
       setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) { /* no focus */ } }, 30);
       function go() {
         var name = inp.value.trim() || 'Screen';
-        Sc.save({ id: savedId || undefined, name: name, rows: rows, opts: runInfo ? runInfo.opts : { modes: modes(), minSim: st.minSim / 100, markush: st.markush }, results: results.filter(Boolean).length && !running ? results.filter(Boolean) : null, created: savedAt || undefined })
+        Sc.save({ id: savedId || undefined, name: name, rows: rows, opts: runInfo ? runInfo.opts : { modes: modes(), minSim: st.minSim / 100, markush: st.markush }, results: results.filter(Boolean).length && !running && resultsFor === rows ? results.filter(Boolean) : null, created: savedAt || undefined })
           .then(function (v) { savedId = v.id; savedName = v.name; savedAt = v.created; d.close(); U.toast('Screen saved'); R.go({ view: 'screen', arg: v.id }, { silent: true }); drawSaved(); },
             function (e) { U.toast('Could not save: ' + U.errText(e), { error: true }); });
       }
@@ -255,9 +270,9 @@
       var m = r.markush;
       if (!m) return h('span.faint', { text: '\u2013' });
       var out = [];
-      m.covered.filter(function (x) { return x.pn === pn; }).forEach(function (x) { out.push(h('a.pill.crit.sc-mk', { href: mkHref(x.pn, x.claim), text: 'covered, claim ' + x.claim, title: 'Open the Markush check' })); });
-      m.unclear.filter(function (x) { return x.pn === pn; }).forEach(function (x) { out.push(h('a.pill.warn.sc-mk', { href: mkHref(x.pn, x.claim), text: 'unclear, claim ' + x.claim })); });
-      m.queue.filter(function (x) { return x.pn === pn; }).forEach(function (x) { out.push(h('a.pill.hollow.sc-mk', { href: mkHref(x.pn, x.claim), text: 'queue, claim ' + x.claim, title: 'The formula of this claim has no Markush record yet. Open it to translate it.' })); });
+      m.covered.filter(function (x) { return x.pn === pn; }).forEach(function (x) { out.push(h('a.pill.crit.sc-mk', { href: mkHref(x.pn, x.claim, r), text: 'covered, claim ' + x.claim, title: 'Open the Markush check' })); });
+      m.unclear.filter(function (x) { return x.pn === pn; }).forEach(function (x) { out.push(h('a.pill.warn.sc-mk', { href: mkHref(x.pn, x.claim, r), text: 'unclear, claim ' + x.claim })); });
+      m.queue.filter(function (x) { return x.pn === pn; }).forEach(function (x) { out.push(h('a.pill.hollow.sc-mk', { href: mkHref(x.pn, x.claim, r), text: 'queue, claim ' + x.claim, title: 'The formula of this claim has no Markush record yet. Open it to translate it.' })); });
       return out.length ? h('span.sc-tags', null, out) : h('span.faint', { text: '\u2013' });
     }
     function detail(r) {
@@ -279,16 +294,17 @@
         var tb = h('tbody'), cap = 60;
         r.patents.slice(0, cap).forEach(function (e) { tb.appendChild(patentRow(e, r)); });
         box.appendChild(h('div.table-wrap.sc-pt', null, h('table.data.sc-ptab', null, h('thead', null, h('tr', null, ['Publication', 'Match', 'Found in', 'Status', 'Expiry (estimate)', 'Markush'].map(function (t) { return h('th', { text: t }); }))), tb)));
-        if (r.patents.length > cap) box.appendChild(h('p.k-hint', { text: 'Showing ' + cap + ' of ' + U.num(r.patents.length) + ' publications; the CSV export lists all.' }));
+        if (r.nPatents > r.patents.length) box.appendChild(h('p.k-hint', { text: 'Stored results keep only ' + r.patents.length + ' of ' + U.num(r.nPatents) + ' publications, and the CSV export has the same limit. Run the screen again for the full list.' }));
+        else if (r.patents.length > cap) box.appendChild(h('p.k-hint', { text: 'Showing ' + cap + ' of ' + U.num(r.patents.length) + ' publications; the CSV export lists all.' }));
         box.appendChild(h('p.k-hint', { text: 'Order: claims hits first, then exact before similar, then granted and in force. \u201cFound in\u201d is where SureChEMBL recognised the structure; it is not evidence that a claim protects the compound.' }));
       } else box.appendChild(h('p.k-sub', { text: 'No publication of the dataset contains this structure or a similar one at the chosen settings.' }));
       var m = r.markush;
       if (m) {
         var mk = h('div.sc-mkbox', null, h('p.k-filters-l', { text: 'Markush check' }),
           h('p.k-sub', { text: m.checked ? m.checked + ' formula claim' + (m.checked === 1 ? '' : 's') + ' checked against records: ' + m.covered.length + ' covered, ' + m.unclear.length + ' unclear, ' + (m.notCovered || 0) + ' not covered. ' + (m.queue.length ? m.queue.length + ' formula claim' + (m.queue.length === 1 ? '' : 's') + ' in the hit publications without a record (queue).' : '') : (m.queue.length ? m.queue.length + ' formula claim' + (m.queue.length === 1 ? '' : 's') + ' in the hit publications without a record (queue).' : 'No Markush record and no formula claim in the hit publications.') }));
-        if (m.covered.length || m.unclear.length) mk.appendChild(h('p.sc-tags', null, m.covered.map(function (x) { return h('a.pill.crit.sc-mk', { href: mkHref(x.pn, x.claim), text: 'covered: ' + U.pnPretty(x.pn) + ' claim ' + x.claim + (x.caveat ? ' (translation not reviewed)' : ''), title: 'Open the Markush check' }); })
-          .concat(m.unclear.slice(0, 10).map(function (x) { return h('a.pill.warn.sc-mk', { href: mkHref(x.pn, x.claim), text: 'unclear: ' + U.pnPretty(x.pn) + ' claim ' + x.claim, title: x.why || '' }); }))));
-        if (m.queue.length) mk.appendChild(h('p.sc-tags', null, m.queue.slice(0, 12).map(function (x) { return h('a.pill.hollow.sc-mk', { href: mkHref(x.pn, x.claim), text: U.pnPretty(x.pn) + ' claim ' + x.claim }); })));
+        if (m.covered.length || m.unclear.length) mk.appendChild(h('p.sc-tags', null, m.covered.map(function (x) { return h('a.pill.crit.sc-mk', { href: mkHref(x.pn, x.claim, r), text: 'covered: ' + U.pnPretty(x.pn) + ' claim ' + x.claim + (x.caveat ? ' (translation not reviewed)' : ''), title: 'Open the Markush check' }); })
+          .concat(m.unclear.slice(0, 10).map(function (x) { return h('a.pill.warn.sc-mk', { href: mkHref(x.pn, x.claim, r), text: 'unclear: ' + U.pnPretty(x.pn) + ' claim ' + x.claim, title: x.why || '' }); }))));
+        if (m.queue.length) mk.appendChild(h('p.sc-tags', null, m.queue.slice(0, 12).map(function (x) { return h('a.pill.hollow.sc-mk', { href: mkHref(x.pn, x.claim, r), text: U.pnPretty(x.pn) + ' claim ' + x.claim }); })));
         if (m.error) mk.appendChild(h('p.notice.err', { text: 'The Markush check failed: ' + m.error }));
         box.appendChild(mk);
       }
@@ -306,8 +322,8 @@
         r.ok ? cnt(r.exact.length, 'Exact') : h('td.num', { 'data-l': 'Exact' }, h('span.faint', { text: '\u2013' })),
         r.ok ? cnt(r.simTotal != null ? r.simTotal : r.sim.length, 'Similar') : h('td.num', { 'data-l': 'Similar' }, h('span.faint', { text: '\u2013' })),
         r.ok ? cnt(r.sub.total, 'Substructure') : h('td.num', { 'data-l': 'Substructure' }, h('span.faint', { text: '\u2013' })),
-        r.ok ? cnt(r.patents.length, 'Publications') : h('td.num', { 'data-l': 'Publications' }, h('span.faint', { text: '\u2013' })),
-        h('td.sc-flag', { 'data-l': 'Flag' }, r.ok ? h('span.sc-tags', null, pill(f ? f.level : 0), f && f.commodity ? h('span.tag', { text: 'commodity', title: 'Appears in very many publications' }) : null) : h('span.pill.crit', { text: 'invalid input', title: r.error || '' })),
+        r.ok ? cnt(r.nPatents > r.patents.length ? r.nPatents : r.patents.length, 'Publications') : h('td.num', { 'data-l': 'Publications' }, h('span.faint', { text: '\u2013' })),
+        h('td.sc-flag', { 'data-l': 'Flag' }, r.ok ? h('span.sc-tags', null, pill(f ? f.level : 0, f, r), f && f.commodity ? h('span.tag', { text: 'commodity', title: 'Appears in very many publications' }) : null) : h('span.pill.crit', { text: 'invalid input', title: r.error || '' })),
         h('td.sc-mkc', { 'data-l': 'Markush' }, r.ok ? mkPill(r.markush) : null));
       var out = [tr];
       if (open) { var dt = h('tr.sc-detail-row', null, h('td', { colspan: '8', id: id }, detail(r))); out.push(dt); }
@@ -350,12 +366,13 @@
         if (!v || !Array.isArray(v.rows)) { U.set(preview, h('p.notice.err', { text: 'This saved screen no longer exists.' })); return; }
         savedId = v.id; savedName = v.name; savedAt = v.created || '';
         ta.value = v.rows.map(function (r) { return r.input; }).join('\n');
-        // keep ids and names of the saved rows: re-parse the stored input, then restore row identity
-        parseInfo = Sc.parseInput(ta.value); rows = parseInfo.map(function (r, i) { var s = v.rows[i]; if (s) { r.id = s.id || r.id; r.name = s.name || r.name; } return r; });
+        // the saved rows (row number, id, name, input) are the list: the text is only a display and is parsed again only when the user edits it
+        rows = v.rows.map(cloneRow); fromSaved = true; resolveSeq++;
+        parseInfo = Object.assign(rows.slice(), { total: rows.length, notes: [], header: false });
         if (v.opts) { ['exact', 'sim', 'sub'].forEach(function (k) { st.modes[k] = (v.opts.modes || []).indexOf(k) >= 0; }); st.minSim = Math.round((v.opts.minSim || 0.8) * 100); st.markush = v.opts.markush !== false; sync(); }
         drawPreview(false);
         if (Ch) Sc.resolve(rows).then(function () { if (!dead) drawPreview(true); }, function () { });
-        if (v.results && v.results.length) { results = v.results; stored = true; runInfo = { opts: v.opts, snapshot: v.snapshot }; drawResults(); }
+        if (v.results && v.results.length) { results = v.results; resultsFor = rows; stored = true; runInfo = { opts: v.opts, snapshot: v.snapshot }; drawResults(); }
         else if (!st.modes.sub) startRun();
       }, function (e) { U.set(preview, K.errBox(e, 'The saved screen could not be opened')); });
     }

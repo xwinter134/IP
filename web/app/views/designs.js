@@ -1,4 +1,5 @@
-/* LNP Patent Desk: Design-around assistant. Route: #designs[-<id>][--q<molecule>][--n<pn>][--c<claim>]
+/* LNP Patent Desk: Design-around assistant. Route: #designs[-<id>][--q<molecule>][--n<pn>][--c<claim>] or #designs--p<profile id>
+   (formulation: values of a stored product profile moved outside the claimed numeric ranges, re-checked with LnpRanges).
    Code (engine x-designaround.js, LnpDesign) generates candidate structures that sit just OUTSIDE one claimed Markush
    rule, verifies each against LnpMarkush.check, re-checks every variant across the corpus and ranks what remains by a
    remaining-risk score computed in code. This is an IDEA GENERATOR for discussion with counsel, never advice: a variant
@@ -61,7 +62,7 @@
   function mount(host, route, App) {
     var K = g.LnpKit, Ch = g.LnpChem, D = g.LnpData, Mk = g.LnpMarkush, Dz = g.LnpDesign, AI = g.LnpAI, St = g.LnpStore;
     var dead = false, seq = 0;
-    var st = { q: '', pn: '', claim: '', id: '', start: null, variants: null, form: null, maxRisk: 4, moveType: '', busy: false, phase: '', explain: null, loadedId: '' };
+    var st = { q: '', pn: '', claim: '', id: '', pid: '', start: null, variants: null, form: null, maxRisk: 4, moveType: '', busy: false, phase: '', explain: null, loadedId: '' };
     App.chemUsed = true;
 
     var page = h('div.page.k-page.da-page');
@@ -75,7 +76,7 @@
     var pnIn = h('input.input.mono', { id: 'da-pn', type: 'text', placeholder: 'Patent (EP…)', autocomplete: 'off', 'aria-label': 'Patent number of the claim' });
     var cIn = h('input.input.mono', { id: 'da-c', type: 'text', inputmode: 'numeric', placeholder: 'Claim', style: { maxWidth: '7em' }, 'aria-label': 'Claim number' });
     var goBtn = h('button.btn.primary', { type: 'submit' }, U.icon('spark'), 'Generate ideas');
-    var form = h('form.da-form', { onsubmit: function (ev) { ev.preventDefault(); st.q = qIn.value.trim(); st.pn = pnIn.value.trim(); st.claim = cIn.value.trim(); st.id = ''; push(); run(); } },
+    var form = h('form.da-form', { onsubmit: function (ev) { ev.preventDefault(); st.pid = ''; st.form = null; st.q = qIn.value.trim(); st.pn = pnIn.value.trim(); st.claim = cIn.value.trim(); st.id = ''; push(); run(); } },
       K.field('Starting molecule', qIn), K.field('Claim patent', pnIn), K.field('Claim no.', cIn), h('div.da-go', null, goBtn));
     page.appendChild(form);
 
@@ -89,9 +90,11 @@
       st.id = r.arg || '';
       var p = r.params || {};
       st.q = p.q ? String(p.q) : st.q; st.pn = p.n ? String(p.n) : st.pn; st.claim = p.c ? String(p.c) : st.claim;
+      st.pid = p.p ? String(p.p) : '';
+      if (st.pid) { st.q = ''; st.pn = ''; st.claim = ''; }
       qIn.value = st.q; pnIn.value = st.pn; cIn.value = st.claim;
     }
-    function toRoute() { return { view: 'designs', arg: st.id || '', params: st.id ? {} : { q: st.q, n: st.pn, c: st.claim } }; }
+    function toRoute() { return { view: 'designs', arg: st.id || '', params: st.id ? {} : st.pid ? { p: st.pid } : { q: st.q, n: st.pn, c: st.claim } }; }
     function push(replace) { R.go(toRoute(), { silent: true, replace: !!replace }); }
 
     function setStatus(node) { U.set(statusBox, node || h('span')); }
@@ -101,8 +104,9 @@
     /* ---------- run the pipeline ---------- */
     function run() {
       if (!Dz) { setStatus(K.errBox({ message: 'the design-around engine is not loaded' })); return; }
-      if (!st.q || !st.pn || !st.claim) { U.clear(body); setStatus(h('p.k-hint', { text: 'Enter a molecule, the claim’s patent number and the claim number, then generate ideas. You usually arrive here from a Markush result.' })); return; }
-      var my = ++seq; st.explain = null; st.variants = null; st.start = null; U.clear(body);
+      if (st.pid && !st.q) { runFormulation(); return; }
+      if (!st.q || !st.pn || !st.claim) { U.clear(body); setStatus(h('p.k-hint', { text: 'Enter a molecule, the claim’s patent number and the claim number, then generate ideas. You usually arrive here from a Markush result. For formulation ideas, open #designs--p<profile id> (a product profile from Products).' })); return; }
+      var my = ++seq; st.explain = null; st.variants = null; st.start = null; st.form = null; U.clear(body);
       busy('Reading the claim and the molecule …');
       Dz.ready().then(function () { return Ch ? Ch.parse(st.q) : { ok: true, smiles: st.q }; }).then(function (pm) {
         if (my !== seq || dead) return;
@@ -138,11 +142,31 @@
         busy('Re-checking variant ' + (i + 1) + ' of ' + variants.length + ' across the corpus …');
         return Dz.assess(variants[i++], { markushRecords: 'all-cached' }).then(step, step);
       }
-      return step().then(function () { if (my === seq && !dead) { st.assessMs = Date.now() - t0; clearBusy(); render(); maybeFormulation(start, my); } });
+      return step().then(function () { if (my === seq && !dead) { st.assessMs = Date.now() - t0; clearBusy(); render(); } });
     }
 
-    // if the starting point came from a profile (future: range entry), nothing here; kept for the formulation section
-    function maybeFormulation() { /* formulation variants are shown only when a range result is supplied via loadSession */ }
+    /* ---------- formulation: a stored product profile -> LnpRanges.checkProfile -> values moved outside, re-checked ---------- */
+    function runFormulation() {
+      var my = ++seq, Rg = g.LnpRanges; st.start = null; st.variants = null; st.form = null; st.explain = null; U.clear(body);
+      if (!Rg) { setStatus(h('p.k-hint', { text: 'The range engine is not part of this build, so formulation ideas cannot be computed.' })); return; }
+      busy('Reading the product profile …');
+      var pf = st.pid === 'beispiel' ? Promise.resolve(g.LnpProfile && g.LnpProfile.example ? g.LnpProfile.example() : null)
+        : (St && St.get ? Promise.resolve(St.get('profiles', st.pid)).then(null, function () { return null; }) : Promise.resolve(null));
+      pf.then(function (form) {
+        if (my !== seq || dead) return;
+        if (!form) { clearBusy(); setStatus(h('p.k-hint', { text: 'No product profile with the id "' + st.pid + '" was found. Create one under Products.' })); return; }
+        return Promise.resolve(Rg.init()).then(function () {
+          if (my !== seq || dead) return;
+          if (Rg.available && !Rg.available()) { clearBusy(); setStatus(h('p.k-hint', { text: 'Numeric claim ranges are not available in this build (' + (Rg.reason ? Rg.reason() : 'not loaded') + ').' })); return; }
+          busy('Checking the profile against the claimed ranges …');
+          return Rg.checkProfile(form, { mode: 'any' }).then(function (res) {
+            if (my !== seq || dead) return;
+            busy('Moving values outside and re-checking them across the corpus …');
+            return Dz.fromRanges(form, res).then(function (out) { if (my !== seq || dead) return; out.profileName = form.name || st.pid; st.form = out; clearBusy(); render(); });
+          });
+        });
+      }).catch(function (e) { if (my === seq && !dead) { clearBusy(); setStatus(K.errBox(e, 'Formulation ideas')); } });
+    }
 
     function noRecord() {
       clearBusy(); U.clear(body);
@@ -160,15 +184,20 @@
     /* ---------- render ---------- */
     function filtered() {
       return (st.variants || []).filter(function (v) {
-        var r = v.assessment ? v.assessment.risk : -1;
-        if (r != null && r > st.maxRisk) return false;
+        var r = v.assessment ? v.assessment.risk : null;
+        // not assessed (null / -1) ranks as the most risky: it passes only "Any risk"
+        if (r == null || r < 0) { if (st.maxRisk < 4) return false; }
+        else if (r > st.maxRisk) return false;
         if (st.moveType && v.move.type !== st.moveType) return false;
         return true;
       });
     }
     function render() {
       U.clear(body);
-      if (!st.start) return;
+      if (!st.start) {
+        if (st.form) { body.appendChild(formulationCard(st.form)); body.appendChild(limitsBox(st.form.limits)); }
+        return;
+      }
       body.appendChild(startCard(st.start));
       if (!st.variants || !st.variants.length) {
         body.appendChild(h('p.k-hint', { text: 'No design-around variants could be generated from the met variables of this claim. The met rules may have no adjustable carbon range, linker or head group that the generator can move.' }));
@@ -223,15 +252,17 @@
 
     function variantCard(v) {
       var a = v.assessment || {}, risk = a.risk != null ? a.risk : -1;
+      var verified = v.verified !== undefined ? v.verified !== false : v.sourceVerdict === 'not_covered';
       var card = h('div.da-card', null,
         h('div.da-card-top', null,
           depict(v.smiles, 240, 110),
           h('div.da-card-main', null,
             h('div.da-card-head', null, h('span.da-move', { text: v.moveLabel || Dz.moveLabel(v.move) }), riskPill(risk)),
-            h('p.da-reason', { text: 'Outside the claim: ' + (v.sourceReason || v.sourceVerdict || '') }),
+            verified ? h('p.da-reason', { text: 'Outside the claim (verified by code): ' + (v.sourceReason || v.sourceVerdict || '') })
+              : h('p.da-reason.da-unverified', null, h('span.pill.warn.sm', { text: 'not verified' }), h('span', { text: ' Not verified outside: ' + (v.sourceReason || 'the checker is unclear') })),
             h('div.da-card-meta', null,
               v.sourceVerdict ? h('span.da-mi', null, h('span.faint', { text: 'source claim: ' }), verdictPill(v.sourceVerdict)) : null,
-              isFinite(v.distance) ? h('span.da-mi', null, h('span.faint', { text: 'distance from start: ' }), h('span.mono', { text: (v.distance).toFixed(2) })) : null))));
+              h('span.da-mi', { title: 'Structural distance from the starting molecule (1 - count-fingerprint similarity), computed in code' }, h('span.faint', { text: 'distance from start: ' }), h('span.mono', { text: typeof v.distance === 'number' && isFinite(v.distance) ? v.distance.toFixed(2) : '-' }))))));
       // blocking patents + markush verdicts
       var pats = (a.patents || []).filter(function (p) { return p.markush === 'covered' || (p.src && (p.src.exact_claim || p.src.sim_claim)); });
       var det = h('div.da-card-det');
@@ -251,6 +282,7 @@
         det.appendChild(h('div.da-det-block', null, h('p.da-det-title', { text: 'Other claims that may still read on it' }), mkRows));
       }
       if (!pats.length && !mk.length) det.appendChild(h('p.da-none', { text: 'No exact or close match in the corpus and no cached Markush claim reads on it. Equivalence and claims outside this corpus still remain for counsel.' }));
+      if (a.unknown && a.unknown.length) det.appendChild(h('p.da-riskwhy', { text: 'Not every check ran: ' + a.unknown.map(function (u) { return u.check + ' (' + u.why + ')'; }).join('; ') + '.' }));
       if (a.riskParts && a.riskParts.length) det.appendChild(h('p.da-riskwhy', { text: 'Risk drivers: ' + a.riskParts.map(function (x) { return x.why; }).join('; ') + '.' }));
       card.appendChild(det);
       return card;
@@ -258,12 +290,16 @@
 
     function formulationCard(form) {
       var rows = h('div.da-form-rows');
-      form.variants.forEach(function (v) {
+      function links(list) { return (list || []).slice(0, 8).map(function (w) { return h('span.da-mi', null, K.patentLink(w.pn, App), h('span.mono.faint', { text: ' c' + w.claim })); }); }
+      (form.variants || []).forEach(function (v) {
         rows.appendChild(h('div.da-form-row', null, h('span.da-form-move', { text: v.moveLabel }),
-          h('span.da-form-was', null, h('span.faint', { text: 'currently inside: ' }), v.wasInside.length ? v.wasInside.map(function (w) { return K.patentLink(w.pn, App); }) : h('span.faint', { text: 'none' }))));
+          h('span.da-form-was', null, h('span.faint', { text: 'leaves: ' }), links(v.leaves)),
+          h('span.da-form-was', null, h('span.faint', { text: v.rechecked ? 'still inside (re-checked across the corpus): ' : 'still inside (not re-checked): ' }),
+            v.stillInside && v.stillInside.length ? links(v.stillInside) : h('span', { text: 'none' }), v.stillInsideCount > 8 ? h('span.faint', { text: ' +' + (v.stillInsideCount - 8) + ' more' }) : null)));
       });
-      return h('section.sec.da-formsec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Formulation' }), h('h2.sec-title', { text: 'Values moved outside the claimed ranges' }))),
-        h('p.da-sub', { text: 'A value moved just outside each range it currently falls in. Other claim features and other patents still decide, and equivalence remains open; not advice.' }), rows);
+      if (!(form.variants || []).length) rows.appendChild(h('p.k-hint', { text: 'No value of this profile sits inside a claimed range that has a finite bound to move past, so there is no formulation idea to show.' }));
+      return h('section.sec.da-formsec', null, h('div.sec-head', null, h('div', null, h('p.overline', { text: 'Formulation' + (form.profileName ? ' · ' + form.profileName : '') }), h('h2.sec-title', { text: 'Values moved outside the claimed ranges' }))),
+        h('p.da-sub', { text: 'Each value is moved one step past a finite bound of a range it falls in, then re-checked against every claim range of the corpus. Other claim features and other patents still decide, and equivalence remains open; not advice.' }), rows);
     }
 
     function explainBox() {
@@ -286,7 +322,10 @@
     function limitsBox(limits) {
       var det = h('details.da-limits', null, h('summary', null, U.icon('help'), 'Limits of this pre-screening'));
       var ul = h('ul');
-      (limits || []).concat(['Remaining risk is a code-computed score over this corpus snapshot (' + ((D && D.manifest && D.manifest.snapshots && D.manifest.snapshots.corpus) || 'current') + '); it is not a legal conclusion.']).forEach(function (l) { ul.appendChild(h('li', { text: l })); });
+      var extra = [];
+      if ((st.variants || []).some(function (v) { return !(typeof v.distance === 'number' && isFinite(v.distance)); })) extra.push('The structural distance from the start could not be computed for some variants (shown as "-"); they are ranked after the others of the same risk.');
+      if ((st.variants || []).some(function (v) { return v.verified === false; })) extra.push('Ideas marked "not verified" are ones the Markush checker reads as unclear for the source claim: code could not confirm that they leave the claim. They carry one extra risk point.');
+      (limits || []).concat(extra).concat(['Remaining risk is a code-computed score over this corpus snapshot (' + ((D && D.manifest && D.manifest.snapshots && D.manifest.snapshots.corpus) || 'current') + '); it is not a legal conclusion.']).forEach(function (l) { ul.appendChild(h('li', { text: l })); });
       det.appendChild(ul);
       return det;
     }
@@ -296,10 +335,10 @@
       var fv = filtered(), start = st.start; if (!start) return;
       var stamp = K.fileStamp(), nm = str(start.pn).replace(/\s+/g, '') + '-c' + start.claim;
       if (fmt === 'csv') {
-        var rows = [['rank', 'move', 'smiles', 'remaining_risk', 'source_verdict', 'distance_from_start', 'blocking_patents']];
+        var rows = [['rank', 'move', 'smiles', 'remaining_risk', 'source_verdict', 'verified_outside', 'distance_from_start', 'blocking_patents']];
         fv.forEach(function (v, i) {
           var pats = (v.assessment && v.assessment.patents || []).filter(function (p) { return p.markush === 'covered' || (p.src && (p.src.exact_claim || p.src.sim_claim)); }).map(function (p) { return p.pn; });
-          rows.push([String(i + 1), v.moveLabel || '', v.smiles, v.assessment ? String(v.assessment.risk) : '', v.sourceVerdict || '', isFinite(v.distance) ? v.distance.toFixed(3) : '', pats.join(' ')]);
+          rows.push([String(i + 1), v.moveLabel || '', v.smiles, v.assessment && v.assessment.risk != null ? String(v.assessment.risk) : 'not assessed', v.sourceVerdict || '', v.verified === false ? 'no' : 'yes', typeof v.distance === 'number' && isFinite(v.distance) ? v.distance.toFixed(3) : '', pats.join(' ')]);
         });
         U.saveFile('designaround-' + nm + '-' + stamp + '.csv', U.csv(rows), 'text/csv;charset=utf-8');
         return;
@@ -312,7 +351,7 @@
       md.push('|---|------|----------------|--------------|----------|--------|------------------|');
       fv.forEach(function (v, i) {
         var pats = (v.assessment && v.assessment.patents || []).filter(function (p) { return p.markush === 'covered' || (p.src && (p.src.exact_claim || p.src.sim_claim)); }).map(function (p) { return p.pn; }).join(' ');
-        md.push('| ' + (i + 1) + ' | ' + (v.moveLabel || '').replace(/\|/g, '/') + ' | ' + (v.assessment ? v.assessment.risk + '/4' : '?') + ' | ' + (v.sourceVerdict || '') + ' | ' + (isFinite(v.distance) ? v.distance.toFixed(2) : '') + ' | `' + v.smiles + '` | ' + pats + ' |');
+        md.push('| ' + (i + 1) + ' | ' + (v.moveLabel || '').replace(/\|/g, '/') + ' | ' + (v.assessment && v.assessment.risk != null ? v.assessment.risk + '/4' : 'not assessed') + ' | ' + (v.sourceVerdict || '') + (v.verified === false ? ' (not verified)' : '') + ' | ' + (typeof v.distance === 'number' && isFinite(v.distance) ? v.distance.toFixed(2) : '-') + ' | `' + v.smiles + '` | ' + pats + ' |');
       });
       md.push('', '_Pre-screening, not legal advice. Equivalence (doctrine of equivalents) and claims or patents outside this corpus remain open questions for counsel._');
       U.saveFile('designaround-' + nm + '-' + stamp + '.md', md.join('\n'), 'text/markdown;charset=utf-8');
@@ -344,10 +383,10 @@
 
     return {
       update: function (r) {
-        var oldId = st.id, oldKey = st.q + '|' + st.pn + '|' + st.claim;
+        var oldId = st.id, oldKey = st.q + '|' + st.pn + '|' + st.claim + '|' + st.pid;
         fromRoute(r);
         if (st.id && st.id !== oldId) { loadSession(st.id); return true; }
-        if (!st.id && (st.q + '|' + st.pn + '|' + st.claim) !== oldKey) { run(); return true; }
+        if (!st.id && (st.q + '|' + st.pn + '|' + st.claim + '|' + st.pid) !== oldKey) { run(); return true; }
         return true;
       },
       destroy: function () { dead = true; seq++; }

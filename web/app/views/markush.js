@@ -95,8 +95,9 @@
     var dead = false, urls = [], seq = { mol: 0, pat: 0, chk: 0 }, editor = null, editorWanted = false, quietEditor = false, lastSmiles = '', docPaste = null;
     var bt = { ctl: null, results: [], queue: [], running: false };
 
-    function url(blob) { var u = URL.createObjectURL(blob); urls.push(u); return u; }
-    function revokeAll() { urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ } }); urls = []; }
+    var urlMap = {};
+    function url(blob, key) { if (key && urlMap[key]) return urlMap[key]; var u = URL.createObjectURL(blob); urls.push(u); if (key) urlMap[key] = u; return u; }
+    function revokeAll() { urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ } }); urls = []; urlMap = {}; }
     function snapshotDate() { var b = D && D.manifest && D.manifest.built; return fmtDate(b) || str(b).slice(0, 10) || 'unknown'; }
 
     /* ---------------------------------------------------------- route <-> state */
@@ -208,7 +209,7 @@
     function curClaim() { for (var i = 0; i < st.claims.length; i++) if (st.claims[i].n === st.claim) return st.claims[i]; return null; }
 
     function selectClaim(n) {
-      st.claim = n; st.base = null; st.rec = null; st.dirty = false; st.uploads = []; st.ocsr = {}; st.coreMachine = false; st.result = null;
+      revokeAll(); st.claim = n; st.base = null; st.rec = null; st.dirty = false; st.uploads = []; st.ocsr = {}; st.coreMachine = false; st.result = null;
       push(); drawPicker();
       if (n == null) { drawRecord(); drawResult(); return Promise.resolve(); }
       var my = seq.pat;
@@ -247,7 +248,7 @@
     }
     function figure(im, uploaded) {
       var o = st.ocsr[im.id] || {};
-      var fig = h('figure.mk-fig', null, h('img', { src: url(im.blob), alt: (uploaded ? 'Uploaded formula image' : 'Formula image from claim ' + st.claim + ' of ' + st.pn), loading: 'lazy' }),
+      var fig = h('figure.mk-fig', null, h('img', { src: url(im.blob, (uploaded ? 'u:' : 'c:') + st.pn + ':' + st.claim + ':' + str(im.id)), alt: (uploaded ? 'Uploaded formula image' : 'Formula image from claim ' + st.claim + ' of ' + st.pn), loading: 'lazy' }),
         h('figcaption.mono', { text: (uploaded ? 'uploaded: ' : '') + str(im.id) + (im.w ? ' - ' + im.w + ' x ' + im.h + ' px' : '') }));
       if (st.ai) {
         var b = h('button.btn.sm', { type: 'button', disabled: !!o.busy, onclick: function () { runOcsr(im, b, note); } }, U.icon('spark'), 'Read structure with Claude');
@@ -382,6 +383,7 @@
       });
     }
     function save(reviewed) {
+      if (st.coreMachine && st.rec) { st.rec.origin = 'claude'; st.rec.reviewed = false; st.coreMachine = false; }
       var errs = Mk.validate(st.rec);
       if (errs.length) { U.toast('The record is not valid yet: ' + errs[0], { error: true }); return Promise.resolve(); }
       return Mk.put(st.rec).then(function (r) {
@@ -536,7 +538,7 @@
       var cdSeq = 0;
       function coreDep() { var my = ++cdSeq; setTimeout(function () { if (my !== cdSeq || dead) return; U.set(coreBox, str(rec.core && rec.core.smiles) && !/^\[?\*\]?$/.test(str(rec.core.smiles).trim()) ? depict(rec.core.smiles, 280, 120, rec.core.smiles) : null); }, 250); }
       coreDep();
-      var coreSec = h('div.mk-coresec', null, fld('Core SMILES (each variable position is [*:n], n unique)', coreIn, 'mk-wide'), st.coreMachine ? h('p.k-hint', null, h('span.mk-machine', { text: 'machine-extracted' }), ' Read from the image by Claude; check it against the image.') : null, coreBox,
+      var coreSec = h('div.mk-coresec', null, fld('Core SMILES (each variable position is [*:n], n unique)', coreIn, 'mk-wide'), st.coreMachine ? h('p.k-hint', null, h('span.mk-machine', { text: 'machine-extracted' }), ' Read from the image by Claude; check it against the image. ', h('button.btn.sm', { type: 'button', id: 'mk-core-confirm', onclick: function () { st.coreMachine = false; if (/^machine-extracted/.test(str(rec.core.note))) rec.core.note = 'machine-extracted, checked against the image by the user'; drawRecord(); drawEditor(true); runCheck(); } }, 'I checked the core against the image')) : null, coreBox,
         fld('Note on the core', txt(rec.core && rec.core.note, function (x) { rec.core = rec.core || {}; rec.core.note = x || null; touch(); }, { label: 'Note on the core' })));
       var varsBox = h('div.mk-vars'); rec.vars = rec.vars || [];
       rec.vars.forEach(function (v, i) { varsBox.appendChild(varCard(v, i)); });
@@ -563,7 +565,12 @@
       jsonTa.addEventListener('input', U.debounce(jsonCheck, 300));
       function applyJson() {
         var o = jsonCheck(); if (!o) return;
-        o.pn = st.pn; o.claim = st.claim; o.origin = o.origin || rec.origin; o.source = o.source || rec.source;
+        o.pn = st.pn; o.claim = st.claim;
+        /* the source text, origin and review state come from the build and the current record, never from pasted JSON */
+        var cc = curClaim(), t0 = cc ? str(cc.text) : '';
+        o.origin = rec.origin === 'claude' ? 'claude' : 'manual';
+        o.reviewed = o.origin === 'claude' ? !!rec.reviewed : true;
+        o.source = { images: ((cc && cc.images) || []).map(function (i) { return str(i.id); }), textHash: Mk._internal && Mk._internal.hash ? Mk._internal.hash(t0) : '', claimText: t0.slice(0, 20000), defsText: st.defs.length ? st.defs.join('\n').slice(0, 20000) : null };
         st.rec = o; st.dirty = true; st.coreMachine = false; drawRecord(); drawEditor(true); runCheck();
       }
       var tf = h('button', { type: 'button', 'aria-pressed': edTab === 'form' ? 'true' : 'false', onclick: function () { setEd('form'); } }, 'Form'), tj = h('button', { type: 'button', id: 'mk-tab-json', 'aria-pressed': edTab === 'json' ? 'true' : 'false', onclick: function () { setEd('json'); } }, 'JSON');
@@ -587,7 +594,9 @@
       return Mk.ready().then(function () {
         var errs = Mk.validate(st.rec);
         if (errs.length) { if (my === seq.chk && !dead) { st.result = null; drawResult({ invalid: errs }); } return null; }
-        return Mk.check(st.rec, st.parsed.smiles || st.q).then(function (res) { if (my === seq.chk && !dead) { st.result = res; drawResult(); } }, function (e) { if (my === seq.chk && !dead) { st.result = null; drawResult({ error: e }); } });
+        var recIn = st.rec;
+        if (st.coreMachine) { recIn = clone(st.rec); recIn.origin = 'claude'; recIn.reviewed = false; } /* a core read by the model alone is unreviewed AI output: the engine then holds 'not covered' as unclear */
+        return Mk.check(recIn, st.parsed.smiles || st.q).then(function (res) { if (my === seq.chk && !dead) { st.result = res; drawResult(); } }, function (e) { if (my === seq.chk && !dead) { st.result = null; drawResult({ error: e }); } });
       }, function (e) { if (my === seq.chk && !dead) drawResult({ error: e }); });
     }
     function drawResult(o) {
@@ -604,6 +613,7 @@
         res.caveat === 'translation_not_reviewed' ? h('span.pill.warn.hollow', { id: 'mk-caveat', text: 'translation not reviewed' }) : res.caveat === 'no_core' ? h('span.pill.warn.hollow', { id: 'mk-caveat', text: 'core not available' }) : null,
         pill(ORIGIN, res.origin || (st.rec && st.rec.origin), ''), h('span.k-hint', { text: (res.ms != null ? Math.round(res.ms) + ' ms' : '') }));
       resBox.appendChild(head);
+      if (st.coreMachine) resBox.appendChild(h('p.notice.warn', { id: 'mk-machine-note', text: 'The core was read from the image by Claude and is not confirmed. A "not covered" result is held as unclear until you check the core against the image and confirm it (button in the core section) or enter it by hand.' }));
       if (raw && res.caveat === 'translation_not_reviewed') resBox.appendChild(h('p.k-hint', { text: 'Code result before the caveat: ' + String(raw).replace(/_/g, ' ') + '. An unreviewed Claude translation never reports "not covered", because a translation error could hide a covered molecule.' }));
       if ((res.reasons || []).length) resBox.appendChild(h('ul.mk-reasons', null, res.reasons.map(function (r) { return h('li', { text: r }); })));
       var c = res.core || {};
@@ -688,7 +698,7 @@
       if (bt.running || dead) return;
       if (!st.parsed || !st.parsed.ok) { U.set(bStatus, h('p.notice.err', { text: 'Enter a valid molecule in step 1 first.' })); return; }
       var ctl = bt.ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, mol = st.parsed.smiles || st.q;
-      bt.running = true; bt.results = []; bt.queue = []; bt.skipped = []; bt.mol = mol; bt.molName = st.parsed.name || st.parsed.id || '';
+      bt.running = true; bt.index = null; bt.results = []; bt.queue = []; bt.skipped = []; bt.mol = mol; bt.molName = st.parsed.name || st.parsed.id || '';
       bRunBtn.disabled = true; bCancel.hidden = false; drawBResults(); drawQueue();
       var collect = function (ev) { if (ev && ev.last) { bt.results.push(ev.last); drawBResults(); U.set(bStatus, K.busy('Checked ' + ev.done + ' of ' + ev.total + ' claims')); } };
       var prep;
@@ -697,7 +707,7 @@
       prep.then(function (targets) {
         if (targets !== 'all-cached' && !targets.length) { U.set(bStatus, h('p.notice', { text: 'No claim with a formula was found in the candidate set.' + (bt.skipped.length ? ' ' + bt.skipped.length + ' publication(s) were skipped.' : '') })); return null; }
         U.set(bStatus, K.busy('Checking ' + (targets === 'all-cached' ? 'all cached records' : targets.length + ' claims')));
-        var index = {}; if (targets !== 'all-cached') targets.forEach(function (t) { index[t.pn + '--c' + t.claim] = t; });
+        var index = bt.index = {}; if (targets !== 'all-cached') targets.forEach(function (t) { index[t.pn + '--c' + t.claim] = t; });
         return Mk.batch(mol, targets, { signal: ctl ? ctl.signal : undefined, onProgress: collect }).then(function (rs) {
           bt.results = rs;
           rs.forEach(function (r) { if (r.reason === 'no_record' && index[r.pn + '--c' + r.claim]) bt.queue.push({ t: index[r.pn + '--c' + r.claim], state: 'wait' }); });
@@ -706,6 +716,8 @@
           U.set(bStatus, h('p.k-sub', null, h('b', { text: bt.results.length + ' claim' + (bt.results.length === 1 ? '' : 's') + ' checked' }), nq ? ', ' + nq + ' without a translation yet' : '', bt.skipped.length ? ', ' + bt.skipped.length + ' publication(s) skipped (' + bt.skipped.slice(0, 5).join(', ') + (bt.skipped.length > 5 ? ' ...' : '') + ')' : '', '.'));
         });
       }).then(null, function (e) {
+        var ix = bt.index || {}; bt.results.forEach(function (r) { if (r.reason === 'no_record' && ix[r.pn + '--c' + r.claim]) bt.queue.push({ t: ix[r.pn + '--c' + r.claim], state: 'wait' }); });
+        bt.results = bt.results.filter(function (r) { return r.reason !== 'no_record'; });
         if (e && e.code === 'cancelled') U.set(bStatus, h('p.notice', { text: 'Cancelled. ' + bt.results.length + ' result' + (bt.results.length === 1 ? '' : 's') + ' so far are kept.' }));
         else U.set(bStatus, K.errBox(e, 'The batch failed'));
       }).then(function () { bt.running = false; if (bRunBtn) bRunBtn.disabled = false; if (bCancel) bCancel.hidden = true; if (!dead) { drawBResults(); drawQueue(); } });
@@ -765,24 +777,26 @@
       }
       var ul = h('ul.mk-queue');
       bt.queue.forEach(function (q) {
-        var b = st.ai ? h('button.btn.sm', { type: 'button', disabled: bt.tbusy || q.state === 'done' || q.state === 'busy', onclick: function () { translateOne(q).then(drawAfterQueue); } }, U.icon('spark'), q.state === 'done' ? 'Translated' : 'Translate') : null;
+        var b = st.ai ? h('button.btn.sm', { type: 'button', disabled: bt.tbusy || q.state === 'done' || q.state === 'busy', onclick: function () { translateOne(q).then(drawAfterQueue, drawAfterQueue); } }, U.icon('spark'), q.state === 'done' ? 'Translated' : 'Translate') : null;
+        var qc = st.ai && q.state === 'busy' && q.ctl && !bt.tbusy ? h('button.btn.sm', { type: 'button', onclick: function () { try { q.ctl.abort(); } catch (e) { /* ignore */ } } }, 'Cancel') : null;
         ul.appendChild(h('li.mk-qitem', { data: { s: q.state } }, h('a.mono', { href: R.build({ view: 'markush', arg: q.t.pn, params: { c: String(q.t.claim), q: bt.mol || st.q } }), text: (U.pnPretty ? U.pnPretty(q.t.pn) : q.t.pn) + ' claim ' + q.t.claim }),
-          h('span.k-hint', { text: q.state === 'busy' ? 'translating ...' : q.state === 'error' ? q.err : q.state === 'done' ? 'done' : 'no record' }), b));
+          h('span.k-hint', { text: q.state === 'busy' ? 'translating ...' : q.state === 'error' ? q.err : q.state === 'done' ? 'done' : 'no record' }), b, qc));
       });
       bQueueBox.appendChild(ul);
     }
     function drawAfterQueue() { if (dead) return; drawBResults(); drawQueue(); }
     function translateOne(q, ctl) {
-      q.state = 'busy'; drawQueue();
+      if (!ctl) { ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; if (!bt.tbusy) bt.tctl = ctl; }
+      q.ctl = ctl; q.state = 'busy'; drawQueue();
       var imgs = q.t.images || [];
       return Promise.resolve(D.patent(q.t.p)).then(function () { return Promise.resolve(Se.defs ? Se.defs(q.t.p) : []).then(function (d) { return d || []; }, function () { return []; }); }).then(function (defs) {
-        return Mk.translate({ pn: q.t.pn, claim: q.t.claim, claimText: q.t.text, images: imgs.map(function (i) { return i.blob; }), imageIds: imgs.map(function (i) { return i.id; }), defs: defs, lang: q.t.lang || 'en', signal: ctl ? ctl.signal : (bt.tctl ? bt.tctl.signal : undefined) });
+        return Mk.translate({ pn: q.t.pn, claim: q.t.claim, claimText: q.t.text, images: imgs.map(function (i) { return i.blob; }), imageIds: imgs.map(function (i) { return i.id; }), defs: defs, lang: q.t.lang || 'en', signal: ctl ? ctl.signal : undefined });
       }).then(function (rec) { return Mk.put(rec); }).then(function (rec) {
         return Mk.check(rec, bt.mol).then(function (res) { bt.results.push({ pn: q.t.pn, claim: q.t.claim, result: res, reason: null, origin: rec.origin }); q.state = 'done'; });
       }).then(null, function (e) {
         if (e && e.code === 'cancelled') { q.state = 'wait'; throw e; }
         q.state = 'error'; q.err = msgOf(e);
-        if (AI && AI.isFatal && AI.isFatal(e)) { st.ai = false; }
+        if (AI && AI.isFatal && AI.isFatal(e)) { st.ai = false; if (!dead) { drawRecord(); drawPicker(); } }
       });
     }
     function translateAll() {

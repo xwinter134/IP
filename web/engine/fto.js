@@ -15,6 +15,8 @@
   'use strict';
   var cfg = {};
   function eng(name) { return cfg[name] || g[{ data: 'LnpData', search: 'LnpSearch', chem: 'LnpChem', store: 'LnpStore', ai: 'LnpAI', prompts: 'LnpFtoPrompts', render: 'LnpFtoRender' }[name]] || null; }
+  /* optional evidence engines (x-markush.js, x-ranges.js): configure({markush: false}) switches one off explicitly */
+  function xeng(name) { if (Object.prototype.hasOwnProperty.call(cfg, name)) return cfg[name] || null; return g[{ markush: 'LnpMarkush', ranges: 'LnpRanges' }[name]] || null; }
   function mkErr(code, message, extra) { var e = { code: code, message: message || code }, k; if (extra) for (k in extra) e[k] = extra[k]; return e; }
   function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
   function arr(x) { return Array.isArray(x) ? x : []; }
@@ -477,6 +479,44 @@
       arr(o.manual).forEach(function (m) { ch = ch.then(function () { return Promise.resolve(typeof m === 'number' ? m : (data ? data.byPn(str(m)) : -1)).then(function (p) { add(p, 'manual', 20, 'Marked by the user'); }, function () { }); }); });
       return ch;
     });
+    // 5b. Markush route: stored and curated mk-1 records checked by code (LnpMarkush), no model call
+    var mkE = xeng('markush');
+    if (mkE && mkE.batch && mkE.list) chain = chain.then(function () {
+      emit({ type: 'stage', stage: 'markush' });
+      var mr = record.markush = { records: 0, lipids: 0, checked: 0, covered: [], unclear: [], notCovered: 0, errors: [] };
+      return Promise.resolve(mkE.list({ curated: true })).then(function (recs) {
+        recs = arr(recs).filter(function (r) { return r && r.pn && r.claim != null; });
+        mr.records = recs.length;
+        var mls = lipids.filter(function (c) { return c.smiles; }), ch = Promise.resolve();
+        mr.lipids = mls.length;
+        if (!recs.length || !mls.length) return null;
+        var targets = recs.map(function (r) { return { pn: r.pn, claim: r.claim }; });
+        mls.forEach(function (c) {
+          var nm = str(c.name || c.ref_name || c.role);
+          ch = ch.then(function () {
+            return Promise.resolve(mkE.batch(c.smiles_canonical || c.smiles, targets, { signal: o.signal })).then(function (rows) {
+              var ch2 = Promise.resolve();
+              arr(rows).forEach(function (row) {
+                if (!row || !row.result) { if (row && row.reason !== 'no_record') mr.errors.push({ lipid: nm, pn: row.pn, claim: row.claim, reason: row.reason }); return; }
+                mr.checked++;
+                var res = row.result, rv = mkReviewed(row), ov = res.overall;
+                if (ov === 'not_covered') { mr.notCovered++; return; }
+                var why = 'Markush check: ' + nm + (ov === 'covered' ? ' covered by claim ' : ' unclear for claim ') + row.claim + (ov === 'covered' ? ' (code-verified, translation ' + (rv ? 'reviewed' : 'not reviewed') + ')' : ' (code check, ' + (arr(res.reasons)[0] ? str(res.reasons[0]).slice(0, 120) : 'no decision') + ')');
+                ch2 = ch2.then(function () {
+                  return Promise.resolve(data ? data.byPn(str(row.pn)) : -1).then(function (p) {
+                    var item = { lipid: nm, role: c.role, pn: row.pn, claim: row.claim, overall: ov, reviewed: rv, origin: row.origin || res.origin || null, p: p >= 0 ? p : null };
+                    if (ov === 'covered') { mr.covered.push(item); if (p >= 0) { add(p, 'markush', 12, why); acc[p].mkCovered = true; } }
+                    else { mr.unclear.push(item); if (p >= 0 && acc[p]) { var w = acc[p].whyBy.markush || (acc[p].whyBy.markush = []); if (w.indexOf(why) < 0 && w.length < 4) w.push(why); } }
+                  }, function () { });
+                });
+              });
+              return ch2;
+            }, function (e) { if (e && e.code === 'cancelled') throw e; mr.errors.push({ lipid: nm, reason: str(e && (e.code || e.message)) }); });
+          });
+        });
+        return ch;
+      }, function (e) { mr.errors.push({ reason: 'records not readable: ' + str(e && (e.code || e.message)) }); });
+    });
     // 6. family members in the target jurisdictions, then biblio
     return chain.then(function () {
       var list = Object.keys(acc).map(function (k) { return total(acc[k]); }).sort(function (a, b) { return (b.score - a.score) || (a.p - b.p); });
@@ -496,7 +536,7 @@
       // the must-hit set (seed tier 1, user marks) is always looked at, whatever its rank
       var take = list.slice(0, Math.max(600, max * 4)), inTake = {};
       take.forEach(function (c) { inTake[c.p] = 1; });
-      list.forEach(function (c) { if (!inTake[c.p] && (c.by.manual || c.by.seed >= 3 || c.exact)) take.push(c); });
+      list.forEach(function (c) { if (!inTake[c.p] && (c.by.manual || c.by.seed >= 3 || c.exact || c.mkCovered)) take.push(c); });
       return Promise.resolve(data.patents(take.map(function (c) { return c.p; }))).then(function (ps) {
         var out = [], pnOf = {};
         ps.forEach(function (pt) { if (pt) pnOf[pt.p] = pt.pn; });
@@ -507,10 +547,10 @@
           /* Markush signal: the user's own lipid is disclosed in the document and an independent claim carries a formula
              that exists only as an image. Such a generic claim never names the compound, so neither the text route nor
              "structure in the claims" can find it. */
-          if (c.exact && pt.hasImg) { c.by.markush = 9; (c.whyBy.markush = c.whyBy.markush || []).push('Possible generic formula claim: ' + c.exact + ' is disclosed in the document and an independent claim contains a formula that exists only as an image \u2013 formula test needed'); total(c); }
+          if (c.exact && pt.hasImg) { c.by.markush = Math.max(c.by.markush || 0, 9); (c.whyBy.markush = c.whyBy.markush || []).push('Possible generic formula claim: ' + c.exact + ' is disclosed in the document and an independent claim contains a formula that exists only as an image \u2013 formula test needed'); total(c); }
           var why = whyOf(c).map(function (w) { return c.fromFamily != null && pnOf[c.fromFamily] ? w.replace('index ' + c.fromFamily, pnOf[c.fromFamily]) : w; });
           if (pt.seedFam && c.by.seed) why = why.map(function (w) { return w.indexOf('Key family') === 0 ? w + ': ' + pt.seedFam + (pt.player ? ' (' + pt.player + ')' : '') : w; });
-          out.push({ p: c.p, pn: pt.pn, auth: pt.auth, kind: pt.kind, title: pt.title, assignee: pt.assignee, player: pt.player || null, status: pt.status || null, text: !!pt.text, family: pt.fam, routes: routesOf(c), score: Math.round(c.score * 100) / 100, why: why, must: !!(c.by.manual || c.by.seed >= 3) });
+          out.push({ p: c.p, pn: pt.pn, auth: pt.auth, kind: pt.kind, title: pt.title, assignee: pt.assignee, player: pt.player || null, status: pt.status || null, text: !!pt.text, family: pt.fam, routes: routesOf(c), score: Math.round(c.score * 100) / 100, why: why, must: !!(c.by.manual || c.by.seed >= 3 || c.mkCovered) });
         });
         return out;
       });
@@ -767,10 +807,212 @@
       patent_id: e.pn, family_id: e.family == null ? null : String(e.family), jurisdiction: e.right.jurisdiction, assignees: e.assignee ? String(e.assignee).split(/;\s*/) : [], title: str(e.title), is_granted: !!e.right.granted,
       status: e.statusText, status_snapshot_date: e.right.asof, filing_date: e.filing || null, expiry_estimate: e.right.expiry.date, relevanz: e.rel === 'A' ? 'A' : 'B', claims: claims,
       risiko_b: e.risk.b, risiko_e: e.risk.e, risiko_final: e.risk.final, modifikatoren: mods, ausnahmen: g0.ausnahmen || null,
-      umgehungsloesungen: arr(g0.umgehungsloesungen).slice(0, 6), offene_fragen: arr(g0.offene_fragen).concat(rt ? arr(rt.zu_klaeren) : []).slice(0, 10).map(function (s) { return str(s).slice(0, 300); }),
+      umgehungsloesungen: arr(g0.umgehungsloesungen).slice(0, 6), offene_fragen: (e.app && e.app.evidence ? arr(e.app.evidence.questions) : []).concat(arr(g0.offene_fragen)).concat(rt ? arr(rt.zu_klaeren) : []).slice(0, 10).map(function (s) { return str(s).slice(0, 300); }),
       zitat_pruefung_fehlgeschlagen: chart.app.quotes.failed > 0
     };
   }
+
+  // ------------------------------------------------------------------------------------------------ app-computed evidence
+  /* Evidence computed by code from stored data (FTO_METHOD "App-computed evidence"): numeric ranges of the claims
+     (LnpRanges, xdata "ranges") and Markush records (LnpMarkush, stored and curated mk-1 records). It may add flags and
+     questions and raise a risk floor; it never lowers a risk and never turns "unclear" into "not met". */
+  var EV_LIMITS = [
+    'Evidence computed by the app: deterministic code on stored data (range table of the claims, Markush records); no model output.',
+    'It can add flags and questions for counsel and raise a risk floor; it never lowers a risk.',
+    'Only claims with a stored or curated Markush record and ranges found by the pattern rules are covered; everything else is not checked here.',
+    'Pre-screening, not legal advice.'
+  ];
+  function pnKey(s) { return str(s).replace(/[\s,]/g, '').toUpperCase(); }
+  /* a Markush result counts as "translation reviewed" when the record is curated, typed by the user, or a Claude
+     translation that a person marked as reviewed */
+  function mkReviewed(row) {
+    var r = (row && row.result) || {}, origin = (row && row.origin) || r.origin || null;
+    return r.caveat !== 'translation_not_reviewed' && (origin !== 'claude' || r.reviewed === true);
+  }
+  function mkRecords(ctx) {
+    var mk = xeng('markush');
+    if (!mk || !mk.list) return Promise.resolve([]);
+    if (!ctx.mkList) ctx.mkList = Promise.resolve(mk.list({ curated: true })).then(function (rs) { return arr(rs).filter(function (r) { return r && r.pn && r.claim != null; }); }, function () { return []; });
+    return ctx.mkList;
+  }
+  /* what the evidence depends on, for the opinion id: Markush record ids + updated, range dataset build; null without engines */
+  function evidenceInputs(ctx) {
+    var mk = xeng('markush'), rg = xeng('ranges'), data = eng('data');
+    if (!mk && !rg) return Promise.resolve(null);
+    var out = {};
+    return mkRecords(ctx).then(function (rs) {
+      if (mk) out.markush = rs.map(function (r) { return [pnKey(r.pn) + '--c' + r.claim, str(r.updated), str(r.origin), !!r.reviewed]; }).sort();
+      if (!rg) return null;
+      return Promise.resolve(rg.init ? rg.init() : null).then(null, function () { return null; }).then(function () {
+        var x = data && data.manifest && data.manifest.x && data.manifest.x.ranges, inf = rg.info ? rg.info() : null;
+        out.ranges = { available: !!(rg.available && rg.available()), built: (x && x.built) || null, v: (inf && inf.v) || (x && x.v) || null, rows: (inf && inf.rows) || null };
+      });
+    }).then(function () { return out; });
+  }
+  function unitOk(a, b) {
+    a = str(a).toLowerCase().replace(/\s+/g, ''); b = str(b).toLowerCase().replace(/\s+/g, '');
+    return !a || !b || a === b || (a === '%' && (b === 'mol%' || b === 'wt%')) || (b === '%' && (a === 'mol%' || a === 'wt%'));
+  }
+  function rgDist(r, x) { if (r.lo != null && x < r.lo) return r.lo - x; if (r.hi != null && x > r.hi) return x - r.hi; return 0; }
+  /* ranges per claim of one publication: the statuses of LnpRanges.check for claims with at least one value inside;
+     for the other claims a value is "outside" when the claim states a range for that parameter (and component) */
+  function rangesFor(ctx, pn) {
+    var rg = xeng('ranges'), form = ctx.profile && ctx.profile._app && ctx.profile._app.form;
+    var base = { available: false, reason: null, built: null, values: [], notes: [], claims: [], limits: rg && rg.limits ? rg.limits() : [] };
+    return Promise.resolve(rg.init ? rg.init() : null).then(null, function () { return null; }).then(function () {
+      var data = eng('data'), x = data && data.manifest && data.manifest.x && data.manifest.x.ranges;
+      base.built = (x && x.built) || null;
+      if (!rg.available || !rg.available()) { base.reason = 'range data not available: ' + str(rg.reason ? rg.reason() : 'not in this build'); return base; }
+      base.available = true;
+      if (!form) { base.reason = 'the profile carries no form values (it was not built by normalizeProfile)'; return base; }
+      return Promise.all([rg.checkProfile(form, { pns: [pn], mode: 'any' }), rg.forPatent(pn)]).then(function (r) {
+        var res = r[0] || {}, pat = arr(r[1]), V = arr(res.values), by = {};
+        base.values = V.map(function (v) { return { param: v.param, label: v.paramLabel, comp: v.compLabel || null, value: v.value, unit: v.unit || '' }; });
+        base.notes = arr(res.skippedNotes).concat(arr(res.skipped).map(function (s) { return str(s.reason); }));
+        if (!V.length) { base.reason = 'the profile has no value that a claim range could be compared with'; return base; }
+        arr(res.all).concat(arr(res.partial)).forEach(function (it) { if (it.pn === pn) by[it.claim] = it; });
+        pat.forEach(function (pc) {
+          var it = by[pc.claim], vals = V.map(function (v, k) {
+            var st, row = null, cu = false;
+            if (it && it.values[k]) { st = it.values[k].status; row = it.values[k].row; cu = !!it.values[k].compUnknown; }
+            else {
+              var rows = [], pm = pc.params[v.param] || {};
+              Object.keys(pm).forEach(function (ck) { arr(pm[ck]).forEach(function (rw) { if (unitOk(rw.unit, v.unit)) rows.push(rw); }); });
+              if (v.comp != null && v.comp >= 0) {
+                var ex = rows.filter(function (rw) { return rw.comp === v.comp; });
+                if (ex.length) rows = ex; else { rows = rows.filter(function (rw) { return rw.comp < 0 || rw.compId === 'total'; }); cu = rows.length > 0; }
+              }
+              if (!rows.length) st = 'no_range_in_claim';
+              else { st = 'outside'; row = rows.slice().sort(function (a, b) { return rgDist(a, v.value) - rgDist(b, v.value); })[0]; }
+            }
+            st = st === 'no_range_in_claim' ? 'no_range' : st;
+            return { param: v.param, label: v.paramLabel, comp: v.compLabel || null, value: v.value, unit: v.unit || '', status: st, range: row ? row.text : null, fromClaim: row ? row.fromClaim : null, inherited: !!(row && row.inherited), approx: !!(row && row.approx), compUnknown: cu, row: row };
+          });
+          if (!vals.some(function (x) { return x.status !== 'no_range'; })) return;
+          // all_inside: every value for which the claim states a range is inside it (values without a range in the claim do not count)
+          var nIn = vals.filter(function (x) { return x.status === 'inside'; }).length, nOut = vals.filter(function (x) { return x.status === 'outside'; }).length;
+          base.claims.push({ claim: pc.claim, indep: !!pc.indep, deps: arr(pc.deps), verdict: nOut ? (nIn ? 'partial' : 'outside') : 'all_inside', values: vals });
+        });
+        // verbatim quotes of the deciding ranges (from the file or cut from the claim text), at most 60 per publication
+        var n = 0, ch = Promise.resolve();
+        base.claims.forEach(function (c) {
+          c.values.forEach(function (v) {
+            var rw = v.row; delete v.row;
+            if (!rw) return;
+            if (++n > 60) { v.quote = null; v.quoteSource = 'not loaded (more than 60 rows)'; return; }
+            ch = ch.then(function () {
+              return Promise.resolve(rg.quote ? rg.quote(rw) : null).then(function (q) {
+                v.quote = q && q.text ? str(q.text).slice(0, 240) : (rw.q || null); v.quoteVerified = q ? q.verified : null; v.quoteSource = q ? q.source : (rw.q ? 'file' : 'none');
+              }, function () { v.quote = rw.q || null; v.quoteVerified = null; v.quoteSource = rw.q ? 'file' : 'none'; });
+            });
+          });
+        });
+        return ch.then(function () { return base; });
+      });
+    }).then(null, function (e) { base.reason = 'range check failed: ' + str(e && (e.message || e.code)); base.claims = []; return base; });
+  }
+  function profileLipids(profile) {
+    var l = arr(profile && profile._app && profile._app.lipids).filter(function (c) { return c && c.ok && c.smiles; });
+    if (!l.length && profile && profile.ionizable_lipid && profile.ionizable_lipid.smiles && !arr(profile._app && profile._app.lipids).length) l = [{ role: 'ionizable', name: profile.ionizable_lipid.name_user, smiles: profile.ionizable_lipid.smiles }];
+    return l;
+  }
+  function markushFor(ctx, pn) {
+    var mk = xeng('markush'), out = { records: [], results: [], errors: [], limits: [] };
+    return mkRecords(ctx).then(function (rs) {
+      var mine = rs.filter(function (r) { return pnKey(r.pn) === pnKey(pn); }).sort(function (a, b) { return a.claim - b.claim; }), lipids = profileLipids(ctx.profile), ch = Promise.resolve();
+      out.records = mine.map(function (r) { return { claim: r.claim, origin: r.origin || null, reviewed: !!r.reviewed, updated: r.updated || null }; });
+      if (!mine.length || !lipids.length || !mk.batch) return out;
+      var targets = mine.map(function (r) { return { pn: r.pn, claim: r.claim }; });
+      lipids.forEach(function (c) {
+        var nm = str(c.name || c.ref_name || c.role);
+        ch = ch.then(function () {
+          return Promise.resolve(mk.batch(c.smiles_canonical || c.smiles, targets, { signal: ctx.signal })).then(function (rows) {
+            arr(rows).forEach(function (row) {
+              if (!row || !row.result) { out.errors.push({ lipid: nm, claim: row && row.claim, reason: row ? str(row.reason) : 'error' }); return; }
+              var r = row.result;
+              arr(r.limits).forEach(function (x) { if (out.limits.indexOf(str(x)) < 0) out.limits.push(str(x)); });
+              out.results.push({ claim: row.claim, lipid: nm, role: c.role || null, smiles: c.smiles_canonical || c.smiles, overall: r.overall, raw: r.raw || null, caveat: r.caveat || null, reviewed: mkReviewed(row), origin: row.origin || r.origin || null,
+                reasons: arr(r.reasons).slice(0, 6).map(str), coreMatched: !!(r.core && r.core.matched),
+                groups: arr(r.groups).filter(function (gr) { return gr && gr.verdict !== 'n/a'; }).map(function (gr) { return { name: str(gr.name), kind: gr.kind || null, verdict: gr.verdict, why: str(gr.why).slice(0, 300), fragment: gr.fragment == null ? null : str(gr.fragment).slice(0, 200), quote: str(gr.quote).slice(0, 400), quoteStatus: gr.quoteStatus || null }; }),
+                provisos: arr(r.provisos).map(function (pv) { return { quote: str(pv.quote).slice(0, 400), quoteStatus: pv.quoteStatus || null, matched: pv.matched, why: str(pv.why).slice(0, 200) }; }) });
+            });
+          }, function (e) { if (e && e.code === 'cancelled') throw e; out.errors.push({ lipid: nm, reason: str(e && (e.code || e.message)) }); });
+        });
+      });
+      return ch.then(function () { return out; });
+    });
+  }
+  /* computes e.app.evidence (nothing when neither engine is loaded); never rejects except on cancel */
+  function evidenceFor(ctx, e) {
+    var mk = xeng('markush'), rg = xeng('ranges');
+    if (!mk && !rg) return Promise.resolve(null);
+    var ev = { v: 1, created: nowDate().toISOString(), ranges: null, markush: null, applied: [], flags: [], questions: [], limits: EV_LIMITS.slice() }, p = Promise.resolve();
+    if (rg) p = p.then(function () { return rangesFor(ctx, e.pn).then(function (r) { ev.ranges = r; }); });
+    if (mk) p = p.then(function () { return markushFor(ctx, e.pn).then(function (r) { ev.markush = r; }, function (x) { if (x && x.code === 'cancelled') throw x; ev.markush = { records: [], results: [], errors: [{ reason: str(x && (x.code || x.message)) }], limits: [] }; }); });
+    return p.then(function () {
+      if (ev.ranges) arr(ev.ranges.limits).forEach(function (x) { if (ev.limits.indexOf(x) < 0) ev.limits.push(x); });
+      if (ev.markush) ev.markush.limits.forEach(function (x) { if (ev.limits.indexOf(x) < 0) ev.limits.push(x); });
+      (e.app = e.app || {}).evidence = ev;
+      return ev;
+    });
+  }
+  /* the rules, applied in code after the model chart (checkChart): floors only, flags, questions */
+  function applyEvidence(chart, e, cs) {
+    var ev = e.app && e.app.evidence;
+    /* independence of a claim: from the claim set; without one (no claim text) from the range table, else unknown (null) */
+    function indepOf(no) {
+      if (cs) { var src = cs.byNo[no]; return !!(src && src.indep); }
+      var rc = ev && ev.ranges ? arr(ev.ranges.claims).filter(function (c) { return c.claim === no; })[0] : null;
+      return rc ? !!rc.indep : null;
+    }
+    if (!ev || !chart || !chart.app) return;
+    var right = e.right || {}, risk = chart.app.risk, notes = chart.app.notes, flags = ev.flags, qs = ev.questions;
+    function flag(f) { if (flags.indexOf(f) < 0) flags.push(f); if (e.flags.indexOf(f) < 0) e.flags.push(f); }
+    function raise(to, why, rule) {
+      if (riskRank(to) > riskRank(risk)) { notes.push('Risk raised from ' + rl(risk) + ' to ' + rl(to) + ': ' + why); ev.applied.push({ rule: rule, from: risk, to: to, text: why }); risk = to; }
+      else ev.applied.push({ rule: rule, from: risk, to: risk, text: why + ' (risk already at or above ' + rl(to) + ')' });
+    }
+    if (ev.markush) arr(ev.markush.results).forEach(function (r) {
+      if (r.overall !== 'covered') return;
+      var indep = indepOf(r.claim);
+      var why = 'Markush check: ' + r.lipid + ' covered by claim ' + r.claim + ' (code-verified, translation ' + (r.reviewed ? 'reviewed' : 'not reviewed') + ')';
+      if (indep === null) why += '; whether claim ' + r.claim + ' is independent cannot be checked (no claim text in the corpus), floor applied as a precaution';
+      flag(r.reviewed ? 'markush_covered' : 'markush_covered_unreviewed');
+      if (indep === false) { ev.applied.push({ rule: 'markush_covered', from: risk, to: risk, text: why + '; claim ' + r.claim + ' is not an independent claim of the corpus text, no floor applied' }); return; }
+      if (right.dead) { ev.applied.push({ rule: 'markush_covered', from: risk, to: risk, text: why + '; the right is not in force, no floor applied' }); return; }
+      if (r.reviewed) raise(right.granted ? '5_sehr_hoch' : '3_mittel', why + (right.granted ? ': floor as for a literally met independent claim of a granted right' : ': floor as for a claim of an application that reads on the product'), 'markush_covered_reviewed');
+      else raise('3_mittel', why + ': floor "possible" (medium) until the translation is reviewed', 'markush_covered_unreviewed');
+      var cc = arr(chart.claims).filter(function (c) { return c.claim_no === r.claim; })[0];
+      if (cc && cc.app && cc.app.literal === 'wortsinngemaess_nicht_erfuellt') { flag('markush_contradicts_chart'); qs.push('Claim ' + r.claim + ': the claim chart finds a literal miss, but the code-verified Markush check finds ' + r.lipid + ' covered by the formula - check the chart against the formula.'); }
+    });
+    if (ev.ranges) {
+      var outs = [], alls = [];
+      arr(ev.ranges.claims).forEach(function (c) {
+        var src = cs && cs.byNo[c.claim], indep = src ? !!src.indep : !!c.indep;
+        if (!indep) return;
+        if (c.verdict === 'all_inside') alls.push(c.claim);
+        c.values.forEach(function (v) { if (v.status === 'outside') outs.push({ c: c, v: v }); });
+      });
+      if (outs.length) {
+        flag('range_outside');
+        outs.forEach(function (x) { qs.push('Claim ' + x.c.claim + ': product value ' + x.v.value + (x.v.unit ? ' ' + x.v.unit : '') + ' (' + x.v.label + (x.v.comp ? ', ' + x.v.comp : '') + ') is outside the claimed range ' + str(x.v.range) + (x.v.quote ? ' ("' + x.v.quote + '")' : '') + '. Not used to lower the risk: "about", the basis and method of the value and equivalence are open.'); });
+        ev.applied.push({ rule: 'range_outside', from: risk, to: risk, text: outs.length + ' product value(s) outside a range of an independent claim: flag and question for counsel, risk not lowered' });
+      }
+      if (alls.length) { flag('ranges_all_inside'); ev.applied.push({ rule: 'ranges_all_inside', from: risk, to: risk, text: 'all compared product values inside the ranges of independent claim(s) ' + alls.join(', ') + ' (other features decide; no risk change)' }); }
+    }
+    chart.app.risk = risk;
+  }
+  /* analysis failed or no claim text: risk "cannot be assessed", then the same code-verified floors without a chart */
+  function failFloor(e, cs) {
+    e.risk = { b: 'nicht_beurteilbar', e: null, final: 'nicht_beurteilbar' };
+    var pseudo = { claims: [], app: { risk: e.risk.final, notes: [] } };
+    applyEvidence(pseudo, e, cs && arr(cs.all).length ? cs : null);
+    e.risk.b = e.risk.final = pseudo.app.risk;
+    return e;
+  }
+  /* code-verified "covered" Markush results of an entry (from e.app.evidence) */
+  function mkCovOf(e) { var ev = e.app && e.app.evidence; return arr(ev && ev.markush && ev.markush.results).filter(function (r) { return r.overall === 'covered'; }); }
+  function mkCovText(list) { return list.map(function (r) { return r.lipid + ' covered by claim ' + r.claim + ' (code-verified, translation ' + (r.reviewed ? 'reviewed' : 'not reviewed') + ')'; }).filter(function (t, i, l) { return l.indexOf(t) === i; }).join('; '); }
 
   // ------------------------------------------------------------------------------------------------ the chain
   function fatal(e) { var ai = eng('ai'); return ai && ai.isFatal ? ai.isFatal(e) : !!(e && (e.code === 'cancelled' || e.code === 'rate_limited' || e.code === 'not_granted')); }
@@ -848,9 +1090,9 @@
   function analysePatent(ctx, e) {
     var P = eng('prompts'), ai = eng('ai'), product = productForModel(ctx.profile, false), depth = ctx.depthCfg;
     e.flags = e.flags || [];
-    return Promise.all([claimSet(e.p, e), Promise.resolve(eng('search').defs ? eng('search').defs(e.p) : []).then(null, function () { return []; }), ai.limits()]).then(function (r) {
+    return Promise.all([claimSet(e.p, e), Promise.resolve(eng('search').defs ? eng('search').defs(e.p) : []).then(null, function () { return []; }), ai.limits(), e.app && e.app.evidence ? e.app.evidence : evidenceFor(ctx, e)]).then(function (r) {
       var cs = r[0], defs = arr(r[1]), lim = r[2];
-      if (!cs || !cs.indep.length) { e.failed = { step: 'B', code: 'no_claims', message: ctx.lang === 'de' ? 'kein Text eines unabh\u00e4ngigen Anspruchs im Korpus' : 'no independent claim text in the corpus' }; return e; }
+      if (!cs || !cs.indep.length) { e.failed = { step: 'B', code: 'no_claims', message: ctx.lang === 'de' ? 'kein Text eines unabh\u00e4ngigen Anspruchs im Korpus' : 'no independent claim text in the corpus' }; return failFloor(e, cs); }
       e.claimsLang = cs.lang;
       return imagesFor(e.p, e, cs).then(function (imgs) {
         // B: one call, or several when the independent claims are very long
@@ -877,9 +1119,10 @@
           });
         });
         return chain.then(function () {
-          if (failed || !charts.length) { e.failed = { step: 'B', code: failed ? failed.code : 'error', message: failed ? failed.message : 'no chart' }; return e; }
+          if (failed || !charts.length) { e.failed = { step: 'B', code: failed ? failed.code : 'error', message: failed ? failed.message : 'no chart' }; return failFloor(e, cs); }
           var chart = mergeCharts(charts);
           checkChart(chart, cs, defs, { formulaMissing: missing, cutClaims: cutClaims, right: e.right });
+          applyEvidence(chart, e, cs);
           chart.app.images_sent = imgSent;
           e.chart = chart; e.risk = { b: chart.app.risk, e: null, final: chart.app.risk };
           e.literal = { b: chart.app.literal_worst, e: null, final: chart.app.literal_worst, claim: chart.app.claim_worst };
@@ -990,10 +1233,10 @@
     return Promise.resolve(given ? given : candidates(profile, { markets: markets, signal: o.signal, onEvent: emit, semantic: o.semantic })).then(function (list) {
       if (!record && list && list.record) record = list.record;
       return normalizeCandidates(list);
-    }).then(function (cands) {
+    }).then(function (cands) { return evidenceInputs(ctx).then(function (x) { ctx.evIn = x; return cands; }); }).then(function (cands) {
       var snap = (data.manifest && data.manifest.snapshots) || {}, pclean = clone(profile);
       if (pclean._app) delete pclean._app.created;
-      var inputHash = hash(JSON.stringify([pclean, depth, lang, markets, cands.map(function (c) { return c.p; }), snap.corpus || snap]));
+      var inputHash = hash(JSON.stringify([pclean, depth, lang, markets, cands.map(function (c) { return c.p; }), snap.corpus || snap].concat(ctx.evIn ? [ctx.evIn] : [])));
       ctx.id = o.id || ('op' + inputHash);
       ctx.saveHead = function (patch) {
         if (!ctx.persist) return Promise.resolve();
@@ -1022,7 +1265,12 @@
   function execute(ctx, cands, record) {
     var data = eng('data'), ai = eng('ai'), P = eng('prompts'), emit = ctx.emit, lang = ctx.lang, de = lang === 'de';
     var entries = [], notCharted = [], triageCounts = { A: 0, B: 0, C: 0 }, aiOk = false, snap = (data.manifest && data.manifest.snapshots) || {};
-    function skip(e, reason, text) { notCharted.push({ p: e.p, pn: e.pn, auth: e.auth, kind: e.kind, title: e.title, assignee: e.assignee, reason: reason, text: text, rel: e.rel, relWhy: e.relWhy, status: e.statusText, expiry: e.right.expiry.date, expiryBasis: e.right.expiry.basis, score: e.score, routes: e.routes }); }
+    function skip(e, reason, text) {
+      var mc = mkCovOf(e), n = { p: e.p, pn: e.pn, auth: e.auth, kind: e.kind, title: e.title, assignee: e.assignee, reason: reason, text: text, rel: e.rel, relWhy: e.relWhy, status: e.statusText, expiry: e.right.expiry.date, expiryBasis: e.right.expiry.basis, score: e.score, routes: e.routes };
+      if (mc.length) { n.text = str(text) + (de ? ' | Code-Ergebnis (Markush): ' : ' | Code result (Markush): ') + mkCovText(mc); n.markushCovered = mc.map(function (r) { return { claim: r.claim, lipid: r.lipid, reviewed: r.reviewed }; }); }
+      if (e.app && e.app.evidence) n.evidence = e.app.evidence;
+      notCharted.push(n);
+    }
     emit({ type: 'stage', stage: 'status', done: 0, total: cands.length });
     return Promise.resolve(ai ? ai.init() : false).then(function (ok) {
       aiOk = !!ok;
@@ -1038,13 +1286,26 @@
       return chain;
     }).then(function () {
       emit({ type: 'stage', stage: 'status', done: entries.length, total: entries.length });
+      // code-verified Markush evidence first (no model): a right that code finds covered is never dropped by the
+      // text gate, the model's triage or the depth cut-off, and the result is kept for rights that are not analysed
+      return mkRecords(ctx).then(function (rs) {
+        var has = {}, ch = Promise.resolve();
+        rs.forEach(function (r) { has[pnKey(r.pn)] = 1; });
+        entries.forEach(function (e) {
+          if (e.auth === 'WO' || !has[pnKey(e.pn)]) return;
+          ch = ch.then(function () { return evidenceFor(ctx, e).then(function () { e.mkCov = mkCovOf(e); }); });
+        });
+        return ch;
+      });
+    }).then(function () {
+      function mkc(e) { return !!(e.mkCov && e.mkCov.length && !e.right.dead); }
       // jurisdiction and status gate
       var live = [];
       entries.forEach(function (e) {
         if (e.auth === 'WO') return skip(e, 'wo', de ? 'WO-Ver\u00f6ffentlichung: nicht durchsetzbar; ma\u00dfgeblich sind die EP-/US-Familienmitglieder' : 'WO publication: not enforceable; the EP/US family members count');
         if (!e.right.markets.length) return skip(e, 'market', de ? 'kein Zielmarkt f\u00fcr dieses Schutzrecht gew\u00e4hlt' : 'no target market selected for this right');
         if (e.right.dead && !ctx.depthCfg.dead) return skip(e, 'dead', (de ? 'Rechtsstand: ' : 'Legal status: ') + e.statusText + (e.right.expiry.date ? (de ? '; Ablauf (Sch\u00e4tzung) ' : '; expiry (estimate) ') + e.right.expiry.date : '') + (de ? '; ohne Merkmalsanalyse (nur in der Tiefe \u201edeep\u201c)' : '; no claim chart (only at depth "deep")'));
-        if (!e.hasText) return skip(e, e.textCut ? 'text_cut' : 'no_text', e.textCut ? (de ? 'Anspruchstext wegen des Gr\u00f6\u00dfenbudgets nicht im Datenpaket' : 'claim text not in the data package (size budget)') : (de ? 'kein Anspruchstext im Korpus (nur Bibliografie); ggf. Familienmitglied pr\u00fcfen' : 'no claim text in the corpus (biblio only); check a family member'));
+        if (!e.hasText && !mkc(e)) return skip(e, e.textCut ? 'text_cut' : 'no_text', e.textCut ? (de ? 'Anspruchstext wegen des Gr\u00f6\u00dfenbudgets nicht im Datenpaket' : 'claim text not in the data package (size budget)') : (de ? 'kein Anspruchstext im Korpus (nur Bibliografie); ggf. Familienmitglied pr\u00fcfen' : 'no claim text in the corpus (biblio only); check a family member'));
         live.push(e);
       });
       if (!aiOk) {
@@ -1078,11 +1339,21 @@
       });
       return chain.then(function () {
         emit({ type: 'stage', stage: 'triage', done: batches.length, total: batches.length });
-        // order of analysis: rights in force before dead ones, A before B, granted rights before applications, then score
-        var order = live.filter(function (e) { return e.rel !== 'C'; }).sort(function (a, b) { return ((a.right.dead ? 1 : 0) - (b.right.dead ? 1 : 0)) || ((a.rel === 'A' ? 0 : 1) - (b.rel === 'A' ? 0 : 1)) || ((a.right.granted ? 0 : 1) - (b.right.granted ? 0 : 1)) || (b.score - a.score) || (a.p - b.p); });
+        // a code-verified Markush hit overrides triage C (the model's verdict is kept in relModel and relWhy)
+        live.forEach(function (e) {
+          if (!mkc(e) || e.rel !== 'C') return;
+          triageCounts.C--; triageCounts.B = (triageCounts.B || 0) + 1;
+          e.relModel = 'C'; e.rel = 'B';
+          e.relWhy = (de ? 'Triage C durch Code-Ergebnis \u00fcberstimmt (' : 'Triage C overridden by the code result (') + mkCovText(e.mkCov) + (de ? '); Begr\u00fcndung des Modells: ' : '); model reason: ') + str(e.relWhy);
+          if (e.flags.indexOf('triage_c_ueberstimmt') < 0) e.flags.push('triage_c_ueberstimmt');
+        });
+        // order of analysis: rights in force before dead ones, code-verified Markush hits first, A before B, granted rights before applications, then score
+        var order = live.filter(function (e) { return e.rel !== 'C'; }).sort(function (a, b) { return ((a.right.dead ? 1 : 0) - (b.right.dead ? 1 : 0)) || ((mkc(a) ? 0 : 1) - (mkc(b) ? 0 : 1)) || ((a.rel === 'A' ? 0 : 1) - (b.rel === 'A' ? 0 : 1)) || ((a.right.granted ? 0 : 1) - (b.right.granted ? 0 : 1)) || (b.score - a.score) || (a.p - b.p); });
         live.filter(function (e) { return e.rel === 'C'; }).forEach(function (e) { skip(e, 'triage_c', (de ? 'Triage C: ' : 'Triage C: ') + e.relWhy); });
-        order.slice(ctx.depthCfg.n).forEach(function (e) { skip(e, 'depth_limit', (de ? 'Triage ' + e.rel + ', aber au\u00dferhalb der gew\u00e4hlten Tiefe (' + ctx.depth + ': ' + ctx.depthCfg.n + ' Schutzrechte) \u2013 NICHT analysiert' : 'Triage ' + e.rel + ' but outside the selected depth (' + ctx.depth + ': ' + ctx.depthCfg.n + ' rights) - NOT analysed') + (e.relWhy ? ': ' + e.relWhy : '')); });
-        return order.slice(0, ctx.depthCfg.n);
+        var cut = order.filter(function (e, k) { return k >= ctx.depthCfg.n && !mkc(e); });
+        cut.forEach(function (e) { skip(e, 'depth_limit', (de ? 'Triage ' + e.rel + ', aber au\u00dferhalb der gew\u00e4hlten Tiefe (' + ctx.depth + ': ' + ctx.depthCfg.n + ' Schutzrechte) \u2013 NICHT analysiert' : 'Triage ' + e.rel + ' but outside the selected depth (' + ctx.depth + ': ' + ctx.depthCfg.n + ' rights) - NOT analysed') + (e.relWhy ? ': ' + e.relWhy : '')); });
+        // code-verified Markush hits are analysed even beyond the depth limit
+        return order.filter(function (e, k) { return k < ctx.depthCfg.n || mkc(e); });
       });
     }).then(function (todo) {
       var chain = Promise.resolve(), done = [];
@@ -1090,7 +1361,7 @@
         chain = chain.then(function () {
           emit({ type: 'stage', stage: 'patent', done: i, total: todo.length, pn: e.pn });
           return analysePatent(ctx, e).then(function () {
-            if (e.failed) { e.risk = { b: 'nicht_beurteilbar', e: null, final: 'nicht_beurteilbar' }; e.flags.push('analyse_fehlgeschlagen'); }
+            if (e.failed) { if (!e.risk) e.risk = { b: 'nicht_beurteilbar', e: null, final: 'nicht_beurteilbar' }; e.flags.push('analyse_fehlgeschlagen'); }
             if (e.right.dead && e.risk) { e.risk.chart = e.risk.final; e.risk.final = '1_sehr_gering'; e.flags.push('rechtsstand_' + e.right.deadReason); }
             done.push(e);
           });
@@ -1137,8 +1408,8 @@
             return { p: e.p, pn: e.pn, auth: e.auth, kind: e.kind, title: e.title, assignee: e.assignee, player: e.player, family: e.family, filing: e.filing, priority: e.priority, routes: e.routes, score: e.score, why: e.why,
               jurisdiction: e.right.jurisdiction, markets: e.right.markets, rel: e.rel, relWhy: e.relWhy, status: e.statusText, right: e.right, statusDetail: e.statusDetail, expiry: e.right.expiry, claimsLang: e.claimsLang || null,
               risk: e.risk, literal: e.literal || null, flags: e.flags, failed: e.failed || null, chart: e.chart || null, dependent: e.dependent || null, redteam: e.redteam || null, digest: e.digest || null,
-              dependentFailed: e.dependentFailed || null, redteamFailed: e.redteamFailed || null };
-          }),
+              dependentFailed: e.dependentFailed || null, redteamFailed: e.redteamFailed || null, app: e.app };
+          }).map(function (x) { if (!x.app) delete x.app; return x; }),
           notCharted: notCharted, overall: overall, synthesis: s && !s.failed ? s : null, synthesisFailed: s && s.failed ? s.failed : null,
           matrix: done.map(function (e) { return { pn: e.pn, jurisdiction: e.right.jurisdiction, markets: e.right.markets, rel: e.rel, risk: e.risk.final, riskB: e.risk.b, riskE: e.risk.e, literal: e.literal ? e.literal.final : null, status: e.statusText, expiry: e.right.expiry.date, expiryBasis: e.right.expiry.basis, dead: e.right.dead, pending: e.right.pending, flags: e.flags }; }),
           warnings: ctx.warnings.slice(), usage: usage ? { calls: usage.calls, bytesIn: usage.bytesIn, bytesOut: usage.bytesOut, failed: usage.failed, repairs: usage.repairs } : null, run: { calls: ctx.calls, resumedSteps: ctx.resumed }
@@ -1169,7 +1440,7 @@
       if (!e.right.markets.length) e.right.markets = e.auth === 'US' ? ['US'] : ['DE', 'EP'];
       e.rel = 'A';
       return analysePatent(ctx, e).then(function () {
-        if (e.failed) { e.risk = { b: 'nicht_beurteilbar', e: null, final: 'nicht_beurteilbar' }; e.flags.push('analyse_fehlgeschlagen'); }
+        if (e.failed) { if (!e.risk) e.risk = { b: 'nicht_beurteilbar', e: null, final: 'nicht_beurteilbar' }; e.flags.push('analyse_fehlgeschlagen'); }
         if (e.right.dead && e.risk) { e.risk.chart = e.risk.final; e.risk.final = '1_sehr_gering'; e.flags.push('rechtsstand_' + e.right.deadReason); }
         e.status = e.statusText; e.expiry = e.right.expiry; e.jurisdiction = e.right.jurisdiction; e.markets = e.right.markets; e.warnings = ctx.warnings;
         e.limits = eng('prompts').limits(lang, e.right.asof);
@@ -1213,7 +1484,7 @@
     configure: configure, normalizeProfile: normalizeProfile, candidates: candidates, run: run, resume: resume, chartOne: chartOne, render: render, list: list, load: load, remove: remove,
     // deterministic parts, exported for the UI and the tests
     verifyQuote: verifyQuote, literalFromVerdicts: literalFromVerdicts, maxRisk: maxRisk, riskRank: riskRank, worseLiteral: worseLiteral, rightOf: rightOf, statusLabel: statusLabel, checkChart: checkChart, checkDependent: checkDependent,
-    applyRedTeam: applyRedTeam, buildDigest: buildDigest, overallRisk: overallRisk, textQueries: textQueries, wordingIssues: wordingIssues, hash: hash, DEPTH: DEPTH, RISK_RANK: RISK_RANK
+    applyRedTeam: applyRedTeam, buildDigest: buildDigest, applyEvidence: applyEvidence, evidenceInputs: function (o) { return evidenceInputs(o || {}); }, overallRisk: overallRisk, textQueries: textQueries, wordingIssues: wordingIssues, hash: hash, DEPTH: DEPTH, RISK_RANK: RISK_RANK
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   g.LnpFto = api;

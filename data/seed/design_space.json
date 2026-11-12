@@ -1,8 +1,8 @@
 {
   "v": "ds-1",
-  "note": "Vocabulary of the design-around assistant (web/engine/x-designaround.js, LnpDesign). The engine code is general; every class of linker, head group and every step size lives here. Linker SMILES are written left to right with unnumbered '*' for the two ends, exactly like Markush linker alternatives (docs/MARKUSH.md); head groups have one '*' for the attachment. The engine tries each listed linker in both directions. A class that the claim lists for the variable is never proposed for that variable. Edit this file to change the idea space; no code change is needed.",
+  "note": "Vocabulary of the design-around assistant (web/engine/x-designaround.js, LnpDesign). The engine code is general; every class of linker, head group and every step size lives here. Linker SMILES are written left to right with unnumbered '*' for the two ends, exactly like Markush linker alternatives (docs/MARKUSH.md); head groups have one '*' for the attachment. The engine tries each listed linker in both directions (the new fragment's first end on either neighbour atom); a linker or head group is only swapped when it sits between plain (non-carbonyl) carbons. A class that the claim lists for the variable is never proposed for that variable. Edit this file to change the idea space; no code change is needed.",
   "chain": {
-    "note": "Carbon counts and repeat counts are moved just outside each claimed range: max + 1 ... max + aboveMax and min - 1 ... min - belowMin (never below minCarbons for a group, never below 0 for a repeat).",
+    "note": "Carbon counts of a substituent group are moved just outside each claimed range: max + 1 ... max + aboveMax and min - 1 ... min - belowMin (never below minCarbons). Repeat-unit counts are not edited yet; maxRepeat is reserved for that move.",
     "aboveMax": 2,
     "belowMin": 1,
     "minCarbons": 1,
@@ -10,7 +10,7 @@
     "maxRepeat": 120
   },
   "unsaturation": {
-    "note": "C=C count moved outside a dbl range by one step: a C=C is put near the middle of the longest carbon path of the group (cis/trans not set), or one C=C is reduced to a single bond.",
+    "note": "C=C count moved one step outside a dbl range: above dblMax (an alkyl group counts as dblMax 0) C=C are put on single C-C bonds of the longest carbon path, from the free end inwards (cis/trans not set); below dblMin the C=C nearest the free end are reduced to single bonds.",
     "step": 1
   },
   "branching": {

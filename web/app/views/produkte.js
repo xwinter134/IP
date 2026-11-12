@@ -185,11 +185,14 @@
         St.remove('profiles', id).then(function () { profiles = profiles.filter(function (x) { return x.id !== id; }); U.toast('Profile deleted'); R.go('#produkte'); }, function (e) { U.toast('Deleting failed: ' + U.errText(e), { error: true }); });
       } }, 'Delete');
       function fto() { var go = function () { R.go({ view: 'fto', params: { p: cur.id } }); }; if (draft) { touch(); saveSoon.cancel(); save().then(go); } else { saveSoon.cancel(); save().then(go); } }
+      // links to the range check and the expiry timeline of this profile, only when those views are part of the build
+      function toolLink(view, label, params) { return !draft && App.views && App.views[view] ? h('button.btn.sm', { type: 'button', onclick: function () { saveSoon.cancel(); save().then(function () { if (App.views[view]) R.go({ view: view, params: params }); }); } }, label) : null; }
       U.set(edBox,
         h('div.k-ped-head', null, h('div.k-ped-title', null, inp(function () { return p.name; }, function (v) { p.name = v; }, { id: 'pf-name', aria: 'Profile name', max: 160 }), headState),
           h('div.k-row', null, saveState, h('button.btn.primary', { type: 'button', onclick: fto }, U.icon('fto'), 'Check FTO'),
             h('button.btn.sm', { type: 'button', onclick: function () { U.saveFile('lnp-profile-' + (p.name || 'profile').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) + '.json', JSON.stringify({ kind: 'lnp-profile', v: 1, profile: clean(p) }, null, 1), 'application/json'); } }, U.icon('download'), 'Export'),
             h('button.btn.sm', { type: 'button', onclick: function () { var c = clean(p); c.name = c.name.replace(/^Example: /, '') + ' (copy)'; c.example = false; open(c, true); touch(); } }, U.icon('copy'), 'Duplicate'),
+            toolLink('ranges', 'Range check', { p: p.id }), toolLink('expiry', 'Expiry timeline', { s: 'profile', p: p.id }),
             draft ? null : del)),
         K.sec('Formulation', 'Lipids and proportions', h('button.btn.sm', { type: 'button', onclick: function () { if (p.lipids.length < 12) { p.lipids.push({ role: 'other', name: '', smiles: '', molPct: null }); touch(); drawLipids(); } } }, 'Add lipid'),
           lipBox, h('div.k-row.k-between', null, sumBox, h('div.k-inline', null,

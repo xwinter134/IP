@@ -22,7 +22,10 @@
        +1  a highly similar compound (count-fingerprint Tanimoto >= risk.simHigh) sits in the CLAIMS of a live patent
        +1  a cached/curated Markush record is "unclear" on a live granted claim (an unknown raises the score)
        +1  the variant sits in a crowded space (>= risk.crowd distinct live publications disclose it or a close analogue)
-     risk === null only when the variant could not be assessed at all (engine missing); it ranks as most risky.
+       +1  a check did not run (search engine missing or failed, Markush batch failed, or a record could not be checked)
+       +1  the variant is not verified outside its source claim (the checker reads it as unclear)
+     Markush verdicts are kept per (publication, claim); a covered claim counts even when another claim of the same
+     publication is not covered. risk === null when no check ran at all; it then ranks as most risky ("not assessed").
 
    API (every data-touching function returns a promise):
      configure({chem, markush, ranges, data, store, ai, designSpace, loader, now}) -> api
@@ -30,7 +33,8 @@
      space()                                   -> the loaded design_space.json (or the embedded default)
      fromMarkush(molecule, record, checkResult?) -> start  (which variables were met and their rule boundaries)
      variants(start, {max=60})                 -> [variant] (code-generated, each tagged with its move, deduped, capped)
-     fromRanges(profileForm, rangeResult)      -> [formulationVariant] (values moved just outside each claimed range)
+     fromRanges(profileForm, rangeResult, {ranges}) -> {variants, dropped, rechecked, limits} (values moved outside a
+                                                 claimed range, each re-checked with LnpRanges.check across the corpus)
      assess(variant, {markushRecords='all-cached', signal, onProgress}) -> variant with .assessment
      rank(assessed[])                          -> sorted (remaining risk desc, then closest to the start molecule first)
      explain(start, ranked, {signal})          -> {text, skipped, reason} (Claude, tier 'explain'; commentary only)
@@ -403,6 +407,40 @@
   }
 
   // ------------------------------------------------------------------------------------------------ variants
+  /* Every single move is recorded as a SITE in atom indices of the starting molecule:
+       {ops: [{op: 'chainAdd', at, n} | {op: 'addC', at} | {op: 'bondOrder', a, b, order} | {op: 'graft', frag, anchors}],
+        del: [atoms], touch: [atoms], var}
+     applySites() applies one or several sites to one fresh copy of the start (all additions first, deletions last, so the
+     start's indices stay valid). A combination is the two labelled single moves applied at exactly their own sites, and
+     only when the two sites touch different atoms of different variables. */
+  var TYPE_ORDER = ['chain', 'unsaturation', 'branching', 'linker', 'head', 'combination'];
+  function applySites(baseMol, sites) {
+    var mol = editable(baseMol), del = [], i, k;
+    for (i = 0; i < sites.length; i++) {
+      var s = sites[i]; if (!s) return null;
+      var ops = arr(s.ops);
+      for (k = 0; k < ops.length; k++) {
+        var op = ops[k];
+        if (op.op === 'chainAdd') { var last = op.at; for (var c = 0; c < op.n; c++) last = addCarbon(mol, last); }
+        else if (op.op === 'addC') addCarbon(mol, op.at);
+        else if (op.op === 'bondOrder') { var bi = bondIndex(mol, op.a, op.b); if (bi < 0) return null; mol.setBondOrder(bi, op.order); }
+        else if (op.op === 'graft') { if (!graftFrag(mol, op.frag, op.anchors)) return null; }
+        else return null;
+      }
+      arr(s.del).forEach(function (a) { if (del.indexOf(a) < 0) del.push(a); });
+    }
+    if (del.length) delAtoms(mol, del);
+    return mol;
+  }
+  /* a clean anchor for a linker or head swap: a carbon that is not itself a carbonyl / imine / thiocarbonyl carbon, so
+     an "ether" O inside an ester or an "ester" inside a carbonate is not mistaken for a group of its own */
+  function plainCarbon(mg, a) {
+    if (mg.z[a] !== 6 || mg.ar[a]) return false;
+    return !mg.adj[a].some(function (e) { return e[1] === 2 && mg.z[e[0]] !== 6; });
+  }
+  function hasMultiple(mg, a) { return mg.adj[a].some(function (e) { return e[1] >= 2; }); }
+  function bondOrderIn(mg, a, b) { var l = mg.adj[a]; for (var j = 0; j < l.length; j++) if (l[j][0] === b) return l[j][1]; return 0; }
+
   function variants(start, o) {
     o = o || {};
     var M = eng('markush');
@@ -413,100 +451,120 @@
       if (!baseMol) throw mkErr('molecule', 'the starting molecule could not be parsed');
       var baseIdc = baseMol.getIDCode();
       var loc = start.coreSmiles ? locate(start.coreSmiles, baseMol) : null;
-      var cands = [], invalid = 0, seen = {}; seen[baseIdc] = 1;
-      function emit(mol, move) {
-        if (cands.length >= max * 4) return; // generate a surplus; we cap after verification
-        var san = sanitize(mol);
+      var cands = [], invalid = 0, seen = {}, perType = {};
+      seen[baseIdc] = 1;
+      var typeCap = max * 2, totalCap = max * 8;
+      function emit(move, site) {
+        var t = move.type;
+        if ((perType[t] || 0) >= typeCap || cands.length >= totalCap) return;
+        var mol = applySites(baseMol, [site]);
+        var san = mol ? sanitize(mol) : null;
         if (!san) { invalid++; return; }
         if (seen[san.idcode]) return;
-        seen[san.idcode] = 1;
-        cands.push({ smiles: san.smiles, idcode: san.idcode, move: move });
+        seen[san.idcode] = 1; perType[t] = (perType[t] || 0) + 1;
+        cands.push({ smiles: san.smiles, idcode: san.idcode, move: move, _site: site });
       }
-      // ---- single moves on substituent carbon-range vars (chain length, unsaturation, branching) ----
-      var singles = [];
       start.met.forEach(function (mv) {
         if (mv.verdict !== 'met') return;
-        if (mv.kind === 'substituent' && mv.boundary && CARBON_TYPES[mv.boundary.type]) buildChainMoves(mv, singles);
+        if (mv.kind === 'substituent' && mv.boundary && CARBON_TYPES[mv.boundary.type]) chainMoves(start, loc, mv, sp, emit);
       });
-      // apply singles
-      singles.forEach(function (fn) { if (cands.length < max * 4) fn(); });
-      // ---- linker swaps ----
-      buildLinkerSwaps(start, baseMol, sp, emit);
-      // ---- head swaps ----
-      buildHeadSwaps(start, baseMol, sp, emit);
-
-      function buildChainMoves(mv, sink) {
-        if (!loc) return;
-        // the substituent attach id = first attach of the var
-        var cv = varOf(start, mv.name); if (!cv) return;
-        var attach = arr(cv.attach)[0]; var slot = loc.byMap[attach]; if (!slot || !slot.ext.length) return;
-        var startAtom = slot.ext[0];
-        var b = mv.boundary, step = sp.chain, un = sp.unsaturation;
-        sink.push(function () {
-          var frag = fragmentAtoms(loc.mg, startAtom, loc.coreImg);
-          var chain = carbonChain(loc.mg, startAtom, frag);
-          var nC = frag.filter(function (a) { return loc.mg.z[a] === 6; }).length; // carbon count of the group
-          var ruleC = 'C' + (b.cMin != null ? b.cMin : '') + (b.cMax != null ? '-C' + b.cMax : '+');
-          // chain length longer: cMax+1 ... cMax+aboveMax (add carbons at the free terminal carbon of the longest chain)
-          if (isNum(b.cMax) && chain.length) {
-            for (var d = 1; d <= (step.aboveMax || 2); d++) {
-              var target = b.cMax + d; if (target > step.maxCarbons || target <= nC) continue;
-              var mol = editable(baseMol), last = chain[chain.length - 1];
-              for (var k = 0; k < target - nC; k++) last = addCarbon(mol, last);
-              emit(mol, { type: 'chain', dir: 'longer', var: mv.name, from: nC, to: target, rule: ruleC });
-            }
-          }
-          // chain length shorter: cMin-1 (remove carbons from the free end of the longest chain)
-          if (isNum(b.cMin)) {
-            var to = b.cMin - (step.belowMin || 1), rm = nC - to;
-            if (to >= 1 && rm >= 1 && chain.length >= rm) {
-              var mol2 = editable(baseMol); delAtoms(mol2, chain.slice(chain.length - rm));
-              emit(mol2, { type: 'chain', dir: 'shorter', var: mv.name, from: nC, to: to, rule: ruleC });
-            }
-          }
-          // unsaturation: introduce a C=C where the rule caps the count (alkyl dblMax 0, or alkenyl with a dblMax)
-          if (isNum(b.dblMax) && chain.length >= 3) {
-            var mol3 = editable(baseMol), bi = bondIndex(mol3, chain[chain.length - 2], chain[chain.length - 3]);
-            if (bi >= 0 && mol3.getBondOrder(bi) === 1) { mol3.setBondOrder(bi, 2); emit(mol3, { type: 'unsaturation', dir: 'more', var: mv.name, rule: 'at most ' + b.dblMax + ' C=C' }); }
-          }
-          // branching flip where the rule fixes branched true/false (keep the carbon count)
-          if (b.branched === false && chain.length >= 3) {
-            var mol4 = editable(baseMol); addCarbon(mol4, chain[1]); delAtoms(mol4, [chain[chain.length - 1]]);
-            emit(mol4, { type: 'branching', dir: 'branched', var: mv.name, rule: 'linear required' });
-          } else if (b.branched === true && chain.length >= 2) {
-            var mol5 = editable(baseMol); addCarbon(mol5, chain[chain.length - 1]);
-            emit(mol5, { type: 'branching', dir: 'linear', var: mv.name, rule: 'branched required' });
-          }
-        });
-      }
-      return finalizeVariants(cands, baseMol, start, sp, max, invalid, M, o);
+      linkerMoves(start, baseMol, sp, emit);
+      headMoves(start, baseMol, sp, emit);
+      return finalizeVariants(cands, baseMol, start, sp, max, invalid, M, o, perType, seen);
     });
   }
   function varOf(start, name) { return arr(start.record && start.record.vars).filter(function (v) { return v.name === name; })[0] || null; }
 
-  function buildLinkerSwaps(start, baseMol, sp, emit) {
-    var mg = graph(baseMol), from = sp.linkerSwaps.from || [];
+  function chainMoves(start, loc, mv, sp, emit) {
+    if (!loc) return;
+    var cv = varOf(start, mv.name); if (!cv) return;
+    var slot = loc.byMap[arr(cv.attach)[0]]; if (!slot || !slot.ext.length) return;
+    var mg = loc.mg, startAtom = slot.ext[0], b = mv.boundary, step = sp.chain, d, k;
+    var frag = fragmentAtoms(mg, startAtom, loc.coreImg), fragSet = new Set(frag);
+    var chain = carbonChain(mg, startAtom, frag);
+    if (!chain.length) return;
+    var nC = frag.filter(function (a) { return mg.z[a] === 6; }).length; // carbon count of the group
+    var last = chain[chain.length - 1];
+    var ruleC = 'C' + (b.cMin != null ? b.cMin : '') + (b.cMax != null ? '-C' + b.cMax : '+');
+    // chain length longer: cMax + 1 ... cMax + aboveMax (carbons added at the free terminal carbon of the longest path)
+    if (isNum(b.cMax)) {
+      for (d = 1; d <= (step.aboveMax || 2); d++) {
+        var target = b.cMax + d; if (target > (step.maxCarbons || 40) || target <= nC) continue;
+        emit({ type: 'chain', dir: 'longer', var: mv.name, from: nC, to: target, rule: ruleC }, { ops: [{ op: 'chainAdd', at: last, n: target - nC }], del: [], touch: [last], var: mv.name });
+      }
+    }
+    // chain length shorter: cMin - 1 ... cMin - belowMin (carbons removed from the free end; never below minCarbons)
+    if (isNum(b.cMin)) {
+      for (d = 1; d <= (step.belowMin || 1); d++) {
+        var to = b.cMin - d, rm = nC - to;
+        if (to < (step.minCarbons || 1)) break;
+        if (rm >= 1 && chain.length > rm) emit({ type: 'chain', dir: 'shorter', var: mv.name, from: nC, to: to, rule: ruleC }, { ops: [], del: chain.slice(chain.length - rm), touch: chain.slice(chain.length - rm), var: mv.name });
+      }
+    }
+    // unsaturation: count the C=C of the group, then move the count one step outside the rule's dbl range
+    var dbl = [];
+    frag.forEach(function (a) { mg.adj[a].forEach(function (e) { if (e[0] > a && fragSet.has(e[0]) && e[1] === 2 && mg.z[a] === 6 && mg.z[e[0]] === 6) dbl.push([a, e[0]]); }); });
+    var dblMax = isNum(b.dblMax) ? b.dblMax : (b.type === 'alkyl' ? 0 : null);
+    if (dblMax != null) {
+      var need = dblMax - dbl.length + (sp.unsaturation.step || 1);
+      if (need >= 1) {
+        // C-C single bonds along the longest path, from the free end inwards, whose atoms carry no multiple bond yet
+        var used = new Set(), picks = [];
+        for (k = chain.length - 2; k >= 1 && picks.length < need; k--) {
+          var x = chain[k], y = chain[k - 1];
+          if (bondOrderIn(mg, x, y) !== 1 || used.has(x) || used.has(y) || hasMultiple(mg, x) || hasMultiple(mg, y)) continue;
+          picks.push([y, x]); used.add(x); used.add(y);
+        }
+        if (picks.length === need) emit({ type: 'unsaturation', dir: 'more', var: mv.name, from: dbl.length, to: dbl.length + need, rule: 'at most ' + dblMax + ' C=C' },
+          { ops: picks.map(function (p) { return { op: 'bondOrder', a: p[0], b: p[1], order: 2 }; }), del: [], touch: [].concat.apply([], picks), var: mv.name });
+      }
+    }
+    if (isNum(b.dblMin) && b.dblMin >= 1 && dbl.length) {
+      var red = dbl.length - b.dblMin + (sp.unsaturation.step || 1);
+      if (red >= 1 && red <= dbl.length) {
+        // reduce the C=C nearest the free end first
+        var pos = function (p) { return Math.max(chain.indexOf(p[0]), chain.indexOf(p[1])); };
+        var sel = dbl.slice().sort(function (p, q) { return pos(q) - pos(p); }).slice(0, red);
+        emit({ type: 'unsaturation', dir: 'fewer', var: mv.name, from: dbl.length, to: dbl.length - red, rule: 'at least ' + b.dblMin + ' C=C' },
+          { ops: sel.map(function (p) { return { op: 'bondOrder', a: p[0], b: p[1], order: 1 }; }), del: [], touch: [].concat.apply([], sel), var: mv.name });
+      }
+    }
+    // branching flip where the rule fixes branched true/false (carbon count kept)
+    if (b.branched === false && chain.length >= 3) {
+      emit({ type: 'branching', dir: 'branched', var: mv.name, rule: 'linear required' }, { ops: [{ op: 'addC', at: chain[1] }], del: [last], touch: [chain[1], last], var: mv.name });
+    } else if (b.branched === true) {
+      // only a plain hydrocarbon group is rebuilt: the side carbons move to the end of the longest path
+      var chainSet = new Set(chain), side = frag.filter(function (a) { return !chainSet.has(a); });
+      var plain = frag.every(function (a) { return mg.z[a] === 6; });
+      if (plain && side.length) emit({ type: 'branching', dir: 'linear', var: mv.name, rule: 'branched required' }, { ops: [{ op: 'chainAdd', at: last, n: side.length }], del: side, touch: side.concat([last]), var: mv.name });
+    }
+  }
+
+  function linkerMoves(start, baseMol, sp, emit) {
+    var mg = graph(baseMol), from = sp.linkerSwaps.from || [], sites = {};
     from.forEach(function (fid) {
       var lk = sp.linkerById[fid]; if (!lk) return;
       var fm = parse(lk.smiles, true); if (!fm) return;
       var fg = graph(fm), matches = matchFrag(fg, mg, 12);
       matches.forEach(function (img) {
-        var dummyEnds = [], inner = [];
-        for (var i = 0; i < fg.n; i++) { if (isDummy(fg, i)) dummyEnds.push(img[i]); else inner.push(img[i]); }
-        if (dummyEnds.length !== 2 || inner.length < 1) return;
-        // a clean divalent linker: the inner atoms touch nothing but each other and the two anchors
-        if (!isCleanGroup(mg, inner, dummyEnds)) return;
-        // the alternatives the record already lists for this region are excluded
-        var prefer = sp.linkerSwaps.prefer || sp.linkers.map(function (l) { return l.id; }), done = 0;
+        var ends = [], inner = [];
+        for (var i = 0; i < fg.n; i++) { if (isDummy(fg, i)) ends.push(img[i]); else inner.push(img[i]); }
+        if (ends.length !== 2 || inner.length < 1) return;
+        // a clean divalent linker between two plain carbons: the inner atoms touch nothing but each other and the anchors
+        if (!isCleanGroup(mg, inner, ends) || !plainCarbon(mg, ends[0]) || !plainCarbon(mg, ends[1])) return;
+        var key = inner.slice().sort(function (a, b) { return a - b; }).join(',');
+        if (sites[key]) return; sites[key] = 1;
+        var prefer = sp.linkerSwaps.prefer || sp.linkers.map(function (l) { return l.id; }), done = 0, cap = sp.linkerSwaps.maxPerSite || 6;
         prefer.forEach(function (nid) {
-          if (nid === fid || done >= sp.linkerSwaps.maxPerSite) return;
+          if (nid === fid || done >= cap) return;
           var nl = sp.linkerById[nid]; if (!nl) return;
           if (recordListsLinker(start, nl.smiles)) return;
-          // both directions
-          [nl.smiles, reverseLinker(nl.smiles)].filter(function (x, i, a) { return a.indexOf(x) === i; }).forEach(function (sm) {
-            if (done >= sp.linkerSwaps.maxPerSite) return;
-            var mol = editable(baseMol);
-            if (replaceInner(mol, inner, dummyEnds, sm)) { emit(mol, { type: 'linker', from: lk.label, to: nl.label, var: null, rule: 'replace ' + lk.label + ' linker' }); done++; }
+          // both directions: the new fragment's first end on either anchor (symmetric linkers collapse by idcode)
+          [[ends[0], ends[1]], [ends[1], ends[0]]].forEach(function (anc, orient) {
+            if (done >= cap) return;
+            emit({ type: 'linker', from: lk.label, to: nl.label, orient: orient, var: null, rule: 'replace ' + lk.label + ' linker' },
+              { ops: [{ op: 'graft', frag: nl.smiles, anchors: anc }], del: inner.slice(), touch: inner.concat(ends), var: null });
+            done++;
           });
         });
       });
@@ -517,186 +575,232 @@
     return arr(start.record && start.record.vars).some(function (v) { return arr(v.alts).some(function (a) { return a && a.type === 'smiles' && idcOf(a.smiles) === idc; }); });
   }
   function idcOf(smiles) { var m = parse(dummify(smiles), true); if (!m) return ''; try { return m.getIDCode(); } catch (e) { return ''; } }
-  function reverseLinker(sm) { // "*OC(=O)*" -> "*C(=O)O*"; symmetric linkers map to themselves
-    var m = parse(sm, true); if (!m) return sm; return sm; // OCL canonicalises; direction handled by two anchor orders below instead
-  }
-  /* replace the inner atoms (a matched linker) by a new divalent fragment between the two anchors */
-  function replaceInner(mol, innerAtoms, anchors, newSmiles) {
-    // anchors are molecule atoms that stay; innerAtoms are removed; the new fragment ends bond to anchors (both orders)
-    if (!graftFrag(mol, newSmiles, anchors)) return false;
-    delAtoms(mol, innerAtoms.slice());
-    return true;
-  }
 
-  function buildHeadSwaps(start, baseMol, sp, emit) {
-    var mg = graph(baseMol);
+  function headMoves(start, baseMol, sp, emit) {
+    var mg = graph(baseMol), sites = {};
     sp.heads.forEach(function (hd) {
       var fm = parse(hd.smiles, true); if (!fm) return;
       var fg = graph(fm), matches = matchFrag(fg, mg, 8);
       matches.forEach(function (img) {
-        var anchorExt = null, inner = [], i;
-        for (i = 0; i < fg.n; i++) { if (isDummy(fg, i)) anchorExt = img[i]; else inner.push(img[i]); }
-        if (anchorExt == null || !inner.length) return;
-        // the anchor stays; the head atoms (inner) are replaced by another family member not equal to this head
+        var anchor = null, inner = [], i;
+        for (i = 0; i < fg.n; i++) { if (isDummy(fg, i)) anchor = img[i]; else inner.push(img[i]); }
+        if (anchor == null || !inner.length) return;
         var innerSet = new Set(inner);
-        // guard: the anchor must sit outside the head group, and the head must be a genuine terminal group
-        if (innerSet.has(anchorExt)) return;
-        if (!isCleanGroup(mg, inner, [anchorExt])) return;
+        // the anchor sits outside the head, is a plain carbon, and the head is a genuine terminal group
+        if (innerSet.has(anchor) || !plainCarbon(mg, anchor) || !isCleanGroup(mg, inner, [anchor])) return;
+        var key = hd.id + ':' + inner.slice().sort(function (a, b) { return a - b; }).join(',');
+        if (sites[key]) return; sites[key] = 1;
         var fam = hd.family, done = 0, cross = (sp.headSwaps.cross && sp.headSwaps.cross[fam]) || [];
         sp.heads.forEach(function (nh) {
-          if (done >= sp.headSwaps.maxPerSite) return;
+          if (done >= (sp.headSwaps.maxPerSite || 6)) return;
           if (nh.id === hd.id) return;
           if (!(nh.family === fam || cross.indexOf(nh.family) >= 0)) return;
           if (idcOf(nh.smiles) === idcOf(hd.smiles)) return;
-          var mol = editable(baseMol);
-          if (graftFrag(mol, nh.smiles, [anchorExt])) { delAtoms(mol, inner.slice()); emit(mol, { type: 'head', from: hd.label, to: nh.label, var: null, rule: 'head group swap' }); done++; }
+          emit({ type: 'head', from: hd.label, to: nh.label, var: null, rule: 'head group swap' },
+            { ops: [{ op: 'graft', frag: nh.smiles, anchors: [anchor] }], del: inner.slice(), touch: inner.concat([anchor]), var: null });
+          done++;
         });
       });
     });
   }
 
-  function finalizeVariants(cands, baseMol, start, sp, max, invalid, M, o) {
-    // ---- combinations of two single moves ----
-    var combCap = Math.floor(max * (sp.combinations.share || 0.3));
-    var singles = cands.slice(0, sp.combinations.maxSingles || 14);
-    var seen = {}; cands.forEach(function (c) { seen[c.idcode] = 1; }); seen[baseMol.getIDCode()] = 1;
-    var combos = [];
-    for (var i = 0; i < singles.length && combos.length < combCap; i++) {
-      for (var j = i + 1; j < singles.length && combos.length < combCap; j++) {
-        var m2 = applyTwo(baseMol, start, sp, singles[i].move, singles[j].move);
-        if (!m2) continue;
-        var san = sanitize(m2); if (!san || seen[san.idcode]) continue; seen[san.idcode] = 1;
-        combos.push({ smiles: san.smiles, idcode: san.idcode, move: { type: 'combination', moves: [moveLabel(singles[i].move), moveLabel(singles[j].move)], parts: [singles[i].move, singles[j].move] } });
+  /* targeted variables of a move (the rule the move is meant to break); empty for linker and head swaps */
+  function targetVars(move) {
+    if (!move) return [];
+    if (move.type === 'combination') return [].concat.apply([], arr(move.parts).map(targetVars));
+    return move.var ? [move.var] : [];
+  }
+  /* verify one candidate against the source record.
+     -> null (covered or unreadable: dropped) | {verified: bool, verdict, reason}
+     verified = the overall verdict is "not_covered", or a targeted variable is "not_met". A candidate the checker reads
+     as "unclear" without either is kept but marked NOT verified, never described as outside. */
+  function verifyOne(c, rec, M) {
+    var res;
+    try { res = M.checkSync(rec, c.smiles); } catch (e) { return null; }
+    if (!res || res.overall === 'covered') return null;
+    var tv = targetVars(c.move), groups = arr(res.groups);
+    var notMet = groups.filter(function (x) { return x.verdict === 'not_met'; });
+    var tNot = notMet.filter(function (x) { return tv.indexOf(x.name) >= 0; });
+    var verified = res.overall === 'not_covered' || tNot.length > 0;
+    var reason;
+    if (verified) {
+      var use = tNot.length ? tNot : notMet;
+      reason = use.length ? use.map(function (x) { return x.name + ' ' + (x.why || 'not met'); }).join('; ').slice(0, 200) : 'the drawn core no longer matches the claim';
+    } else {
+      var unc = groups.filter(function (x) { return x.verdict === 'unclear'; }).map(function (x) { return x.name + ' ' + (x.why || 'unclear'); });
+      reason = 'the checker reads this variant as unclear' + (unc.length ? ' (' + unc.join('; ') + ')' : res.reasons && res.reasons[0] ? ' (' + String(res.reasons[0]) + ')' : '');
+      reason = reason.slice(0, 220);
+    }
+    return { verified: verified, verdict: res.overall, reason: reason };
+  }
+  /* round-robin over move types, each queue verified lazily (verified ideas before unverified ones within a type) so that
+     one prolific move type cannot crowd out the others; combinations take at most `combCap` slots */
+  function pickBalanced(queues, max, combCap, rec, M, o) {
+    var out = [], taken = {}, types = TYPE_ORDER.filter(function (t) { return queues[t] && queues[t].length; });
+    var held = {}; // unverified-but-kept candidates per type, used only after the verified ones of that type
+    types.forEach(function (t) { held[t] = []; taken[t] = 0; });
+    function nextOf(t) {
+      var q = queues[t];
+      while (q.length) {
+        if (o && o.signal && o.signal.aborted) throw mkErr('cancelled', 'cancelled');
+        var c = q.shift();
+        if (c._v === undefined) c._v = verifyOne(c, rec, M);
+        if (!c._v) continue;
+        if (c._v.verified) return c;
+        held[t].push(c);
+      }
+      return held[t].length ? held[t].shift() : null;
+    }
+    var progress = true;
+    while (out.length < max && progress) {
+      progress = false;
+      for (var i = 0; i < types.length && out.length < max; i++) {
+        var t = types[i];
+        if (t === 'combination' && taken[t] >= combCap) continue;
+        var c = nextOf(t);
+        if (c) { out.push(c); taken[t]++; progress = true; }
       }
     }
-    var all = cands.concat(combos);
-    // ---- verify: the targeted rule must now fail (not covered or the targeted group not met), and the structure valid ----
-    return verifyVariants(all, start, M, o).then(function (verified) {
-      verified = verified.slice(0, max);
-      verified.forEach(function (v) { v.moveLabel = moveLabel(v.move); });
-      return { v: VERSION, start: { pn: start.pn, claim: start.claim, molecule: start.molecule }, variants: verified, generated: all.length, invalidDropped: invalid, cap: max, space: sp.v };
+    return out;
+  }
+  function byType(list) { var q = {}; list.forEach(function (c) { (q[c.move.type] || (q[c.move.type] = [])).push(c); }); return q; }
+
+  function finalizeVariants(cands, baseMol, start, sp, max, invalid, M, o, perType, seen) {
+    var rec = start.record;
+    return Promise.resolve().then(function () {
+      // 1. verified single moves, balanced over move types
+      var singles = pickBalanced(byType(cands), max, 0, rec, M, o);
+      // 2. combinations of two verified single moves on different atoms of different variables, at their own sites
+      var combCap = Math.floor(max * (sp.combinations.share || 0.3));
+      var pool = pickBalanced(byType(singles.filter(function (c) { return c._v && c._v.verified; })), sp.combinations.maxSingles || 14, 0, rec, M, o);
+      var combos = [];
+      for (var i = 0; i < pool.length && combos.length < combCap * 2; i++) {
+        for (var j = i + 1; j < pool.length && combos.length < combCap * 2; j++) {
+          var A = pool[i], B = pool[j];
+          if (A.move.var && B.move.var && A.move.var === B.move.var) continue;
+          var tA = new Set(arr(A._site.touch).concat(arr(A._site.del)));
+          if (arr(B._site.touch).concat(arr(B._site.del)).some(function (x) { return tA.has(x); })) continue;
+          var m2 = applySites(baseMol, [A._site, B._site]); if (!m2) { invalid++; continue; }
+          var san = sanitize(m2); if (!san) { invalid++; continue; }
+          if (seen[san.idcode]) continue; seen[san.idcode] = 1;
+          combos.push({ smiles: san.smiles, idcode: san.idcode, move: { type: 'combination', moves: [moveLabel(A.move), moveLabel(B.move)], parts: [A.move, B.move] } });
+        }
+      }
+      perType.combination = combos.length;
+      // 3. final balanced pick (singles keep their verification; combinations are verified here)
+      var q = byType(singles); q.combination = combos;
+      var picked = pickBalanced(q, max, combCap, rec, M, o);
+      picked.forEach(function (v) {
+        v.verified = !!v._v.verified; v.sourceVerdict = v._v.verdict; v.sourceReason = v._v.reason;
+        v.moveLabel = moveLabel(v.move);
+        delete v._v; delete v._site;
+      });
+      if (o && typeof o.onProgress === 'function') { try { o.onProgress({ done: picked.length, total: picked.length, kept: picked.length }); } catch (e) { /* ignore */ } }
+      return { v: VERSION, start: { pn: start.pn, claim: start.claim, molecule: start.molecule }, variants: picked, generated: cands.length + combos.length,
+        generatedByType: clone(perType), invalidDropped: invalid, cap: max, space: sp.v,
+        unverified: picked.filter(function (v) { return !v.verified; }).length };
     });
-  }
-  function applyTwo(baseMol, start, sp, mvA, mvB) {
-    // re-run the two moves on a fresh copy via their recorded descriptions; only structural single moves combine
-    // We reconstruct by re-locating and re-applying; to keep it simple and robust we re-generate from the move specs.
-    // Supported combinable moves: chain/unsaturation/branching (need loc), linker, head.
-    var mol = editable(baseMol);
-    if (!applyMove(mol, start, sp, mvA)) return null;
-    if (!applyMove(mol, start, sp, mvB)) return null;
-    return mol;
-  }
-  function applyMove(mol, start, sp, mv) {
-    // Re-applying on an already-edited molecule needs fresh location; for robustness we only support combinations of a
-    // structural single move with a linker/head swap by matching patterns on the current molecule.
-    var mg = graph(mol);
-    if (mv.type === 'linker') {
-      var fromL = sp.linkers.filter(function (l) { return l.label === mv.from; })[0], toL = sp.linkers.filter(function (l) { return l.label === mv.to; })[0];
-      if (!fromL || !toL) return false;
-      var fg = graph(parse(fromL.smiles, true)), ms = matchFrag(fg, mg, 1); if (!ms.length) return false;
-      var inner = [], anchors = [];
-      for (var i = 0; i < fg.n; i++) { if (isDummy(fg, i)) anchors.push(ms[0][i]); else inner.push(ms[0][i]); }
-      if (anchors.length !== 2) return false;
-      return replaceInner(mol, inner, anchors, toL.smiles);
-    }
-    if (mv.type === 'head') {
-      var fh = sp.heads.filter(function (x) { return x.label === mv.from; })[0], th = sp.heads.filter(function (x) { return x.label === mv.to; })[0];
-      if (!fh || !th) return false;
-      var hg = graph(parse(fh.smiles, true)), hm = matchFrag(hg, mg, 1); if (!hm.length) return false;
-      var hin = [], hanc = null;
-      for (var k = 0; k < hg.n; k++) { if (isDummy(hg, k)) hanc = hm[0][k]; else hin.push(hm[0][k]); }
-      if (hanc == null) return false;
-      if (!graftFrag(mol, th.smiles, [hanc])) return false; delAtoms(mol, hin); return true;
-    }
-    // chain/unsaturation/branching: re-locate the var fragment on the current molecule via the core
-    if (!start.coreSmiles) return false;
-    var loc = locate(start.coreSmiles, mol); if (!loc) return false;
-    var cv = varOf(start, mv.var); if (!cv) return false;
-    var slot = loc.byMap[arr(cv.attach)[0]]; if (!slot || !slot.ext.length) return false;
-    var frag = fragmentAtoms(loc.mg, slot.ext[0], loc.coreImg), chain = carbonChain(loc.mg, slot.ext[0], frag);
-    if (mv.type === 'chain') {
-      if (mv.dir === 'longer') { var last = chain[chain.length - 1], nC = frag.filter(function (a) { return loc.mg.z[a] === 6; }).length; for (var c = 0; c < mv.to - nC; c++) last = addCarbon(mol, last); return mv.to - nC > 0; }
-      if (mv.dir === 'shorter') { var nC2 = frag.filter(function (a) { return loc.mg.z[a] === 6; }).length, rm = nC2 - mv.to; if (rm >= 1 && chain.length >= rm) { delAtoms(mol, chain.slice(chain.length - rm)); return true; } return false; }
-    }
-    if (mv.type === 'unsaturation' && chain.length >= 3) { var bi = bondIndex(mol, chain[1], chain[2]); if (bi >= 0 && mol.getBondOrder(bi) === 1) { mol.setBondOrder(bi, 2); return true; } return false; }
-    if (mv.type === 'branching') { if (mv.dir === 'branched' && chain.length >= 3) { addCarbon(mol, chain[1]); delAtoms(mol, [chain[chain.length - 1]]); return true; } if (mv.dir === 'linear') { addCarbon(mol, chain[chain.length - 1]); return true; } }
-    return false;
   }
   function moveLabel(mv) {
     if (!mv) return '';
     if (mv.type === 'chain') return (mv.dir === 'longer' ? 'Lengthen ' : 'Shorten ') + mv.var + ' to C' + mv.to + ' (outside ' + mv.rule + ')';
-    if (mv.type === 'unsaturation') return 'Add a C=C in ' + mv.var + ' (outside ' + mv.rule + ')';
+    if (mv.type === 'unsaturation') {
+      var n = isNum(mv.to) && isNum(mv.from) ? Math.abs(mv.to - mv.from) : 1, w = n === 1 ? 'a C=C' : n + ' C=C';
+      return (mv.dir === 'fewer' ? 'Reduce ' + w + ' in ' : 'Add ' + w + ' in ') + mv.var + ' (outside ' + mv.rule + ')';
+    }
     if (mv.type === 'branching') return (mv.dir === 'branched' ? 'Branch ' : 'Linearise ') + mv.var + ' (' + mv.rule + ')';
-    if (mv.type === 'linker') return 'Swap ' + mv.from + ' linker -> ' + mv.to;
+    if (mv.type === 'linker') return 'Swap ' + mv.from + ' linker -> ' + mv.to + (mv.orient ? ' (reversed)' : '');
     if (mv.type === 'head') return 'Swap head group ' + mv.from + ' -> ' + mv.to;
     if (mv.type === 'combination') return (mv.moves || []).join(' + ');
     return mv.type || '';
   }
-  /* verify each variant against the source record: the targeted rule must fail (overall not "covered"); report the
-     Markush verdict so the UI can show it */
-  function verifyVariants(cands, start, M, o) {
-    var rec = start.record, out = [], i = 0;
-    function step() {
-      if (i >= cands.length) return Promise.resolve(out);
-      if (o && o.signal && o.signal.aborted) return Promise.reject(mkErr('cancelled', 'cancelled'));
-      var c = cands[i++], res;
-      try { res = M.checkSync(rec, c.smiles); } catch (e) { res = null; }
-      if (res && res.overall !== 'covered') {
-        c.sourceVerdict = res.overall; c.sourceReason = pickReason(res, c.move);
-        out.push(c);
-      } else if (res && res.overall === 'covered') {
-        // the edit did not leave the claim; drop it (we only keep true design-arounds)
-      }
-      if (o && typeof o.onProgress === 'function') { try { o.onProgress({ done: i, total: cands.length, kept: out.length }); } catch (e) { /* ignore */ } }
-      return step();
-    }
-    return step();
-  }
-  function pickReason(res, move) {
-    var g2 = arr(res.groups).filter(function (x) { return x.verdict === 'not_met'; });
-    if (g2.length) return g2.map(function (x) { return x.name + ' ' + (x.why || 'not met'); }).join('; ').slice(0, 200);
-    if (res.overall === 'not_covered') return 'the drawn core no longer matches the claim';
-    return res.reasons && res.reasons[0] ? String(res.reasons[0]).slice(0, 200) : 'outside the claimed definition';
-  }
 
   // ------------------------------------------------------------------------------------------------ formulation variants
-  function fromRanges(profileForm, rangeResult) {
-    // works from a LnpRanges.check / checkProfile result; the ranges engine itself is not required here.
+  function insideRow(r, x) {
+    var e = 1e-9 * Math.max(1, Math.abs(x));
+    if (r.lo != null && (r.loInc === false ? x <= r.lo + e : x < r.lo - e)) return false;
+    if (r.hi != null && (r.hiInc === false ? x >= r.hi - e : x > r.hi + e)) return false;
+    return true;
+  }
+  /* fromRanges(profileForm, rangeResult, {ranges, perValue}) -> {variants, dropped, rechecked, limits}
+     rangeResult is an LnpRanges.check / checkProfile result. For every value that sits inside a claimed range, the value
+     is moved one step outside each finite bound of those ranges (an open bound gives no move on that side; a move that
+     would leave the physically possible min..max is dropped, never clamped back). Every new value is then RE-CHECKED with
+     LnpRanges.check against every claim range in the corpus; a move is kept only when it leaves at least one of the ranges
+     it was inside, and the claims that still contain the new value are listed. */
+  function fromRanges(profileForm, rangeResult, o) {
+    o = o || {};
+    var Rg = o.ranges || eng('ranges');
+    var canCheck = !!(Rg && typeof Rg.check === 'function' && (typeof Rg.available !== 'function' || Rg.available()));
     return loadSpace().then(function () {
-      var sp = S.space.formulation, out = [];
-      var vals = arr(rangeResult && rangeResult.mapped && rangeResult.mapped.length ? rangeResult.mapped : rangeResult && rangeResult.values);
-      // claims the profile currently falls inside (per value)
+      var sp = S.space.formulation, perValue = o.perValue || 4, dropped = [];
+      // normalised values (with compLabel) first: they carry the same component label as the match rows
+      var vals = arr(rangeResult && rangeResult.values && rangeResult.values.length ? rangeResult.values : rangeResult && rangeResult.mapped);
       var inside = {};
       arr(rangeResult && rangeResult.matches).forEach(function (m) {
-        arr(m.values).forEach(function (v) { if (v.status === 'inside' && v.row) { var k = v.param + '|' + (v.comp || ''); (inside[k] || (inside[k] = [])).push({ pn: m.pn, claim: m.claim, lo: v.row.lo, hi: v.row.hi }); } });
+        arr(m.values).forEach(function (v) {
+          if (v.status !== 'inside' || !v.row) return;
+          var k = v.param + '|' + (v.comp || '');
+          (inside[k] || (inside[k] = [])).push({ pn: m.pn, claim: m.claim, lo: v.row.lo, hi: v.row.hi, loInc: v.row.loInc, hiInc: v.row.hiInc, text: v.row.text || null });
+        });
       });
+      var jobs = [];
       vals.forEach(function (v) {
         var cfg = sp.params[v.param]; if (!cfg) return;
-        var k = v.param + '|' + (v.compLabel || v.comp || '');
-        var hits = inside[k] || [];
-        if (!hits.length) return; // only move values that actually sit inside some claim
-        // nearest lower and upper bounds among the claims the value sits in
-        var los = hits.map(function (x) { return x.lo; }).filter(isNum), his = hits.map(function (x) { return x.hi; }).filter(isNum);
-        var below = los.length ? Math.min.apply(null, los) : null, above = his.length ? Math.max.apply(null, his) : null;
-        // move below the lowest lo, and above the highest hi
-        if (los.length) {
-          var lo = Math.max(cfg.min, round(Math.min.apply(null, los.filter(isNum)) - cfg.step, cfg.digits));
-          out.push(mkFormVariant(v, lo, 'below', cfg, hits));
-        }
-        if (his.length) {
-          var hi = Math.min(cfg.max, round(Math.max.apply(null, his.filter(isNum)) + cfg.step, cfg.digits));
-          out.push(mkFormVariant(v, hi, 'above', cfg, hits));
-        }
+        var hits = inside[v.param + '|' + (v.compLabel || v.comp || '')] || [];
+        if (!hits.length || !isNum(v.value)) return;
+        var cand = {};
+        hits.forEach(function (hh) {
+          if (isNum(hh.lo)) cand[round(hh.lo - cfg.step, cfg.digits)] = 'below';
+          if (isNum(hh.hi)) cand[round(hh.hi + cfg.step, cfg.digits)] = 'above';
+        });
+        Object.keys(cand).map(Number).forEach(function (x) {
+          if (x <= cfg.min || x > cfg.max) { dropped.push({ param: v.param, comp: v.compLabel || v.comp || null, to: x, why: 'not above the minimum ' + cfg.min + ' or above the maximum ' + cfg.max + ' (a value at the minimum means the component or property is absent)' }); return; }
+          var leaves = hits.filter(function (hh) { return !insideRow(hh, x); });
+          if (!leaves.length) { dropped.push({ param: v.param, comp: v.compLabel || v.comp || null, to: x, why: 'still inside every range it was in' }); return; }
+          jobs.push({ v: v, x: x, cfg: cfg, hits: hits, leaves: leaves });
+        });
       });
-      return { v: VERSION, kind: 'formulation', profile: (profileForm && profileForm.name) || '', variants: out,
-        limits: ['Idea generator, not advice: moving a formulation value outside one claimed range does not clear the formulation; other claim features and other patents decide, and equivalence remains open for counsel.',
-          'Numeric ranges are what pattern rules found in the claim text; ranges in tables or figures are not seen.'] };
+      // re-check each new value across the corpus, one at a time
+      var out = [], i = 0;
+      function step() {
+        if (i >= jobs.length) return Promise.resolve();
+        if (o.signal && o.signal.aborted) return Promise.reject(mkErr('cancelled', 'cancelled'));
+        var jb = jobs[i++], v = jb.v;
+        var p = canCheck ? Promise.resolve(Rg.check([{ param: v.param, comp: v.compLabel || v.comp || null, value: jb.x, unit: v.unit || '' }], { mode: 'any' })).then(function (res) {
+          return { ok: true, still: arr(res && res.matches).map(function (m) { return { pn: m.pn, claim: m.claim }; }) };
+        }, function () { return { ok: false, still: null }; }) : Promise.resolve({ ok: false, still: null });
+        return p.then(function (rc) {
+          var still = rc.ok ? rc.still : jb.hits.filter(function (hh) { return insideRow(hh, jb.x); }).map(function (hh) { return { pn: hh.pn, claim: hh.claim }; });
+          out.push(mkFormVariant(v, jb.x, jb.x < v.value ? 'below' : 'above', jb.cfg, jb.hits, jb.leaves, still, rc.ok));
+          return step();
+        });
+      }
+      return step().then(function () {
+        // per value: fewest claims still containing the new value first, then the smallest change
+        var groups = {}, keep = [];
+        out.forEach(function (fv) { var k = fv.param + '|' + (fv.comp || ''); (groups[k] || (groups[k] = [])).push(fv); });
+        Object.keys(groups).forEach(function (k) {
+          groups[k].sort(function (a, b) { return (a.stillInsideCount - b.stillInsideCount) || (Math.abs(a.to - a.from) - Math.abs(b.to - b.from)) || (a.to - b.to); });
+          keep = keep.concat(groups[k].slice(0, perValue));
+        });
+        var rechecked = keep.length ? keep.every(function (x) { return x.rechecked; }) : canCheck;
+        return { v: VERSION, kind: 'formulation', profile: (profileForm && profileForm.name) || '', variants: keep, dropped: dropped, rechecked: rechecked,
+          limits: ['Idea generator, not advice: moving a formulation value outside one claimed range does not clear the formulation; other claim features and other patents decide, and equivalence remains open for counsel.',
+            rechecked ? 'Each new value was re-checked against every numeric claim range of this corpus snapshot (LnpRanges); the claims that still contain it are listed.'
+              : 'The range engine was not available: the new values were compared only with the ranges the value was inside, not re-checked across the corpus.',
+            'Each value is moved on its own; a change of one mol % share has to be compensated by another lipid, which can move that lipid into or out of other ranges.',
+            'Numeric ranges are what pattern rules found in the claim text; ranges in tables or figures are not seen.'] };
+      });
     });
   }
-  function mkFormVariant(v, value, dir, cfg, hits) {
-    return { param: v.param, paramLabel: v.paramLabel || v.param, comp: v.compLabel || v.comp || null, from: v.value, to: value, dir: dir, step: cfg.step,
+  function mkFormVariant(v, value, dir, cfg, hits, leaves, still, rechecked) {
+    var lbl = v.paramLabel || v.param, comp = v.compLabel || v.comp || null;
+    return { param: v.param, paramLabel: lbl, comp: comp, unit: v.unit || '', from: v.value, to: value, dir: dir, step: cfg.step,
       wasInside: hits.map(function (h) { return { pn: h.pn, claim: h.claim }; }).slice(0, 20),
-      moveLabel: (v.paramLabel || v.param) + (v.compLabel ? ' (' + v.compLabel + ')' : '') + ': ' + fmtNum(v.value) + ' -> ' + fmtNum(value) + ' ' + (v.unit || '') + ' (' + (dir === 'below' ? 'below' : 'above') + ' the claimed range)' };
+      leaves: leaves.map(function (h) { return { pn: h.pn, claim: h.claim, range: h.text }; }).slice(0, 20),
+      stillInside: arr(still).slice(0, 20), stillInsideCount: arr(still).length, rechecked: !!rechecked,
+      moveLabel: lbl + (comp ? ' (' + comp + ')' : '') + ': ' + fmtNum(v.value) + ' -> ' + fmtNum(value) + (v.unit ? ' ' + v.unit : '') + ' (' + dir + ' ' + leaves.length + ' claimed range' + (leaves.length === 1 ? '' : 's') + ')' };
   }
   function round(x, d) { var f = Math.pow(10, d || 0); return Math.round(x * f) / f; }
   function fmtNum(x) { return isNum(x) ? String(round(x, 4)) : str(x); }
@@ -711,23 +815,36 @@
     return { live: !dead, granted: granted && !dead, pending: pending && !dead, dead: !!dead, status: st };
   }
   function todayStr() { return nowIso().slice(0, 10).replace(/-/g, ''); }
+  /* run one check; a missing engine or a rejected call is reported, never turned into "no hits" */
+  function guarded(name, fn) {
+    if (!fn) return Promise.resolve({ name: name, ok: false, why: 'not available in this build' });
+    return Promise.resolve().then(fn).then(function (v) { return { name: name, ok: true, v: v }; }, function (e) {
+      if (e && e.code === 'cancelled') throw e;
+      return { name: name, ok: false, why: (e && (e.message || e.code)) || 'failed' };
+    });
+  }
   function assess(variant, o) {
     o = o || {};
     var Ch = eng('chem'), M = eng('markush'), D = eng('data');
     return ensureOCL().then(function () { return loadSpace(); }).then(function () {
       var smiles = variant.smiles, sp = S.space.risk, today = todayStr();
-      var tasks = [];
-      // exact + similarity search
-      tasks.push(Ch ? Ch.search({ smiles: smiles, mode: 'exact', limit: 30 }).then(function (h) { return h; }, function () { return []; }) : Promise.resolve([]));
-      tasks.push(Ch ? Ch.search({ smiles: smiles, mode: 'sim', minSim: sp.simLow, limit: 60 }).then(function (h) { return h; }, function () { return []; }) : Promise.resolve([]));
-      // markush over all cached + curated records
-      tasks.push(M ? M.batch(smiles, o.markushRecords || 'all-cached', { signal: o.signal }).then(function (b) { return b; }, function () { return []; }) : Promise.resolve([]));
-      return Promise.all(tasks).then(function (r) {
-        var exact = arr(r[0]), sim = arr(r[1]), mk = arr(r[2]);
+      var hasSearch = Ch && typeof Ch.search === 'function', hasBatch = M && typeof M.batch === 'function';
+      return Promise.all([
+        guarded('exact structure search', hasSearch && function () { return Ch.search({ smiles: smiles, mode: 'exact', limit: 30 }); }),
+        guarded('similarity search', hasSearch && function () { return Ch.search({ smiles: smiles, mode: 'sim', minSim: sp.simLow, limit: 60 }); }),
+        guarded('Markush re-check', hasBatch && function () { return M.batch(smiles, o.markushRecords || 'all-cached', { signal: o.signal }); })
+      ]).then(function (r) {
+        var exact = r[0].ok ? arr(r[0].v) : [], sim = r[1].ok ? arr(r[1].v) : [], mk = r[2].ok ? arr(r[2].v) : [];
+        var unknown = r.filter(function (x) { return !x.ok; }).map(function (x) { return { check: x.name, why: x.why }; });
+        var mkErrRows = mk.filter(function (row) { return row && !row.result; });
+        if (mkErrRows.length) unknown.push({ check: 'Markush re-check', why: mkErrRows.length + ' claim record' + (mkErrRows.length === 1 ? '' : 's') + ' could not be checked (' + mkErrRows.slice(0, 3).map(function (x) { return str(x.pn) + ' c' + str(x.claim) + ': ' + (x.reason || 'error'); }).join(', ') + ')' });
         return enrichPatents(exact, sim, mk, D, today).then(function (en) {
-          var a = scoreRisk(en, sp);
+          var a = scoreRisk(en, sp, { unknown: unknown, unverified: variant.verified === false });
+          if (!r.some(function (x) { return x.ok; })) { a.risk = null; a.notAssessed = true; }
+          a.unknown = unknown;
           a.exact = en.exact; a.sim = en.simHigh; a.markush = en.markush; a.patents = en.patents;
           a.limits = ['Pre-screening, not advice. A variant outside the literal claim may still infringe by equivalence or under claims and patents outside this corpus.'];
+          if (unknown.length) a.limits.push('Not every check ran: ' + unknown.map(function (u) { return u.check + ' (' + u.why + ')'; }).join('; ') + '. The score counts this as an unknown and is raised, never lowered.');
           variant.assessment = a;
           if (typeof o.onProgress === 'function') { try { o.onProgress({ done: 1, total: 1 }); } catch (e) { /* ignore */ } }
           return variant;
@@ -735,14 +852,23 @@
       });
     });
   }
+  var MK_RANK = { covered: 3, unclear: 2, not_covered: 1 };
   function enrichPatents(exact, sim, mk, D, today) {
-    // collect publication numbers from exact-in-claims, sim-in-claims and covered markush records
+    // collect publication numbers from exact-in-claims, sim-in-claims and every Markush verdict (kept per claim)
     var byPn = {};
-    function note(pn, src, extra) { var k = str(pn); if (!k) return; (byPn[k] || (byPn[k] = { pn: k, src: {}, })); byPn[k].src[src] = true; if (extra) for (var x in extra) byPn[k][x] = extra[x]; }
-    exact.forEach(function (hit) { arr(hit.patents).forEach(function (p) { if (p.where && p.where.clm) note(p.pn, 'exact_claim', { sim: hit.sim != null ? hit.sim : 1 }); else note(p.pn, 'exact', {}); }); });
-    sim.forEach(function (hit) { if (hit.sim != null && hit.sim >= 0) arr(hit.patents).forEach(function (p) { if (p.where && p.where.clm) note(p.pn, 'sim_claim', { sim: hit.sim }); }); });
+    function rec(pn) { var k = str(pn); if (!k) return null; return byPn[k] || (byPn[k] = { pn: k, src: {}, mk: [] }); }
+    exact.forEach(function (hit) { arr(hit.patents).forEach(function (p) { var e = rec(p.pn); if (!e) return; if (p.where && p.where.clm) { e.src.exact_claim = true; e.sim = 1; } else e.src.exact = true; }); });
+    sim.forEach(function (hit) { if (hit.sim != null && hit.sim >= 0) arr(hit.patents).forEach(function (p) { if (p.where && p.where.clm) { var e = rec(p.pn); if (!e) return; e.src.sim_claim = true; if (!(e.sim >= hit.sim)) e.sim = hit.sim; } }); });
     var simHighHits = sim.filter(function (h) { return h.sim != null && h.sim >= (S.space.risk.simHigh); });
-    mk.forEach(function (row) { if (row && row.result) { var ov = row.result.overall; note(row.pn, 'markush_' + ov, { markush: ov, claim: row.claim }); } });
+    mk.forEach(function (row) {
+      if (!row || !row.result) return;
+      var e = rec(row.pn); if (!e) return;
+      var ov = row.result.overall;
+      e.src['markush_' + ov] = true;
+      e.mk.push({ claim: row.claim, overall: ov });
+      // the worst verdict over all claims of the publication decides: covered > unclear > not_covered
+      if (!e.markush || (MK_RANK[ov] || 0) > (MK_RANK[e.markush] || 0)) { e.markush = ov; e.claim = row.claim; }
+    });
     var pns = Object.keys(byPn);
     if (!D || !D.byPn) { pns.forEach(function (k) { byPn[k].right = { live: null }; }); return Promise.resolve(packEnrich(exact, simHighHits, mk, byPn)); }
     return Promise.all(pns.map(function (k) {
@@ -755,15 +881,20 @@
     var patents = Object.keys(byPn).map(function (k) { return byPn[k]; });
     return { exact: exact.slice(0, 10), simHigh: simHigh.slice(0, 10), markush: mk.filter(function (r) { return r && r.result; }).map(function (r) { return { pn: r.pn, claim: r.claim, overall: r.result.overall, origin: r.origin || null }; }), patents: patents };
   }
-  function scoreRisk(en, sp) {
-    var parts = [], total = 0, pats = en.patents;
-    function live(p) { return p.right && p.right.live !== false; }
-    var coveredGranted = pats.some(function (p) { return p.markush === 'covered' && p.right && p.right.granted; });
-    var coveredPendingUnknown = pats.some(function (p) { return p.markush === 'covered' && p.right && (p.right.pending || p.right.live == null); });
+  function scoreRisk(en, sp, extra) {
+    extra = extra || {};
+    var parts = [], total = 0, pats = arr(en.patents), byPn = {};
+    pats.forEach(function (p) { if (p && p.pn) byPn[p.pn] = p; });
+    // unknown liveness counts as live (an unknown raises, never lowers)
+    function live(p) { return !p || !p.right || p.right.live !== false; }
+    function mkOf(p) { var l = arr(p.mk); return l.length ? l.map(function (x) { return x.overall; }) : (p.markush ? [p.markush] : []); }
+    function has(p, v) { return mkOf(p).indexOf(v) >= 0; }
+    var coveredGranted = pats.some(function (p) { return has(p, 'covered') && p.right && p.right.granted; });
+    var coveredPendingUnknown = pats.some(function (p) { return has(p, 'covered') && (!p.right || p.right.pending || p.right.live == null); });
     var exactClaimLive = pats.some(function (p) { return p.src && p.src.exact_claim && live(p); });
-    var simHighClaimLive = en.simHigh.some(function (h) { return arr(h.patents).some(function (p) { return p.where && p.where.clm; }); });
-    var unclearGrantedLive = pats.some(function (p) { return p.markush === 'unclear' && p.right && p.right.granted; });
-    var crowd = pats.filter(function (p) { return (p.src && (p.src.exact_claim || p.src.sim_claim || p.markush === 'covered')) && live(p); }).length;
+    var simHighClaimLive = arr(en.simHigh).some(function (h) { return arr(h.patents).some(function (p) { return p.where && p.where.clm && live(byPn[p.pn]); }); });
+    var unclearGrantedLive = pats.some(function (p) { return has(p, 'unclear') && p.right && p.right.granted; });
+    var crowd = pats.filter(function (p) { return (p.src && (p.src.exact_claim || p.src.sim_claim)) || has(p, 'covered'); }).filter(live).length;
     function add(cond, pts, why) { if (cond) { total += pts; parts.push({ points: pts, why: why }); } }
     add(coveredGranted, 2, 'covered by a granted, in-force claim (cached/curated Markush)');
     add(!coveredGranted && coveredPendingUnknown, 1, 'covered by a pending or status-unknown claim');
@@ -771,47 +902,66 @@
     add(simHighClaimLive, 1, 'a closely similar compound sits in the claims of a live patent');
     add(unclearGrantedLive, 1, 'a cached Markush record is unclear on a live granted claim');
     add(crowd >= (sp.crowd || 3), 1, 'crowded space: ' + crowd + ' live publications disclose the variant or a close analogue');
+    add(arr(extra.unknown).length > 0, 1, 'not every check ran (' + arr(extra.unknown).map(function (u) { return u.check; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(', ') + '): unknown');
+    add(!!extra.unverified, 1, 'not verified outside the source claim (the checker is unclear)');
     var risk = Math.max(0, Math.min(4, total));
     return { risk: risk, riskParts: parts, riskRaw: total };
   }
 
   // ------------------------------------------------------------------------------------------------ rank
   function rank(assessed) {
-    var Ch = eng('chem');
     var list = arr(assessed).slice();
-    // structural distance from the start molecule (1 - count-fingerprint similarity); closer = smaller distance
     return Promise.resolve().then(function () {
       return list.map(function (v) {
         var risk = v.assessment && isNum(v.assessment.risk) ? v.assessment.risk : -1; // null risk ranks most risky
-        var r = risk < 0 ? 5 : risk;
-        return { v: v, r: r, dist: isNum(v.distance) ? v.distance : 0.5 };
+        return { v: v, r: risk < 0 ? 5 : risk, dist: isNum(v.distance) ? v.distance : null };
       });
     }).then(function (rows) {
-      rows.sort(function (a, b) { return (b.r - a.r) || (a.dist - b.dist) || (a.v.smiles < b.v.smiles ? -1 : 1); });
+      // risk desc, then the closest to the start first; a variant without a computed distance goes after those with one
+      rows.sort(function (a, b) {
+        if (b.r !== a.r) return b.r - a.r;
+        if (a.dist !== b.dist) { if (a.dist == null) return 1; if (b.dist == null) return -1; return a.dist - b.dist; }
+        return a.v.smiles < b.v.smiles ? -1 : a.v.smiles > b.v.smiles ? 1 : 0;
+      });
       return rows.map(function (x) { x.v.rank = { risk: x.r, distance: x.dist }; return x.v; });
     });
   }
-  /* compute structural distance (1 - count-fingerprint Tanimoto) of each variant from the start molecule, used as the
-     secondary ranking key (closer to the start = more useful = ranked first among equal-risk variants). */
-  function withDistance(startSmiles, variants) {
-    return ensureOCL().then(function () { return computeDistances(startSmiles, variants); });
-  }
+  /* structural distance (1 - count-fingerprint Tanimoto, ChemFP of engine/chemfp.js, the same code the similarity search
+     uses) of each variant from the start molecule; the secondary ranking key. When no fingerprint code can be loaded the
+     distance is null (shown as "-"), never a placeholder number. */
   function chemFp() {
     if (g.ChemFP && g.ChemFP.fp) return g.ChemFP;
     if (typeof module !== 'undefined' && module.exports && typeof require === 'function') { try { return require(require('path').join(__dirname, 'chemfp.js')); } catch (e) { /* ignore */ } }
     return null;
   }
+  function ensureFp() {
+    if (chemFp()) return Promise.resolve(chemFp());
+    if (S.fpP) return S.fpP;
+    if (typeof document === 'undefined') return Promise.resolve(null);
+    var base = S.scriptUrl ? S.scriptUrl.replace(/[^\/]*$/, '') : 'engine/';
+    S.fpP = new Promise(function (resolve) {
+      var s = document.createElement('script'); s.src = base + 'chemfp.js'; s.async = false;
+      s.onload = function () { resolve(chemFp()); }; s.onerror = function () { S.fpP = null; resolve(null); };
+      document.head.appendChild(s);
+    });
+    return S.fpP;
+  }
+  function withDistance(startSmiles, variants) {
+    return ensureOCL().then(function () { return ensureFp(); }).then(function () { return computeDistances(startSmiles, variants); });
+  }
   function computeDistances(startSmiles, variants) {
     var CF = chemFp(), OCL = oclSync();
-    if (!CF || !OCL) { arr(variants).forEach(function (v) { if (!isNum(v.distance)) v.distance = 0.5; }); return Promise.resolve(variants); }
+    function none() { arr(variants).forEach(function (v) { v.distance = null; }); return Promise.resolve(variants); }
+    if (!CF || !OCL) return none();
     try {
-      var qm = parse(startSmiles, false); var qf = CF.fp(qm);
+      var qm = parse(startSmiles, false); if (!qm) return none();
+      var qf = CF.fp(qm);
       arr(variants).forEach(function (v) {
-        var vm = parse(v.smiles, false); if (!vm) { v.distance = 0.5; return; }
+        var vm = parse(v.smiles, false); if (!vm) { v.distance = null; return; }
         var vf = CF.fp(vm), sim = CF.tanimotoPacked(qf.pk, vf.pk, 0, vf.pk.length);
-        v.distance = Math.max(0, Math.min(1, 1 - sim));
+        v.distance = isNum(sim) ? Math.max(0, Math.min(1, 1 - sim)) : null;
       });
-    } catch (e) { arr(variants).forEach(function (v) { if (!isNum(v.distance)) v.distance = 0.5; }); }
+    } catch (e) { return none(); }
     return Promise.resolve(variants);
   }
 
@@ -847,9 +997,16 @@
     s.v = VERSION; s.updated = nowIso();
     // cap the stored payload: keep SMILES + move + compact assessment per variant
     if (Array.isArray(s.variants)) s.variants = s.variants.slice(0, 120).map(function (v) {
-      return { smiles: v.smiles, idcode: v.idcode, move: v.move, moveLabel: v.moveLabel, sourceVerdict: v.sourceVerdict, sourceReason: v.sourceReason,
-        assessment: v.assessment ? { risk: v.assessment.risk, riskParts: v.assessment.riskParts, patents: arr(v.assessment.patents).slice(0, 20).map(function (p) { return { pn: p.pn, markush: p.markush || null, src: p.src, status: p.status || null }; }) } : null,
-        rank: v.rank || null, distance: v.distance };
+      var a = v.assessment;
+      return { smiles: v.smiles, idcode: v.idcode, move: v.move, moveLabel: v.moveLabel, verified: v.verified, sourceVerdict: v.sourceVerdict, sourceReason: v.sourceReason,
+        assessment: a ? { risk: a.risk, notAssessed: !!a.notAssessed, riskParts: a.riskParts, unknown: arr(a.unknown).slice(0, 6), limits: arr(a.limits).slice(0, 4),
+          markush: arr(a.markush).filter(function (m) { return m.overall === 'covered' || m.overall === 'unclear'; }).slice(0, 20),
+          patents: arr(a.patents).slice(0, 20).map(function (p) {
+            var r = p.right || {};
+            return { pn: p.pn, markush: p.markush || null, claim: p.claim == null ? null : p.claim, mk: arr(p.mk).slice(0, 10), src: p.src, status: p.status || null,
+              right: { live: r.live == null ? null : !!r.live, granted: !!r.granted, pending: !!r.pending, dead: !!r.dead } };
+          }) } : null,
+        rank: v.rank || null, distance: isNum(v.distance) ? v.distance : null };
     });
     return s;
   }

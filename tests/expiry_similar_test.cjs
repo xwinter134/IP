@@ -46,7 +46,8 @@ async function unit() {
     pat({ p: 3, pn: 'US3A1', auth: 'US', kind: 'A1', fam: 2, appNo: 'u3', app: 20200101, status: 'pending' }),
     pat({ p: 4, pn: 'EP4B1', fam: 3, appNo: 'e4', app: 20050101, status: 'lapsed' }),
     pat({ p: 5, pn: 'WO5A1', auth: 'WO', kind: 'A1', fam: 3, appNo: 'w5', app: 20050101, status: 'unknown' }),
-    pat({ p: 6, pn: 'EP6B1', fam: 4, appNo: 'e6', app: 20190301, deIn: 0 })
+    pat({ p: 6, pn: 'EP6B1', fam: 4, appNo: 'e6', app: 20190301, deIn: 0 }),
+    pat({ p: 7, pn: 'EP7A1', kind: 'A1', fam: 5, appNo: 'e7', app: 20210601, status: 'pending' })
   ];
   const ST = { 0: { code: 'granted', src: 'ep-register', asof: '2026-08-23', expiry_est: '2037-10-26', in_force_de: true, opposition: { filed: false }, filing: '2017-10-26' },
     2: { code: 'granted', src: 'us-calc', asof: '2026-11-11', expiry_est: '2034-01-17', pta_days: 625, term_base: '2012-05-02', terminal_disclaimer: true },
@@ -75,6 +76,8 @@ async function unit() {
   const cl = E.cliff(rows);
   ok(cl.jurisdictions.EP.lastExpiry === '2039-03-01' && cl.jurisdictions.US.lastExpiry === '2034-01-17' && cl.jurisdictions.DE.lastExpiry === '2037-10-26', 'cliff: last in-force expiry per jurisdiction (DE excludes the right lapsed in DE)', cl.jurisdictions);
   ok(cl.jurisdictions.US.nPending === 1 && /pending application/.test(cl.jurisdictions.US.text) && /still grant/.test(cl.jurisdictions.US.text), 'cliff text carries the pending-applications caveat');
+  const clp = E.cliff(await E.timeline([7], {}));
+  ok(clp.jurisdictions.DE.nPending >= 1 && /pending application/.test(clp.jurisdictions.DE.text), 'a pending EP application gives the DE statement the pending caveat', clp.jurisdictions.DE);
   const y = Object.fromEntries(cl.years.map((x) => [x.year, x]));
   ok(y[2037].EP === 1 && y[2034].US === 1 && y[2040].pending === 1 && y[2039].EP === 1 && cl.nDead === 1 && cl.nSuperseded === 1, 'cliff: per-year counts, dead and superseded left out', cl.years);
   ok(cl.years.every((x, i, a) => i === 0 || x.year === a[i - 1].year + 1), 'cliff years are contiguous');
@@ -161,7 +164,9 @@ async function browser() {
     ok(ep && ep.ex.date === ep.filing.replace(/^\d{4}/, (y) => String(+y + 20)) && ep.ex.basis === 'filing + 20 y', 'EP expiry is filing + 20 years', ep && [ep.filing, ep.ex.date]);
     ok(x.rows.every((r) => r.ex.pte === 'not checked' && r.ex.spc === 'not checked'), 'every row says PTE/SPC not checked');
     ok(x.cl.jurisdictions.EP.lastExpiry && x.cl.jurisdictions.US.lastExpiry && x.cl.years.length >= 3, 'cliff has dates for EP and US', x.cl.jurisdictions);
-    ok(/BEGIN:VEVENT/.test(x.ics) && /Estimated expiry EP3532103B1/.test(x.ics.replace(/\r\n /g, '')) && x.ics.split('\r\n').every((l) => l.length <= 75 || true), 'ICS from the real rows has events');
+    ok(/BEGIN:VEVENT/.test(x.ics) && /Estimated expiry EP3532103B1/.test(x.ics.replace(/\r\n /g, '')) && x.ics.split('\r\n').every((l) => Buffer.byteLength(l) <= 75), 'ICS from the real rows has events');
+    const cm = await S.page.evaluate(async () => { const ps = await LnpExpiry.setFrom({ source: 'pns', pns: 'US 10,000,445\nEP 3 532 103 B1' }, {}); return { n: ps.length, unk: ps.info && ps.info.unknown }; });
+    ok(cm.n === 2 && !(cm.unk && cm.unk.length), 'pasted list keeps "US 10,000,445" together', cm);
     const fam = await S.page.evaluate(async () => { const ps = await LnpExpiry.setFrom({ source: 'pns', pns: 'EP3532103B1' }, { family: true }); const rows = await LnpExpiry.timeline(ps, {}); return { n: ps.length, rows: rows.length, wo: rows.skippedWo, sup: rows.filter((r) => r.superseded).length }; });
     ok(fam.n > 1 && fam.wo >= 1 && fam.rows >= 1, 'family option adds members; WO publications skipped', fam);
 

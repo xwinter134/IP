@@ -26,6 +26,8 @@
      limits() -> text[]  */
 (function (g) {
   'use strict';
+  var HERE = '';
+  try { if (document.currentScript && document.currentScript.src) HERE = document.currentScript.src.replace(/[?#].*$/, '').replace(/[^\/]*$/, ''); } catch (e) { /* ignore */ }
   var S = { cfg: {}, cols: null, colsP: null, grids: [], axisCache: {} };
 
   function eng(name) { return S.cfg[name] || g['Lnp' + name.charAt(0).toUpperCase() + name.slice(1)] || null; }
@@ -71,7 +73,7 @@
     var Ch = eng('chem'), D = eng('data'), t0 = now(), mode = normMode(opts.mode), minSim = opts.minSim > 0 && opts.minSim <= 1 ? +opts.minSim : 0.9, limit = Math.max(1, Math.min(1000, opts.limit || 300));
     if (!Ch || !D) return Promise.reject(err('no_engine', 'The chemistry and patent data engines are not available.'));
     if (query == null || query === '' ) return Promise.reject(err('bad_query', 'Enter a structure (SMILES), a reference lipid name or a SCHEMBL number.'));
-    var q0 = typeof query === 'object' ? (query.query || query.smiles || query.c || '') : query;
+    var q0 = typeof query === 'object' ? (query.query || query.smiles || (query.c != null ? query.c : '')) : query;
     return Ch.parse(query).then(function (pr) {
       if (!pr || !pr.ok) throw err('bad_query', (pr && pr.error) || 'The structure could not be read.');
       return searchFor(query, mode, minSim, limit, opts.signal).then(function (hits) {
@@ -110,7 +112,7 @@
       var fm = new Map();
       entries.forEach(function (e) {
         var f = fm.get(e.family);
-        if (!f) { f = { fam: e.family, earliestPrio: '', earliestPub: '', members: [], inClaimsAny: false, statusSummary: { text: '', counts: {} }, inForce: false, player: '', size: 0, sizeInTable: 0, synthetic: e.family != null && e.family < 0 }; fm.set(e.family, f); }
+        if (!f) { f = { fam: e.family, earliestPrio: '', earliestPub: '', earliestKey: '', priorityKnown: false, members: [], inClaimsAny: false, statusSummary: { text: '', counts: {} }, inForce: false, player: '', size: 0, sizeInTable: 0, synthetic: e.family != null && e.family < 0 }; fm.set(e.family, f); }
         f.members.push(e);
         if (lt(e.prio, f.earliestPrio)) f.earliestPrio = e.prio;
         if (lt(e.pub, f.earliestPub)) f.earliestPub = e.pub;
@@ -120,8 +122,8 @@
         if (!f.player && e.player) f.player = e.player;
       });
       var families = Array.from(fm.values());
-      families.forEach(function (f) { f.statusSummary.text = Object.keys(f.statusSummary.counts).map(function (k) { return k + ' ' + f.statusSummary.counts[k]; }).join(', '); f.sizeInTable = f.members.length; });
-      families.sort(function (a, b) { return (a.earliestPrio || '9999').localeCompare(b.earliestPrio || '9999') || (a.earliestPub || '9999').localeCompare(b.earliestPub || '9999') || String(a.fam).localeCompare(String(b.fam)); });
+      families.forEach(function (f) { f.earliestKey = lt(f.earliestPrio, f.earliestPub) || !f.earliestPub ? f.earliestPrio : f.earliestPub; f.priorityKnown = !!f.earliestPrio; f.statusSummary.text = Object.keys(f.statusSummary.counts).map(function (k) { return k + ' ' + f.statusSummary.counts[k]; }).join(', '); f.sizeInTable = f.members.length; });
+      families.sort(function (a, b) { return (a.earliestKey || '9999').localeCompare(b.earliestKey || '9999') || (a.earliestPub || '9999').localeCompare(b.earliestPub || '9999') || String(a.fam).localeCompare(String(b.fam)); });
       entries.forEach(function (e) { delete e._inForce; });
       // family sizes in the whole table (how many publications of the family carry the compound is sizeInTable / size)
       return Promise.all(families.map(function (f) {
@@ -139,17 +141,22 @@
           if (e.where.desc || e.where.abs || e.where.ttl || e.where.img || e.where.mol) earliest.description = pick(earliest.description, e, 'pub');
         });
         Object.keys(earliest).forEach(function (k) { if (earliest[k]) delete earliest[k]._pub; });
+        var noPrioE = entries.filter(function (e) { return !e.prio; }).length, noPrioF = families.filter(function (f) { return !f.earliestPrio; }).length;
+        var prioIncomplete = !!(earliest.publication && (!earliest.priority || earliest.publication.date < earliest.priority.date));
+        var priorityMissing = { entries: noPrioE, families: noPrioF, entriesTotal: entries.length, familiesTotal: families.length, incomplete: prioIncomplete };
         var limits = LIMITS_TIMELINE.slice(), man = D.manifest || {}, snap = man.snapshots || {};
         if (mode === 'sim') limits.unshift('Similarity mode lists compounds with a count-fingerprint Tanimoto of at least ' + minSim.toFixed(2) + ' to the query; they are different structures, not the same compound.');
         else if (mode === 'exact+stereo') limits.unshift('Same connectivity: stereo variants (other or missing E/Z and R/S) of the query are included because SureChEMBL splits one lipid over several entries.');
         else limits.unshift('Exact structure only; stereo variants of the query are not included.');
         if (truncated) limits.push('Only the first ' + hits.length + ' of ' + total + ' matching compounds were used.');
+        if (noPrioE) limits.push(noPrioE + ' of ' + entries.length + ' publications (' + plural(noPrioF, 'family', 'families') + ' of ' + families.length + ' without any dated member) carry no priority date in the patent table; the earliest priority shown is the earliest among the dated ones, and families are ordered by the earlier of priority and publication date.');
+        if (prioIncomplete) limits.push('Priority incomplete: the earliest publication (' + earliest.publication.date + ') is earlier than the earliest known priority date' + (earliest.priority ? ' (' + earliest.priority.date + ')' : '') + '. The true earliest priority is not in the table and is at the latest the earliest publication date.');
         if (unresolved) limits.push(plural(unresolved, 'publication', 'publications') + ' of the chemistry set could not be matched to the patent table and carry no dates or status.');
         if (snap.surechembl) limits.push('Structure extraction snapshot: ' + snap.surechembl + (snap.ep_register ? '; EP legal status of ' + snap.ep_register : '') + '. Status can be out of date.');
         var compounds = hits.map(function (h) { return { c: h.c, id: h.id, smiles: h.smiles, match: h.match || (mode === 'sim' ? 'similar' : 'exact'), sim: h.sim, nPat: h.nPat, nFam: h.nFam, nClaims: h.nClaims, inClaims: h.inClaims, mw: h.mw }; });
         if (!compounds.length) limits.unshift(mode === 'sim' ? 'No compound of the corpus reaches the similarity threshold.' : 'This exact structure is not in the structure data of the corpus.');
         return { query: str(q0), parsed: { kind: pr.kind, smiles: pr.smiles, formula: pr.formula, mw: pr.mw, c: pr.c, id: pr.id }, mode: mode, minSim: minSim, compounds: compounds, compoundsTotal: total, truncated: truncated,
-          entries: entries, families: families, earliest: earliest, snapshot: { surechembl: snap.surechembl || null, ep_register: snap.ep_register || null, built: man.built || null }, ms: Math.round(now() - t0), limits: limits };
+          entries: entries, families: families, earliest: earliest, priorityMissing: priorityMissing, snapshot: { surechembl: snap.surechembl || null, ep_register: snap.ep_register || null, built: man.built || null }, ms: Math.round(now() - t0), limits: limits };
       });
     });
   }
@@ -192,8 +199,7 @@
     var D = eng('data'), man = D && D.manifest;
     if (!man || man.chem === null || !man.chem) return Promise.reject(err('no_chem', 'This build contains no structure data.'));
     if (!g.LnpLoader) return Promise.reject(err('no_engine', 'The data loader is not available.'));
-    var here = '';
-    try { if (document.currentScript && document.currentScript.src) here = document.currentScript.src.replace(/[?#].*$/, '').replace(/[^\/]*$/, ''); } catch (e) { /* ignore */ }
+    var here = HERE;
     var base = D.base() + (man.chem.dir || 'chem/'), L = g.LnpLoader.create({ base: base, enc: man.enc || 'auto', vendorUrl: new URL('../vendor/fflate.js', here || document.baseURI).href });
     var chemP = fetch(base + 'chem.json').then(function (r) { if (!r.ok) throw err('http', 'chem.json: HTTP ' + r.status); return r.json(); });
     S.colsP = Promise.all([chemP, L.get('desc.gz.bin', { as: 'bin' }), L.get('map.gz.bin', { as: 'bin' }), L.get('pat.gz.bin', { as: 'json' })]).then(function (r) {
@@ -225,9 +231,12 @@
   function capLabel(v, cap, zero) { return v === 0 && zero ? zero : (v >= cap ? cap + '+' : String(v)); }
   function longest(C, c) { var m = 0; for (var k = 0; k < 6; k++) { var v = C['t' + k] ? C['t' + k][c] : 0; if (v > m) m = v; } return m; }
 
+  // labels that depend on the kit are mapped on every call (the kit may load after the first call); the cache holds keys and idx only
+  var labelFns = { head: function (k) { return labelHead(k); }, amine: function (k) { return k === 'none' ? 'no amine' : labelAmine(k); } };
+  function withLabels(v) { var fn = labelFns[v.id]; return { labels: fn ? v.keys.map(fn) : v._lab.slice(), keys: v.keys, idx: v.idx }; }
   // -> {labels[], keys[], idx: Int16Array(n)}; the category list is fixed by the data of the whole set, not by the filter
   function axis(id, X) {
-    var key = id; if (S.axisCache[key] && S.axisCache[key].src === X) return S.axisCache[key].val;
+    var key = id; if (S.axisCache[key] && S.axisCache[key].src === X) return withLabels(S.axisCache[key].val);
     var C = X.col, n = X.n, idx = new Int16Array(n), labels = [], keys = [], i, c;
     function fromValues(fn, order, labelFn, keepAll) {        // categorical: values from fn(c) in the given order; only present ones unless keepAll
       var seen = {};
@@ -250,7 +259,7 @@
       var am = AMINES.filter(function (a) { return C[a[1]]; });
       fromValues(function (c) { var best = 'none', bv = 0; for (var j = 0; j < am.length; j++) { var v = C[am[j][1]][c]; if (v > bv) { bv = v; best = am[j][0]; } } return best; }, ['tertiary', 'secondary', 'primary', 'quaternary', 'amide', 'none'], function (k) { return k === 'none' ? 'no amine' : labelAmine(k); });
     } else throw err('bad_axis', 'Unknown axis: ' + id);
-    var val = { labels: labels, keys: keys, idx: idx }; S.axisCache[key] = { src: X, val: val }; return val;
+    var val = { keys: keys, idx: idx, _lab: labels, id: id }; S.axisCache[key] = { src: X, val: val }; return withLabels(val);
   }
   // value list of one axis over the whole set: {keys[], labels[]} (for filter menus)
   function categories(id) {
@@ -262,7 +271,7 @@
   /* ------------------------------------------------------------------------------------------ filters */
   var SPECIAL = { head: 1, amine: 1, inClaims: 1, branched: 1, biodegradable: 1, tailLen: 1, unsat: 1, nTails: 1, mwMin: 1, mwMax: 1, pns: 1, ps: 1, where: 1 };
   function inRange(v, f) { return Array.isArray(f) ? (v >= f[0] && v <= f[1]) : v === f; }
-  function normFilters(f) { var o = {}; Object.keys(f || {}).sort().forEach(function (k) { if (f[k] !== undefined && f[k] !== null && f[k] !== '' && f[k] !== false) o[k] = f[k]; }); return o; }
+  function normFilters(f) { var o = {}; Object.keys(f || {}).sort().forEach(function (k) { if (f[k] !== undefined && f[k] !== null && f[k] !== '') o[k] = f[k]; }); return o; }
   // -> Uint8Array(n) | null ; pubSet = Set of chemistry-set publication indexes (from ps / pns) | null
   function buildMask(X, f, pubSet) {
     var n = X.n, C = X.col, keys = Object.keys(f), m = null, c, i;
@@ -356,12 +365,12 @@
     var nC = o.compounds || 60, nP = o.patents || 100, X = I.X;
     var cs = cell._all.slice(0, nC);
     var compP = Promise.all(cs.map(function (c) { return Ch.compound(c).catch(function () { return null; }); })).then(function (a) { return a.filter(Boolean); });
-    // publications: in claims first, then the earliest priority; dates come from the binary columns of the patent table
+    // publications: earliest priority first (publication date where the priority date is missing); dates come from the binary columns of the patent table
     var pis = Array.from(cell.pi), pns = pis.map(function (pi) { return X.pn[pi]; });
     var patP = Promise.all(pns.map(function (pn) { return D.byPn(pn, { exact: true }).catch(function () { return -1; }); })).then(function (pp) {
       return Promise.resolve(D.meta ? D.meta() : null).catch(function () { return null; }).then(function (m) {
-        var rows = pis.map(function (pi, i) { var p = pp[i]; return { pi: pi, pn: pns[i], p: p, fam: X.fam[pi], prio: m && p >= 0 ? m.prio[p] : 0 }; });
-        rows.sort(function (a, b) { return (a.prio || 99999999) - (b.prio || 99999999) || a.pn.localeCompare(b.pn); });
+        var rows = pis.map(function (pi, i) { var p = pp[i]; return { pi: pi, pn: pns[i], p: p, fam: X.fam[pi], prio: m && p >= 0 ? m.prio[p] : 0, pub: m && p >= 0 && m.pub ? m.pub[p] : 0 }; });
+        rows.sort(function (a, b) { return (a.prio || a.pub || 99999999) - (b.prio || b.pub || 99999999) || a.pn.localeCompare(b.pn); });
         var total = rows.length, top = rows.slice(0, nP);
         return D.patents(top.filter(function (r) { return r.p >= 0; }).map(function (r) { return r.p; })).then(function (pts) {
           var pm = new Map(); pts.forEach(function (pt) { if (pt) pm.set(pt.p, pt); });

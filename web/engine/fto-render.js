@@ -38,7 +38,9 @@
       exemptions: 'Ausnahmen und Rolle (Einsch\u00e4tzung des Modells)', shortVerdict: 'Kurzfazit (Claude)', s_cross: '5. \u00dcbergreifende Punkte (Claude; aus den Einzelbewertungen)', crossPatterns: 'Querschnitt', timeline: 'Zeitachse (Ablaufdaten sind Sch\u00e4tzungen)', exemptionsAll: 'Ausnahmen',
       daAll: 'Umgehungsideen im Quervergleich (nur Ideen)', collides: 'Kollision mit', redAll: 'Gegenpr\u00fcfung', pendingText: 'Anh\u00e4ngige Anmeldungen', s_not: '6. Nicht analysierte Schutzrechte und Gr\u00fcnde', reason: 'Grund', s_next: '7. N\u00e4chste Schritte', prio: 'Priorit\u00e4t', step: 'Schritt', why: 'Warum',
       alwaysNext: 'Stets empfohlen (Methodik)', openQ: 'Offene Fragen', s_usage: 'Nutzung', calls: 'Aufrufe', resumed: 'aus Zwischenstand \u00fcbernommene Schritte', notAssessed: 'nicht bewertet', estimate: 'Sch\u00e4tzung', flagsLabel: 'Kennzeichen', dependentFailed: 'Unteranspruchsanalyse fehlgeschlagen', redteamFailed: 'Gegenpr\u00fcfung fehlgeschlagen',
-      forcedBy: 'von der App auf \u201eunklar\u201c gesetzt', modelRisk: 'Risiko laut Modell', construction: 'Auslegung', broad: 'weit', narrow: 'eng', definition: 'Definition', clarification: 'Kl\u00e4rung', assumption: 'Annahme', numeric: 'Zahlenvergleich', imagesSent: 'gesendete Formelbilder', claimsLang: 'Anspruchssprache'
+      forcedBy: 'von der App auf \u201eunklar\u201c gesetzt', modelRisk: 'Risiko laut Modell', construction: 'Auslegung', broad: 'weit', narrow: 'eng', definition: 'Definition', clarification: 'Kl\u00e4rung', assumption: 'Annahme', numeric: 'Zahlenvergleich', imagesSent: 'gesendete Formelbilder', claimsLang: 'Anspruchssprache',
+      evidence: 'Von der App berechnete Belege', evIntro: 'Von Code aus gespeicherten Daten berechnet, keine Modellausgabe. Diese Belege setzen nur Kennzeichen, Fragen und Risikountergrenzen; sie senken kein Risiko.', evApplied: 'Angewandte Regeln', evMarkush: 'Markush-Pr\u00fcfung (von Code gepr\u00fcft, gespeicherte und kuratierte Datens\u00e4tze)', evNoRecord: 'Kein gespeicherter oder kuratierter Markush-Datensatz f\u00fcr diese Ver\u00f6ffentlichung.',
+      evTranslation: '\u00dcbersetzung', evReviewed: 'gepr\u00fcft', evNotReviewed: 'nicht gepr\u00fcft', evOrigin: 'Herkunft', evGroup: 'Gefundene Gruppe', evRanges: 'Zahlenbereiche der Anspr\u00fcche (von Code verglichen)', evParam: 'Parameter', evRange: 'Beanspruchter Bereich', evQuoteSrc: 'Zitatquelle', evLimits: 'Grenzen dieser Belege', evRoute: 'Markush-Route (gespeicherte und kuratierte Datens\u00e4tze, von Code gepr\u00fcft)', evNoRanges: 'Kein Anspruch dieser Ver\u00f6ffentlichung nennt einen Bereich f\u00fcr die verglichenen Werte.'
     },
     en: {
       title: 'FTO pre-screen (not a legal opinion)', created: 'Created', depth: 'Depth', markets: 'Markets', corpus: 'Corpus snapshot', none: 'none', yes: 'yes', no: 'no', unknown: 'unknown',
@@ -61,7 +63,9 @@
       exemptions: 'Exemptions and role (model view)', shortVerdict: 'Short verdict (Claude)', s_cross: '5. Cross-cutting points (Claude; from the individual assessments)', crossPatterns: 'Cross-patent patterns', timeline: 'Timeline (expiry dates are estimates)', exemptionsAll: 'Exemptions',
       daAll: 'Design-around ideas cross-checked (ideas only)', collides: 'Collides with', redAll: 'Red team', pendingText: 'Pending applications', s_not: '6. Patent rights not analysed, and why', reason: 'Reason', s_next: '7. Next steps', prio: 'Priority', step: 'Step', why: 'Why',
       alwaysNext: 'Always recommended (method)', openQ: 'Open questions', s_usage: 'Usage', calls: 'calls', resumed: 'steps taken from saved state', notAssessed: 'not assessed', estimate: 'estimate', flagsLabel: 'Flags', dependentFailed: 'Dependent-claim analysis failed', redteamFailed: 'Red team failed',
-      forcedBy: 'set to "unclear" by the app', modelRisk: 'Risk according to the model', construction: 'Construction', broad: 'broad', narrow: 'narrow', definition: 'Definition', clarification: 'Clarification', assumption: 'Assumption', numeric: 'Numeric comparison', imagesSent: 'formula images sent', claimsLang: 'Claim language'
+      forcedBy: 'set to "unclear" by the app', modelRisk: 'Risk according to the model', construction: 'Construction', broad: 'broad', narrow: 'narrow', definition: 'Definition', clarification: 'Clarification', assumption: 'Assumption', numeric: 'Numeric comparison', imagesSent: 'formula images sent', claimsLang: 'Claim language',
+      evidence: 'Evidence computed by the app', evIntro: 'Computed by code from stored data, not a model output. This evidence only adds flags, questions and risk floors; it never lowers a risk.', evApplied: 'Rules applied', evMarkush: 'Markush check (code-verified; stored and curated records)', evNoRecord: 'No stored or curated Markush record for this publication.',
+      evTranslation: 'Translation', evReviewed: 'reviewed', evNotReviewed: 'not reviewed', evOrigin: 'Origin', evGroup: 'Group found', evRanges: 'Numeric ranges in the claims (compared by code)', evParam: 'Parameter', evRange: 'Claimed range', evQuoteSrc: 'Quote source', evLimits: 'Limits of this evidence', evRoute: 'Markush route (stored and curated records, code-verified)', evNoRanges: 'No claim of this publication states a range for the compared values.'
     }
   };
   var RISK = {
@@ -97,8 +101,10 @@
     definitionszitat_nicht_verifiziert: 'definition quote not verified', markush_zitat_nicht_verifiziert: 'formula quote not verified', markush_unklar: 'formula test unclear', text_gekuerzt: 'text shortened',
     literal_neu_berechnet: 'literal result recomputed', anspruch_fehlt_in_analyse: 'claim missing from the analysis', urteil_von_app_auf_unklar_gesetzt: 'verdict set to unclear by the app', ungueltiges_urteil: 'invalid verdict',
     einzelnennung_zitat_nicht_verifiziert: 'quote for the individually named compound not verified', kette_neu_berechnet: 'chain result recomputed', unteransprueche_fehlgeschlagen: 'dependent-claim analysis failed',
-    gegenpruefung_fehlgeschlagen: 'red-team review failed', eskalation_durch_gegenpruefung: 'escalated by the red-team review', triage_ohne_ergebnis: 'no triage result', analyse_fehlgeschlagen: 'analysis failed',
+    gegenpruefung_fehlgeschlagen: 'red-team review failed', eskalation_durch_gegenpruefung: 'escalated by the red-team review', triage_ohne_ergebnis: 'no triage result', analyse_fehlgeschlagen: 'analysis failed', triage_c_ueberstimmt: 'triage C overridden by a code-verified Markush hit',
     unbekannte_nummer_in_zeitachse: 'unknown number in the timeline', formulierung_pruefen: 'check wording', gesamtrisiko_abweichend: 'overall risk differs from the computed one',
+    markush_covered: 'Markush check: covered (code-verified, translation reviewed)', markush_covered_unreviewed: 'Markush check: covered (code-verified, translation not reviewed)', markush_contradicts_chart: 'Markush check contradicts the claim chart',
+    range_outside: 'product value outside a claimed range (risk not lowered)', ranges_all_inside: 'all compared product values inside the claimed ranges', all_inside: 'all inside', no_range: 'no range', not_covered: 'not covered', covered: 'covered', not_met: 'not met',
     expired: 'expired', lapsed: 'lapsed', revoked: 'revoked', withdrawn: 'withdrawn', refused: 'refused', lapsed_de: 'lapsed in DE'
   };
   var FIELD_EN = {
@@ -233,6 +239,8 @@
       if (arr(rec.structure).length) { h(3, L.structRoute); table([L.lipid, L.role, L.mode, L.compounds, L.pubs], rec.structure.map(function (s) { return [s.lipid, s.role, de ? s.mode : ({ exact: 'exact', sub: 'substructure', sim: 'similarity' }[s.mode] || s.mode), s.error ? 'ERR: ' + s.error : s.compounds, s.publications]; })); }
       if (arr(rec.text).length) { h(3, L.textRoute); table(['', L.query, L.hits, L.taken], rec.text.map(function (t) { return [t.label, t.query, t.error ? 'ERR: ' + t.error : t.total, t.taken]; }), 'queries'); }
       if (arr(rec.seed).length) { h(3, L.seedRoute); table([L.tier, L.hits], rec.seed.map(function (s) { return [s.tier, s.error ? 'ERR: ' + s.error : s.total]; })); }
+      if (rec.markush) { h(3, L.evRoute); kv([['Records', rec.markush.records], [L.lipid, rec.markush.lipids], [de ? 'gepr\u00fcft' : 'Checks', rec.markush.checked], [de ? 'nicht erfasst' : 'Not covered', rec.markush.notCovered]]);
+        table([L.lipid, L.right, L.claim, L.outcome, L.evTranslation], arr(rec.markush.covered).concat(arr(rec.markush.unclear)).map(function (x) { return [x.lipid, x.pn, x.claim, code(x.overall), x.overall === 'covered' ? (x.reviewed ? L.evReviewed : L.evNotReviewed) : '']; })); }
       if (rec.semantic) { h(3, L.semRoute); kv([['strict', rec.semantic.queries && rec.semantic.queries.strict], ['relaxed', rec.semantic.queries && rec.semantic.queries.relaxed], [L.hits, rec.semantic.hits], [L.calls, rec.semantic.calls], ['degraded', arr(rec.semantic.degraded).join(', ') || rec.semantic.error]]); }
       ul(arr(rec.notes).concat(rec.cut ? [(de ? 'Weitere Kandidaten unterhalb der Auswahlgrenze: ' : 'Further candidates below the cut-off: ') + rec.cut] : []));
     }
@@ -284,6 +292,33 @@
           }
         });
       }
+      var ev = e.app && e.app.evidence;
+      if (ev) {
+        h(4, L.evidence);
+        p(L.evIntro);
+        if (arr(ev.applied).length) { h(5, L.evApplied); ul(ev.applied.map(function (a) { return str(a.text) + (a.to && a.to !== a.from ? ' [' + risk(a.from) + ' -> ' + risk(a.to) + ']' : ''); })); }
+        if (ev.markush) {
+          h(5, L.evMarkush);
+          if (!arr(ev.markush.records).length) p(L.evNoRecord);
+          table([L.claim, L.lipid, L.outcome, L.evTranslation, L.evOrigin, L.reasoning], arr(ev.markush.results).map(function (r) { return [r.claim, r.lipid, code(r.overall) + (r.raw && r.raw !== r.overall ? ' (raw: ' + code(r.raw) + ')' : ''), r.reviewed ? L.evReviewed : L.evNotReviewed, r.origin, arr(r.reasons).join('; ')]; }));
+          arr(ev.markush.results).forEach(function (r) {
+            table([L.claim + ' ' + r.claim + ' / ' + r.lipid + ': ' + L.variables, L.verdict, L.evGroup, L.reasoning, L.quote, L.quoteCheck], arr(r.groups).map(function (gr) { return [gr.name, code(gr.verdict), gr.fragment, gr.why, gr.quote, gr.quoteStatus ? (QCHK[lang][gr.quoteStatus] || gr.quoteStatus) : '']; }));
+            table([L.provisos, L.outcome, L.quoteCheck], arr(r.provisos).map(function (pv) { return [pv.quote, pv.matched ? (de ? 'trifft zu' : 'applies') : str(pv.why), pv.quoteStatus ? (QCHK[lang][pv.quoteStatus] || pv.quoteStatus) : '']; }));
+          });
+          ul(arr(ev.markush.errors).map(function (x) { return 'ERR: ' + [x.lipid, x.claim != null ? L.claim + ' ' + x.claim : '', x.reason].filter(Boolean).join(' - '); }));
+        }
+        if (ev.ranges) {
+          var rgv = ev.ranges;
+          h(5, L.evRanges);
+          if (rgv.reason) p(rgv.reason);
+          else if (!arr(rgv.claims).length) p(L.evNoRanges);
+          var rrows = [];
+          arr(rgv.claims).forEach(function (c) { arr(c.values).forEach(function (v) { if (v.status === 'no_range') return; rrows.push([c.claim + (c.indep ? '' : ' (dep.)'), v.label + (v.comp ? ' (' + v.comp + ')' : ''), str(v.value) + (v.unit ? ' ' + v.unit : ''), str(v.range) + (v.inherited ? ' [' + L.claim + ' ' + v.fromClaim + ']' : '') + (v.approx ? ' (about)' : '') + (v.compUnknown ? (de ? ' (Komponente nicht erkannt)' : ' (component not identified)') : ''), code(v.status), v.quote, str(v.quoteSource) + (v.quoteVerified === true ? ' (verified)' : v.quoteVerified === false ? ' (NOT verified)' : '')]); }); });
+          table([L.claim, L.evParam, L.product, L.evRange, L.outcome, L.quote, L.evQuoteSrc], rrows);
+          ul(rgv.notes);
+        }
+        if (arr(ev.limits).length) { h(5, L.evLimits); ul(ev.limits); }
+      }
       if (e.dependentFailed) p(L.dependentFailed + ': ' + str(e.dependentFailed.message), 'warn');
       if (da) {
         h(4, L.dependent);
@@ -313,7 +348,7 @@
         if (rt.revidiert) p(L.revised + ': ' + risk(rt.revidiert.risiko) + '. ' + str(rt.revidiert.begruendung));
       }
       if (ch) {
-        var qs = arr(gs.offene_fragen).concat(rt ? arr(rt.zu_klaeren) : []);
+        var qs = arr(gs.offene_fragen).concat(rt ? arr(rt.zu_klaeren) : []).concat(ev ? arr(ev.questions) : []);
         arr(ch.claims).forEach(function (c) { arr(c.merkmale).forEach(function (m) { if (m.app && m.app.verdict === 'unklar' && m.klaerung) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + m.klaerung); if (m.app && !m.app.verified) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + (QCHK[lang][m.app.quote] || '') + (de ? ' - am Originaldokument pr\u00fcfen' : ' - check against the original document')); }); if (arr(c.aequivalenz).length) qs.push(L.claim + ' ' + c.claim_no + ': ' + (de ? '\u00c4quivalenz f\u00fcr ' : 'equivalence for ') + c.aequivalenz.map(function (q) { return q.feature_id; }).join(', ') + (de ? ' (nicht entschieden)' : ' (not decided)')); });
         if (qs.length) { h(4, L.questions); ul(qs); }
         if (arr(gs.umgehungsloesungen).length) { h(4, L.designAround); ul(gs.umgehungsloesungen.map(function (u) { return str(u.feature_id) + ': ' + str(u.aenderung) + ' [' + code(u.robustheit) + '] - ' + str(u.vorbehalt); })); }

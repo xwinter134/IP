@@ -84,6 +84,16 @@ async function unit() {
     r = await rp;
     ok(r.length === 1 && r[0].input === 'CCO', 'file contents parsed', r);
   }
+  section('parseInput: delimiter detection');
+  {
+    let r = Sc.parseInput('1,2-dioleoyl-3-trimethylammonium-propane\nSM-102\nALC-0315');
+    ok(r.delimiter === '' && r.length === 3 && !r.some((x) => x.error), 'a name list whose first entry has a comma is not a CSV', r.map((x) => x.error || x.input));
+    r = Sc.parseInput('SM-102,Moderna\nALC-0315,Pfizer');
+    ok(r[0].input === 'SM-102' && r[1].input === 'ALC-0315' && r.notes.length === 1, 'without a structure column the first column is the input, with a note', [r[0], r.notes]);
+    r = Sc.parseInput('X1\tCCCCN(C)CCCC\nX2\tCCCCCCN(C)C');
+    ok(r.delimiter === '\t' && r[0].id === 'X1' && r[0].input === 'CCCCN(C)CCCC', 'TSV without header, structure column found', r[0]);
+  }
+
   section('parseInput: limits, hostile input');
   {
     const big = Array.from({ length: 2500 }, (_, i) => 'C'.repeat(1 + (i % 7)) + 'O').join('\n');
@@ -343,7 +353,7 @@ async function browser() {
     await S.page.waitForSelector('.sc-detail-row .sc-ptab tbody tr');
     const links = await S.page.evaluate(() => ({ pn: Array.from(document.querySelectorAll('.sc-detail-row a.k-pn')).map((a) => a.getAttribute('href')), mk: Array.from(document.querySelectorAll('.sc-detail-row a.sc-mk')).map((a) => a.getAttribute('href') + ' ' + a.textContent), hit: Array.from(document.querySelectorAll('.sc-detail-row a.sc-hit')).map((a) => a.getAttribute('href')) }));
     ok(links.pn.length > 0 && links.pn.every((h2) => /^#patent-/.test(h2)), 'patent numbers link to the patent page', links.pn.slice(0, 3));
-    ok(links.mk.some((x) => /^#markush-EP3350157B1--c1 covered/.test(x)), 'Markush covered pill links to #markush-<pn>--c<claim>', links.mk.slice(0, 4));
+    ok(links.mk.some((x) => /^#markush-EP3350157B1--c1--q\S+ covered/.test(x)), 'Markush covered pill links to #markush-<pn>--c<claim>', links.mk.slice(0, 4));
     ok(links.hit.length > 0 && links.hit.every((h2) => /^#struktur--cSCHEMBL\d+$/.test(h2)), 'hit ids link to the structure view', links.hit.slice(0, 3));
     const detailText = await S.page.textContent('.sc-detail-row');
     ok(/Found in/.test(detailText) && /Status/.test(detailText) && /Expiry/.test(detailText) && /not evidence that a claim protects/.test(detailText), 'detail shows where found, status, expiry and the claim caveat', detailText.slice(0, 160));
@@ -351,7 +361,7 @@ async function browser() {
     ok(exp === 'true' || true, 'expand button state');
     // queue links
     const qlinks = await S.page.evaluate(async () => { const out = []; document.querySelectorAll('tr.sc-row .sc-exp').forEach((b) => { if (b.getAttribute('aria-expanded') !== 'true') b.click(); }); await new Promise((r) => setTimeout(r, 300)); document.querySelectorAll('.sc-mkbox a.sc-mk').forEach((a) => out.push(a.getAttribute('href'))); return out; });
-    ok(qlinks.length === 0 || qlinks.every((h2) => /^#markush-[A-Z]{2}[A-Za-z0-9]+--c\d+$/.test(h2)), 'queue entries link to #markush-<pn>--c<claim> (' + qlinks.length + ' listed)', qlinks.slice(0, 3));
+    ok(qlinks.length === 0 || qlinks.every((h2) => /^#markush-[A-Z]{2}[A-Za-z0-9]+--c\d+--q\S+$/.test(h2)), 'queue entries link to #markush-<pn>--c<claim> (' + qlinks.length + ' listed)', qlinks.slice(0, 3));
     await S.page.evaluate(() => document.querySelectorAll('tr.sc-row .sc-exp[aria-expanded="true"]').forEach((b) => b.click()));
     const all = await S.page.locator('tr.sc-row').count();
     await S.page.check('#sc-f-claims');
@@ -409,6 +419,23 @@ async function browser() {
     await S.page.click('.sc-saved .btn >> nth=0');
     await S.page.waitForFunction(() => document.querySelectorAll('.sc-saved li').length === 0, null, { timeout: 10000 });
     ok(true, 'a saved screen can be deleted');
+    // identity survives a reopen without stored results and a re-run; a list can be saved before it is run
+    await S.page.fill('#sc-input', 'id,smiles\nLIB-001,CCCCCCCCCCCCCCCC(=O)O\nLIB-002,\nLIB-003,CCCCCCCCCCCCCCCCCC(=O)O\nLIB-004,"CCCCCCCC"');
+    await S.page.waitForFunction(() => /4 rows/.test((document.querySelector('.sc-preview') || {}).textContent || ''), null, { timeout: 30000 });
+    const saveEnabled = await S.page.evaluate(() => !document.getElementById('sc-save').disabled);
+    ok(saveEnabled, 'Save run is enabled for a pasted list that was not run yet');
+    await S.page.click('#sc-save'); await S.page.fill('#sc-name', 'ids'); await S.page.click('#sc-save-ok');
+    await S.page.waitForSelector('.sc-saved li', { timeout: 15000 });
+    const hash2 = await S.page.evaluate(() => location.hash);
+    await S.page.goto('about:blank'); await S.page.goto(srv.origin + '/' + hash2);
+    await S.page.waitForSelector('#sc-input', { timeout: 120000 });
+    await S.page.waitForFunction(() => document.querySelectorAll('tr.sc-row').length === 4, null, { timeout: 180000 });
+    const ids1 = await S.page.evaluate(() => Array.from(document.querySelectorAll('tr.sc-row')).map((r) => r.dataset.row + ':' + r.textContent).join('|'));
+    ok(/LIB-001/.test(ids1) && /LIB-003/.test(ids1) && /LIB-004/.test(ids1) && ids1.split('|').some((x) => /^3:[^|]*LIB-002/.test(x)), 'reopened saved screen keeps ids and row numbers, the empty row stays invalid', ids1.slice(0, 300));
+    await S.page.click('#sc-run');
+    await S.page.waitForFunction(() => !document.getElementById('sc-run').disabled && document.querySelectorAll('tr.sc-row').length === 4, null, { timeout: 180000 });
+    const ids2 = await S.page.evaluate(() => Array.from(document.querySelectorAll('tr.sc-row')).map((r) => r.dataset.row + ':' + r.textContent).join('|'));
+    ok(/LIB-001/.test(ids2) && /LIB-003/.test(ids2) && ids2.split('|').some((x) => /^4:[^|]*LIB-003/.test(x)), 'clicking Run on a reopened screen keeps ids and row numbers', ids2.slice(0, 300));
     cleanErrors(S, 'light desktop');
     await noHScroll(S, 'light desktop');
     await S.ctx.close();

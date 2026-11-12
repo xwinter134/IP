@@ -35,7 +35,8 @@
     var K = g.LnpKit, L = g.LnpSimilar, D = g.LnpData;
     var st = { mode: 'patent', pn: '', text: '', smiles: '' }, dead = false, seq = 0, res = null;
 
-    function fromRoute(r) { st.mode = r.params.m === 'text' ? 'text' : 'patent'; st.pn = st.mode === 'patent' ? (r.arg || '') : st.pn; }
+    function fromRoute(r) { st.mode = r.params.m === 'text' ? 'text' : 'patent'; st.pn = st.mode === 'patent' ? decArg(r.arg || '') : st.pn; }
+    function decArg(a) { try { return decodeURIComponent(a); } catch (e) { return a; } }
     function goPn(pn) { R.go({ view: 'similar', arg: pn }); }
 
     /* ---------------------------------------------------------- skeleton */
@@ -55,7 +56,7 @@
       if (st.mode === 'patent') {
         var inp = h('input.input.mono', { id: 'sm-pn', type: 'text', placeholder: 'Publication number, e.g. EP3532103B1 or US 10,000,445', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', 'aria-label': 'Publication number' });
         inp.value = st.pn;
-        qBox.appendChild(h('form.k-qrow', { onsubmit: function (ev) { ev.preventDefault(); var v = inp.value.trim(); if (v) goPn(v); } }, inp, h('button.btn.primary', { type: 'submit', id: 'sm-go' }, U.icon('search'), 'Find similar')));
+        qBox.appendChild(h('form.k-qrow', { onsubmit: function (ev) { ev.preventDefault(); var v = inp.value.trim(); if (!v) return; Promise.resolve(D.byPn(v)).then(function (p) { return p >= 0 ? D.patent(p) : null; }).then(function (pt) { goPn(pt && pt.pn ? pt.pn : v); }, function () { goPn(v); }); } }, inp, h('button.btn.primary', { type: 'submit', id: 'sm-go' }, U.icon('search'), 'Find similar')));
       } else {
         var ta = h('textarea.textarea', { id: 'sm-text', rows: '6', maxlength: String(MAX_TEXT), spellcheck: 'false', 'aria-label': 'Text to compare', placeholder: 'Paste a claim, an abstract or a paragraph. Patent text is only compared, never executed or sent anywhere.' }); ta.value = st.text;
         var sm = h('textarea.textarea.mono', { id: 'sm-smiles', rows: '2', maxlength: '4000', spellcheck: 'false', 'aria-label': 'SMILES, optional', placeholder: 'Optional: SMILES of compounds of interest, one per line (matched exactly against the extracted compounds)' }); sm.value = st.smiles;

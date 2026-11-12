@@ -82,6 +82,8 @@ async function unit() {
   let hand2 = 0; for (let c = 0; c < X.n; c++) if (X.col.nClm[c] > 0 && X.col.nTert[c] > 0) hand2++;
   ok(f.matched > 0 && f.matched <= hand2 && f.totals.nInClaims === f.matched, 'filter inClaims + amine tertiary: all counted compounds are in claims', [f.matched, hand2]);
   ok(f.limits.some((l) => /Filter:/.test(l)), 'a filter is stated in the limits');
+  const fb = await Dc.grid({ x: 'head', y: 'tailC', filters: { branched: false } }), fb2 = await Dc.grid({ x: 'head', y: 'tailC', filters: { branched: true } });
+  ok(fb.matched < r.matched && fb.matched + fb2.matched === r.matched && !fb.cached, 'filter branched:false (linear only) is applied', [fb.matched, fb2.matched, r.matched]);
   const f2 = await Dc.grid({ x: 'nTails', y: 'unsat', filters: { nTails: [2, 2] } });
   ok(f2.cells.every((row) => row.every((c, xi) => c.nCompounds === 0 || f2.xKeys[xi] === '2')), 'filter nTails = 2 leaves only that column');
   for (const bad of [{ x: 'nope' }, { y: 'nope' }, { filters: { nope: 1 } }]) {
@@ -149,11 +151,15 @@ async function browser() {
       ok(r.entries.every((e) => !e.pub || !e.prio || e.prio <= e.pub), name + ': no priority date after its publication date');
       ok(r.entries.every((e, i, a) => i === 0 || (a[i - 1].pub || '9') <= (e.pub || '9')), name + ': entries sorted by publication date');
       ok(r.families.length < r.entries.length && r.families.every((f) => f.famOfMembers.every((x) => x === f.fam)), name + ': members are grouped by family (' + r.families.length + ' families for ' + r.entries.length + ' publications)');
-      ok(r.families.reduce((a, f) => a + f.n, 0) === r.entries.length && r.families.every((f, i, a) => i === 0 || (a[i - 1].earliestPrio || '9') <= (f.earliestPrio || '9')), name + ': every publication sits in one family; families sorted by earliest priority');
+      ok(r.families.reduce((a, f) => a + f.n, 0) === r.entries.length && r.families.every((f, i, a) => i === 0 || (a[i - 1].earliestKey || '9') <= (f.earliestKey || '9')), name + ': every publication sits in one family; families sorted by earliest of priority and publication');
+      ok(r.entries.some((e) => !e.prio) ? r.limits.some((l) => /no priority date/.test(l)) : true, name + ': missing priority dates are stated in the limits');
+      ok(!(r.earliest.publication && r.earliest.priority && r.earliest.publication.date < r.earliest.priority.date) || (r.priorityMissing.incomplete && r.limits.some((l) => /Priority incomplete/.test(l))), name + ': priority later than the earliest publication is flagged');
       ok(r.families.every((f) => f.earliestPrio <= f.earliestPub || !f.earliestPrio), name + ': family earliest priority <= earliest publication');
       ok(r.earliest.claims === null || (r.entries.filter((e) => e.where.clm).sort((a, b) => a.pub.localeCompare(b.pub))[0].pub === r.earliest.claims.date), name + ': earliest-in-claims date is the minimum over the claims entries');
       ok(r.limits.some((l) => /journals/.test(l)) && r.limits.some((l) => /machine extraction/.test(l)) && r.limits.some((l) => /effective date/.test(l)), name + ': limits state corpus scope, machine extraction and the priority caveat');
     }
+    { const r = await S.page.evaluate(async () => { try { const t = await LnpDisclosure.timeline({ c: 72118 }, { mode: 'exact' }); return { e: t.earliest, pm: t.priorityMissing, lim: t.limits, q: t.query }; } catch (e) { return { err: String(e.message) }; } });
+      ok(r.err || !r.e.publication || !r.e.priority || r.e.priority.date <= r.e.publication.date || (r.pm.incomplete && r.lim.some((l) => /Priority incomplete/.test(l))), 'c=72118: priority later than the earliest publication carries a warning', r); }
     section('browser: cross-check against LnpChem.patentsOf and LnpData.patent');
     const xc = await S.page.evaluate(async () => {
       const nm = (await LnpChem.names()).find((n) => n.name === 'ALC-0315'), tl = await LnpDisclosure.timeline('ALC-0315', { mode: 'exact' }), c = nm && nm.c >= 0 ? nm.c : tl.compounds[0].c;

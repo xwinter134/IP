@@ -87,12 +87,15 @@
     return n;
   }
   function detectDelimiter(text) {
-    var lines = text.split(/\r\n|\n|\r/), first = '';
-    for (var i = 0; i < lines.length; i++) { var l = lines[i].trim(); if (l && l.charAt(0) !== '#') { first = lines[i]; break; } }
-    if (countOutsideQuotes(first, '\t') > 0) return '\t';
-    if (countOutsideQuotes(first, ';') > 0) return ';';
-    if (countOutsideQuotes(first, ',') > 0) return ',';
-    // later lines may carry the delimiter when the first one is a lone cell (a name list with a trailing column is rare: no guess)
+    // the delimiter must be on the first line and on most of the sampled lines: one name with a comma does not make a list a CSV
+    var lines = text.split(/\r\n|\n|\r/).filter(function (l) { var t = l.trim(); return t && t.charAt(0) !== '#'; }).slice(0, 30);
+    if (!lines.length) return '';
+    var cands = ['\t', ';', ','];
+    for (var i = 0; i < cands.length; i++) {
+      var hit = 0;
+      lines.forEach(function (l) { if (countOutsideQuotes(l, cands[i]) > 0) hit++; });
+      if (countOutsideQuotes(lines[0], cands[i]) > 0 && hit >= Math.ceil(lines.length * 0.6)) return cands[i];
+    }
     return '';
   }
 
@@ -138,11 +141,11 @@
       var width = 0; recs.forEach(function (r) { width = Math.max(width, r.cells.length); });
       var score = [], j;
       for (j = 0; j < width; j++) score.push(0);
-      recs.slice(0, 25).forEach(function (r) { r.cells.forEach(function (c, ci) { if (strongSmiles(c)) score[ci]++; }); });
+      recs.slice(0, 25).forEach(function (r) { r.cells.forEach(function (c, ci) { if (strongSmiles(c) || /^SCHEMBL\d+$/i.test(c)) score[ci]++; }); });
       var best = -1, bs = 0;
       score.forEach(function (s, ci) { if (s > bs) { bs = s; best = ci; } });
       var others = [];
-      if (best < 0) best = width > 1 ? 1 : 0;
+      if (best < 0) { best = 0; notes.push('No column with structures was recognised; the first column is read as the structure input. Add a header (id, name, smiles) to choose the columns.'); }
       for (j = 0; j < width; j++) if (j !== best) others.push(j);
       cols.smiles = best; cols.id = others.length ? others[0] : -1; cols.name = others.length > 1 ? others[1] : -1;
     } else cols.smiles = 0;
@@ -451,8 +454,9 @@
   }
   function expiryText(n) { n = Number(n) || 0; if (!n) return ''; var s = String(n); return s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6, 8); }
   function csvRows(results, o) {
-    var note = limitsNote(o), rows = [CSV_COLS];
+    var note0 = limitsNote(o), note = note0, rows = [CSV_COLS];
     arr(results).forEach(function (r) {
+      note = note0 + (r.nPatents > arr(r.patents).length ? ' Stored results: only ' + arr(r.patents).length + ' of ' + r.nPatents + ' publications are listed; run the screen again for the full list.' : '');
       var smi = r.parsed ? r.parsed.smiles : '', id = r.id;
       if (!r.ok || !r.parsed) { rows.push([id, r.input, '', 'invalid input', '', '', '', '', '', '', (r.error || 'invalid input') + '. ' + note]); return; }
       var inList = {}; r.patents.forEach(function (e) { inList[e.pn] = 1; });

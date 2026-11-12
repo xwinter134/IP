@@ -43,6 +43,7 @@
 .da-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .da-move { font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--text); overflow-wrap: anywhere; }
 .da-reason { margin: 0; font-size: 13px; color: var(--dim); overflow-wrap: anywhere; }
+.da-reason.da-unverified { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; color: var(--text); }
 .da-card-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
 .da-mi .faint { color: var(--faint); }
 .da-card-det { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }

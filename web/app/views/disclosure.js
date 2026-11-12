@@ -113,6 +113,14 @@
     function earliestTile(label, x, withPrio) {
       return tile(label, x ? U.date(x.date) : '\u2013', x ? [K.patentLink(x.pn, App), withPrio && x.prio ? h('span.faint', { text: ' \u00b7 priority ' + U.date(x.prio) }) : null] : 'no publication');
     }
+    function priorityTile(E, r) {
+      var pm = r.priorityMissing || {};
+      if (!E.priority) return tile('Earliest priority', 'unknown', 'no priority date in the patent table');
+      var t = earliestTile('Earliest priority', E.priority, false);
+      if (pm.incomplete) t.querySelector('dd').appendChild(h('small.faint', { text: 'incomplete: ' + pm.entries + ' of ' + pm.entriesTotal + ' publications have no priority date; the earliest publication is older' }));
+      else if (pm.entries) t.querySelector('dd').appendChild(h('small.faint', { text: 'among dated ones; ' + pm.entries + ' of ' + pm.entriesTotal + ' publications have no priority date' }));
+      return t;
+    }
     function statusPill(f) {
       if (f.inForce) return h('span.pill.good', { text: 'in force', title: f.statusSummary.text });
       var c = f.statusSummary.counts, keys = Object.keys(c);
@@ -129,7 +137,7 @@
         return;
       }
       var stats = h('dl.stats.k-stats', null,
-        earliestTile('Earliest publication', E.publication, true), earliestTile('Earliest priority', E.priority, false),
+        earliestTile('Earliest publication', E.publication, true), priorityTile(E, r),
         E.claims ? earliestTile('Earliest in claims', E.claims, true) : tile('Earliest in claims', 'none', 'no publication with the structure in the claim text'),
         tile('Publications', U.num(r.entries.length), nClaim + ' with a match in claims'),
         tile('Patent families', U.num(nFam), U.num(r.compounds.length) + (r.compounds.length === 1 ? ' compound' : ' compounds') + (r.truncated ? ' of ' + U.num(r.compoundsTotal) : '')));
@@ -140,7 +148,7 @@
       var actions = h('div.k-row', null,
         h('button.btn.sm', { type: 'button', onclick: function () { U.saveFile('disclosure-' + slug(r) + '-publications.csv', D.toCsv(r, { kind: 'entries' }), 'text/csv'); } }, U.icon('download'), 'Publications (CSV)'),
         h('button.btn.sm', { type: 'button', onclick: function () { U.saveFile('disclosure-' + slug(r) + '-families.csv', D.toCsv(r, { kind: 'families' }), 'text/csv'); } }, U.icon('download'), 'Families (CSV)'));
-      var secF = K.sec('Families', 'Patent families, earliest priority first', actions, tblBox);
+      var secF = K.sec('Families', 'Patent families, earliest date first', actions, tblBox);
       drawTable(tblBox, r);
       var secC = compoundsSec(r);
       U.set(body, stats, secT, secF, secC, limitsBox(r));
@@ -220,7 +228,7 @@
           if (f.members.length > 6) mem.appendChild(h('span.faint', { text: '+' + (f.members.length - 6) + ' more' }));
           var w = {}; f.members.forEach(function (e) { Object.keys(e.where).forEach(function (k) { if (e.where[k]) w[k] = true; }); });
           tb.appendChild(h('tr', null,
-            h('td.mono.cm-nowrap', { text: dateCell(f.earliestPrio) }), h('td.mono.cm-nowrap', { text: dateCell(f.earliestPub) }),
+            h('td.mono.cm-nowrap', { text: f.earliestPrio ? U.date(f.earliestPrio) : 'priority unknown', title: f.earliestPrio ? '' : 'No priority date in the patent table for this family' }), h('td.mono.cm-nowrap', { text: dateCell(f.earliestPub) }),
             h('td', null, mem, f.size > f.sizeInTable ? h('span.k-hint', { text: f.sizeInTable + ' of ' + f.size + ' family publications in the table carry it' }) : null),
             h('td', null, h('span.cm-tags', null, f.inClaimsAny ? K.whereTags({ clm: true }) : h('span.tag', { text: 'not in claims', title: 'No publication of this family has the structure in the claim text' }), K.whereTags(Object.assign({}, w, { clm: false })))),
             h('td', null, statusPill(f))));

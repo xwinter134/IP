@@ -174,12 +174,12 @@
         });
         var pl = h('div.ws-plist');
         d.patents.forEach(function (p) {
-          pl.appendChild(h('div.ws-prow', null, p.p >= 0 ? K.patentLink(p.pn, App) : h('span.mono', { text: U.pnPretty(p.pn) }), h('span.faint.mono', { text: U.date(p.prio) }), p.status ? h('span.tag', { text: p.status }) : h('span'), p.title ? h('span.ws-ptitle', { text: p.title }) : null));
+          pl.appendChild(h('div.ws-prow', null, p.p >= 0 ? K.patentLink(p.pn, App) : h('span.mono', { text: U.pnPretty(p.pn) }), h('span.faint.mono', { text: p.prio ? U.date(p.prio) : (p.pub ? U.date(p.pub) + ' (pub.)' : '\u2013') }), p.status ? h('span.tag', { text: p.status }) : h('span'), p.title ? h('span.ws-ptitle', { text: p.title }) : null));
         });
         U.set(detail, K.sec('Cell', title, h('div.k-row', null, h('span.k-hint', { text: U.num(c.nCompounds) + ' compounds · ' + U.num(c.nPatents) + ' publications · ' + U.num(c.nFamilies) + ' families · ' + U.num(c.nInClaims) + ' compounds in claims' })),
           h('div.ws-detail', null, h('div.ws-detail-cols', null,
             h('div', null, h('p.k-filters-l', { text: 'Compounds' + (d.nCompounds > d.compounds.length ? ' (first ' + d.compounds.length + ' of ' + U.num(d.nCompounds) + ', claims first, then most publications)' : '') }), cmps),
-            h('div', null, h('p.k-filters-l', { text: 'Publications' + (d.truncated || d.nPatents > d.patents.length ? ' (earliest priority first, ' + d.patents.length + ' of ' + U.num(d.nPatents) + ')' : ' (earliest priority first)') }), pl)))));
+            h('div', null, h('p.k-filters-l', { text: 'Publications' + (d.truncated || d.nPatents > d.patents.length ? ' (earliest date first, ' + d.patents.length + ' of ' + U.num(d.nPatents) + ')' : ' (earliest date first)') }), pl)))));
       }, function (e) { if (my === detSeq && !dead) U.set(detail, K.sec('Cell', title, null, K.errBox(e, 'The cell could not be listed'))); });
     }
 
