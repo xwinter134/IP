@@ -308,6 +308,16 @@ class T(unittest.TestCase):
         self.assertEqual(r["comp"], COMP["ionizable_cationic"])
         self.rng("the PEG lipid is present in an amount of at least 0.5 mol % and in an amount of at most 3 mol %", "mol_pct", 0.5, 3, "mol%")
 
+    def test_less_than_or_about(self):
+        self.rng("a diameter in the range of about 100 nanometers to less than or about 1 micron", "size_nm", 100, 1000, "nm", hiInc=True)
+        self.rng("a diameter of less than or about 6 microns", "size_nm", None, 6000, "nm", hiInc=True)
+
+    def test_mixed_scale_units(self):
+        self.rng("a diameter of 100 nm to 1 micron", "size_nm", 100, 1000, "nm")
+
+    def test_abbreviated_unit_period(self):
+        self.rng("stored at a temperature of greater than 0\u00b0 C. and less than 10\u00b0 C. for up to 1 year", "temp_c", 0, 10, loInc=False, hiInc=False)
+
     def test_alternatives_and_other_components_not_joined(self):
         rows = [r for r in ex("PEG lipid of at least 1 mol % or at most 3 mol %") if r["param"] == "mol_pct"]
         self.assertEqual(len(rows), 2)          # "or": alternatives stay two rows

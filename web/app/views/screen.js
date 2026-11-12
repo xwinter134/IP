@@ -227,8 +227,9 @@
     function drawStats() {
       var s = Sc.summary(results.filter(Boolean));
       U.set(statsBox, K.stats([['Compounds', U.num(s.n), s.invalid ? s.invalid + ' invalid' : null], ['With a hit', U.num(s.parsed - s.noHit), s.noHit + ' without'],
-        ['Exact in claims', U.num(s.inClaimsExact)], ['Similar in claims', U.num(s.inClaimsSim)], ['Granted, in force', U.num(s.grantedInForce), 'in the claims'],
-        ['Markush covered', U.num(s.markushCovered), s.markushUnclear ? s.markushUnclear + ' unclear' : null], ['Markush queue', U.num(s.queueClaims), 'formula claims'], ['Publications', U.num(s.patents)]]));
+        // six tiles: one full row on a desktop width
+        ['Exact in claims', U.num(s.inClaimsExact), U.num(s.inClaimsSim) + ' similar in claims'], ['Granted, in force', U.num(s.grantedInForce), 'in the claims'],
+        ['Markush covered', U.num(s.markushCovered), (s.markushUnclear ? s.markushUnclear + ' unclear · ' : '') + 'Markush queue: ' + K.plural(s.queueClaims, 'formula claim', 'formula claims')], ['Publications', U.num(s.patents)]]));
     }
     function drawFilters() {
       function sel(id, label, opts, val, cb) { var s = h('select.select', { id: id, 'aria-label': label, onchange: function () { cb(s.value); } }); opts.forEach(function (o) { s.appendChild(h('option', { value: o[0], text: o[1], selected: o[0] === val })); }); return h('div.k-filter', null, h('span.k-filters-l', { text: label }), s); }

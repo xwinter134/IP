@@ -411,7 +411,7 @@
       var row = rows[i++];
       progress({ phase: 'compound', row: row });
       return resolveRow(chem, row).then(function () {
-        if (!row.parsed) { finish({ row: row.row, id: row.id, name: row.name || '', input: row.input, ok: false, error: row.error || 'invalid input', parsed: null, exact: [], sub: { total: 0, hits: [], capped: false }, sim: [], patents: [], flags: null, markush: null, ms: 0 }); return null; }
+        if (!row.parsed) { finish({ row: row.row, id: row.id, name: row.name || '', input: row.input, ok: false, error: row.error || 'invalid input', errorDetail: row.errorDetail || '', parsed: null, exact: [], sub: { total: 0, hits: [], capped: false }, sim: [], patents: [], flags: null, markush: null, ms: 0 }); return null; }
         var key = row.parsed.idcode || row.parsed.smiles;
         if (cache.has(key)) {                                    // the same structure twice: reuse, keep the row identity
           var c = JSON.parse(JSON.stringify(cache.get(key))); c.row = row.row; c.id = row.id; c.name = row.name || c.name; c.input = row.input; c.duplicateOf = cache.get(key).row; c.parsed = row.parsed; finish(c); return null;
@@ -501,7 +501,7 @@
   /* ------------------------------------------------------------------------------------------ store */
   function compact(results) {
     var out = arr(results).map(function (r) {
-      var c = { row: r.row, id: r.id, name: r.name, input: r.input, ok: r.ok, error: r.error, parsed: r.parsed ? { kind: r.parsed.kind, name: r.parsed.name, id: r.parsed.id, smiles: r.parsed.smiles, formula: r.parsed.formula, mw: r.parsed.mw } : null,
+      var c = { row: r.row, id: r.id, name: r.name, input: r.input, ok: r.ok, error: r.error, errorDetail: r.errorDetail || undefined, parsed: r.parsed ? { kind: r.parsed.kind, name: r.parsed.name, id: r.parsed.id, smiles: r.parsed.smiles, formula: r.parsed.formula, mw: r.parsed.mw } : null,
         exact: r.exact.slice(0, 5), sub: { total: r.sub.total, hits: r.sub.hits.slice(0, 5), capped: r.sub.capped }, sim: r.sim.slice(0, 6), simTotal: r.simTotal,
         patents: r.patents.slice(0, 40).map(function (e) { return { p: e.p, pn: e.pn, routes: e.routes, inClaims: e.inClaims, where: e.where, family: e.family, sim: e.sim, status: e.status, exp: e.exp, inForce: e.inForce, via: e.via.slice(0, 2), routeClaims: e.routeClaims }; }),
         nPatents: r.patents.length, flags: r.flags, markush: r.markush ? { covered: r.markush.covered, unclear: r.markush.unclear.slice(0, 10), queue: r.markush.queue.slice(0, 20), notCovered: r.markush.notCovered, checked: r.markush.checked } : null, ms: r.ms };

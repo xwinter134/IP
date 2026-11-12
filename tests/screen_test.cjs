@@ -182,7 +182,7 @@ async function unit() {
     ok(res[3].flags.level === 0 && res[3].flags.label === 'no hit', 'D: no hit', res[3].flags);
     const e7 = res[6];
     ok(e7.exact.length === 0 && e7.flags.level === 4 && e7.flags.markushCovered && /Markush/.test(e7.flags.label) && e7.patents.length === 1, 'E: no structure hit but covered by a Markush claim of a granted patent: level 4', e7.flags);
-    ok(!res[4].ok && /cannot read/.test(res[4].error) && res[4].parsed === null, 'invalid input: ok false with the engine message', res[4]);
+    ok(!res[4].ok && /^Not recognised/.test(res[4].error) && /cannot read/.test(res[4].errorDetail || '') && res[4].parsed === null, 'invalid input: ok false, plain message, engine message kept as detail', res[4]);
     ok(res[5].duplicateOf === 1 && res[5].row === 6 && res[5].id === 'r6' && calls.search.filter((x) => x === 'exact:A').length === 1, 'same structure again: result reused (one search), row identity kept', res[5].duplicateOf);
     ok(calls.fc.filter((p) => p === 10).length === 1, 'formula claims of a publication are read once per run', calls.fc);
     const s = Sc.summary(res);

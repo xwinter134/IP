@@ -326,8 +326,9 @@ def extract(claim_text, vocab, lang="en"):
             if ok:
                 ex = {"kind": "range", "a": t, "b": nxt, "lo": t["val"], "hi": nxt["val"], "loInc": True, "hiInc": True, "ap": t["ap"] or nxt["ap"],
                       "s": t["s"], "e": nxt["e"], "i": i}
-            elif t["val"] <= nxt["val"]:
-                ex = _cmp_range(V, mt, t, nxt, i)
+            elif t["val"] <= nxt["val"] or (t["unit"] and nxt["unit"] and t["unit"] != nxt["unit"]):
+                # ends in different units of one parameter ("100 nm to less than 1 micron") are compared after scaling
+                ex = _cmp_range(V, mt, t, nxt, i, gap)
             if ex is not None:
                 _lower_cmp(V, mt, ex)
                 exprs.append(ex)
@@ -375,10 +376,14 @@ def extract(claim_text, vocab, lang="en"):
         ua = a["unit"]
         ub = b["unit"] if ex["kind"] == "range" else ua
         u_text = ub or ua
+        scale_lo = None
         if ex["kind"] == "range" and ua and ub:
             ca, cb = _unit_class(V, ua), _unit_class(V, ub)
             if ca != cb:
-                continue
+                # the same parameter in two spellings of different scale ("100 nm to 1 micron"): each end keeps its own scale
+                if ca is None or cb is None or ca[0] is None or ca[0] is not cb[0] or ca[1] != cb[1]:
+                    continue
+                scale_lo = ca[2]
         unit_cls = _unit_class(V, u_text) if u_text else None
         s, e = ex["s"], ex["e"]
         param = None
@@ -421,7 +426,7 @@ def extract(claim_text, vocab, lang="en"):
             continue
         lo, hi = ex["lo"], ex["hi"]
         if lo is not None:
-            lo = lo * scale
+            lo = lo * (scale_lo if scale_lo is not None else scale)
         if hi is not None:
             hi = hi * scale
         if lo is not None and hi is not None and lo > hi:
@@ -515,11 +520,13 @@ def _lead_cmp(V, mt, t):
     return best[0], t["s"] - (len(before) - best[1])
 
 
-def _cmp_range(V, mt, t, nxt, i):
+def _cmp_range(V, mt, t, nxt, i, gap=None):
     """two tokens joined by "to less than", "and less than", "or more and ... or less" -> one range expression | None.
     "and" needs a marker of the lower end ("more than X", "X or more", "between X"), so that "X mol % and less than Y mol %"
-    of two different statements is not joined by accident."""
-    gap = mt[t["e"]:nxt["s"]]
+    of two different statements is not joined by accident. `gap` is the text between the tokens (the caller drops the
+    period of an abbreviated unit, "0 deg. C. and less than 10 deg. C.")."""
+    if gap is None:
+        gap = mt[t["e"]:nxt["s"]]
     gm = V.cmp_gap.match(gap)
     if not gm:
         return None

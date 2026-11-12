@@ -247,7 +247,9 @@ async function browser() {
     const dk = await S.page.evaluate(() => ({ bg: getComputedStyle(document.body).backgroundColor, bar: getComputedStyle(document.querySelector('.ex-bar')).backgroundColor }));
     ok(dk.bg !== 'rgb(255, 255, 255)' && dk.bar !== 'rgba(0, 0, 0, 0)', 'dark theme applied to page and bars', dk);
     await noHScroll(S, '390 px expiry'); await shot(S, 'expiry-dark-390');
-    ok(await S.page.evaluate(() => document.querySelector('.ex-tl').scrollWidth > document.querySelector('.ex-tl').clientWidth), 'timeline scrolls inside its own box at 390 px');
+    ok(await S.page.evaluate(() => document.querySelector('.ex-tl').scrollWidth <= document.querySelector('.ex-tl').clientWidth + 1), 'timeline fits its box at 390 px (labels above the lanes)');
+    const ax = await S.page.evaluate(() => { const t = Array.from(document.querySelectorAll('.ex-tl-axis .ex-tl-y')).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0).sort((a, b) => a.left - b.left); let ov = 0; for (let i = 1; i < t.length; i++) if (t[i].left < t[i - 1].right - 1) ov++; return { n: t.length, ov }; });
+    ok(ax.ov === 0, 'year labels of the axis do not overlap at 390 px', ax);
     clean(S, '390 px dark with null caps');
     await S.ctx.close();
 

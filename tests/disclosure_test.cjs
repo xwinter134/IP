@@ -221,7 +221,9 @@ async function browser() {
     await S.page.waitForSelector('.cm-tl .cm-m', { timeout: 120000 });
     await noHScroll(S, 'disclosure 390 px');
     const sc = await S.page.evaluate(() => { const t = document.querySelector('.cm-tl'); return { inner: t.scrollWidth, outer: t.clientWidth, dark: getComputedStyle(document.body).backgroundColor }; });
-    ok(sc.inner > sc.outer, 'the timeline scrolls inside its own box at 390 px', sc);
+    ok(sc.inner <= sc.outer + 1, 'the timeline fits its box at 390 px (labels above the lanes, no sideways scrolling)', sc);
+    const lab = await S.page.evaluate(() => { const l = document.querySelector('.cm-tl-row:not(.cm-tl-axis) .cm-tl-lab'); return l ? { w: l.scrollWidth, c: l.clientWidth } : null; });
+    ok(!lab || lab.w <= lab.c + 1, 'family labels are not cut at 390 px', lab);
     ok(/^rgb\((2\d|1\d|\d), ?(2\d|1\d|\d), ?(2\d|1\d|\d)\)$/.test(sc.dark), 'dark theme background', sc.dark);
     await shot(S, 'disclosure-390-dark');
     clean(S, 'disclosure 390 dark'); await S.ctx.close();
