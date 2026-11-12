@@ -53,6 +53,8 @@ PAT_CHUNK = 4000
 ST_CODES = ["", "granted", "pending", "lapsed", "revoked", "withdrawn", "refused", "expired", "unknown"]
 AUTHS = ["EP", "US", "WO"]
 NAME_OK = re.compile(r"^[a-z0-9._/-]+$")
+# data/seed files that engines read at run time from data/seed/<name> (the rest of data/seed is folded into seed.json)
+SHIP_SEED = ("design_space.json",)
 T0 = time.time()
 
 
@@ -146,6 +148,9 @@ class Dist:
         return gone
 
 
+XDATA_PAGES_ONLY = []   # (dataset, file) left out of an artifact build; recorded in manifest.cut.websiteOnly
+
+
 def scan_xdata(xdir, target):
     """Extra datasets data/work/xdata/<name>/xdata.json -> [{name, meta, files: [(logical name, path)]}].
     target "artifact": datasets with target "both"; "pages": also target "pages" and the files listed in "files_pages".
@@ -169,7 +174,10 @@ def scan_xdata(xdir, target):
             raise SystemExit("xdata %s: target must be 'both' or 'pages', not %r" % (name, tg))
         if tg == "pages" and target != "pages":
             log("xdata %s: target pages only, skipped in the artifact build" % name)
+            XDATA_PAGES_ONLY.extend((name, fn) for fn in (meta.get("files") or []) + (meta.get("files_pages") or []))
             continue
+        if target != "pages":
+            XDATA_PAGES_ONLY.extend((name, fn) for fn in (meta.get("files_pages") or []))
         names = list(meta.get("files") or []) + (list(meta.get("files_pages") or []) if target == "pages" else [])
         if not names:
             raise SystemExit("xdata %s: no files listed" % name)
@@ -667,6 +675,8 @@ def main():
     # seed.json
     seed_obj = {"v": 1, "families": seed_fam, "players": [{"name": n} for n in players], "assignees": seed_asg, "cpc": seed_cpc, "lipids": seed_lip}
     seed_bytes = jdump(seed_obj)
+    seed_ship = [(n, os.path.join(C.SEED, n)) for n in SHIP_SEED if os.path.isfile(os.path.join(C.SEED, n))]
+    seed_ship_bytes = sum(os.path.getsize(p) for _, p in seed_ship)
     # extra datasets (xdata): counted with the fixed parts so that the text cut absorbs them
     xsets = scan_xdata(a.xdata_dir or os.path.join(a.work, "xdata"), a.target)
     xdata_bytes = sum(fac(os.path.getsize(p)) if fn.endswith(".bin") else os.path.getsize(p) for x in xsets for fn, p in x["files"])
@@ -676,8 +686,8 @@ def main():
     pat_bytes = sum(fac(len(v)) for v in pfiles.values())
     st_bytes = sum(fac(len(v)) for v in st_chunks)
     reserve = 400 * 1000                       # manifest.json, publish_batches.json, rounding
-    fixed = web_bytes + chem_bytes + img_bytes + len(seed_bytes) + pat_bytes + st_bytes + xdata_bytes + reserve
-    n_other = len(web_files) + len(chem_files) + len(img_files) + (1 if img_index else 0) + 1 + len(pfiles) + len(st_chunks) + n_xfiles + 2
+    fixed = web_bytes + chem_bytes + img_bytes + len(seed_bytes) + seed_ship_bytes + pat_bytes + st_bytes + xdata_bytes + reserve
+    n_other = len(web_files) + len(chem_files) + len(img_files) + (1 if img_index else 0) + 1 + len(pfiles) + len(st_chunks) + n_xfiles + len(seed_ship) + 2
     idx_max_files = min(400, a.max_files - n_other - a.reserve_files)
     if idx_max_files < 12:
         raise SystemExit("file limit: %d files are needed outside the text index, --max-files is %d" % (n_other, a.max_files))
@@ -805,6 +815,8 @@ def main():
     for n, p in chem_files:
         dist.put("data/chem/" + n, p, "chemistry")
     dist.put("data/seed.json", seed_bytes, "seed")
+    for n, p in seed_ship:
+        dist.put("data/seed/" + n, p, "seed")
     xman = {}
     for x in xsets:
         sizes_x = {}
@@ -842,6 +854,9 @@ def main():
         "flagBits": {"text": 1, "defs": 2, "chemImg": 4, "compounds": 8, "status": 16, "textCut": 32, "defsCut": 64},
         "limit": a.limit or None,
     }
+    if XDATA_PAGES_ONLY:
+        cut["websiteOnly"] = {"xdata": ["%s/%s" % nf for nf in XDATA_PAGES_ONLY],
+                              "note": "extra data files built for the plain website only (size budget of the Artifact)"}
     sizes = dict(sorted(dist.comp.items(), key=lambda kv: -kv[1]))
     if not xman:
         del manifest["x"]                      # absent key when there are no extra datasets
