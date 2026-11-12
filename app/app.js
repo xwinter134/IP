@@ -21,6 +21,63 @@
   App.on = function (ev, fn) { (App.events[ev] = App.events[ev] || []).push(fn); return function () { var l = App.events[ev], i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); }; };
   App.emit = function (ev, data) { (App.events[ev] || []).slice().forEach(function (fn) { try { fn(data); } catch (e) { logError('event ' + ev, e); } }); };
 
+  /* ------------------------------------------------------------ extension hooks (LnpApp.ext)
+     Registries that extension files (engine/x-*.js, app/views/<id>.js) fill and the built-in views read when they mount.
+     A hook registered after a view was mounted shows on the next mount. Every call into a hook is isolated: a throwing
+     hook is logged (App.logError) and skipped. Contract: docs/TOOLS_PLAN.md 2.1.
+       patentAction(fn(P, ctx) -> Node|Node[]|null)           claimAction(fn(P, claim, ctx) -> Node|null)
+       patentPanel({id, title, over, order, when(P), render(P, el, ctx) -> destroy?})      links(fn(P) -> [{label, href, title}])
+       compoundAction(fn(hit, ctx) -> Node|null)              resultAction(fn({query, parsed, filters, total, all}) -> Node|null)
+       searchFacet({id, title, order, counts(allPs) -> Promise<[{value, label, n}]>, ps(value) -> Promise<Uint32Array|number[]>})
+     Getters: ext.list(kind) (specs, panels and facets ordered), ext.nodes(kind, ...args) (DOM nodes of all function hooks),
+     ext.linkItems(P) (sanitised link entries), ext.has(kind). Registering returns a function that removes the entry. */
+  var EXT_FN = ['patentAction', 'claimAction', 'links', 'compoundAction', 'resultAction'], EXT_SPEC = ['patentPanel', 'searchFacet'];
+  var extReg = {};
+  var ext = App.ext = {};
+  var extListeners = [];
+  // ext.on(fn(kind, entry)): called when a spec hook (patentPanel, searchFacet) registers; returns an unsubscribe function
+  ext.on = function (fn) { if (typeof fn !== 'function') return function () { }; extListeners.push(fn); return function () { var i = extListeners.indexOf(fn); if (i >= 0) extListeners.splice(i, 1); }; };
+  // facet link for #suche (--f<id>:<value>), so other tools need not hand-roll the syntax
+  ext.facetHref = function (id, value, q) { return R.build({ view: 'suche', arg: q || '', params: { f: [id + ':' + value] } }); };
+  EXT_FN.concat(EXT_SPEC).forEach(function (kind) {
+    extReg[kind] = [];
+    ext[kind] = function (entry) {
+      var isSpec = EXT_SPEC.indexOf(kind) >= 0;
+      if (isSpec ? !(entry && typeof entry === 'object' && entry.id) : typeof entry !== 'function') return function () { };
+      if (isSpec) {                                    // one entry per id: registering again replaces (a script loaded twice)
+        extReg[kind] = extReg[kind].filter(function (x) { return x.id !== entry.id; });
+      }
+      extReg[kind].push(entry);
+      if (isSpec) extListeners.slice().forEach(function (fn) { try { fn(kind, entry); } catch (e) { logError('ext on', e); } });
+      return function () { var i = extReg[kind].indexOf(entry); if (i >= 0) extReg[kind].splice(i, 1); };
+    };
+  });
+  ext.list = function (kind) {
+    var a = (extReg[kind] || []).slice();
+    if (EXT_SPEC.indexOf(kind) >= 0) a = a.map(function (x, i) { return { x: x, i: i }; }).sort(function (p, q) { return ((+p.x.order || 0) - (+q.x.order || 0)) || (p.i - q.i); }).map(function (p) { return p.x; });
+    return a;
+  };
+  ext.has = function (kind) { return !!(extReg[kind] && extReg[kind].length); };
+  // call every function hook of a kind with the same arguments; results are flattened, empty ones dropped
+  var extLogged = {};                                  // a hook that fails for every claim is logged once, not once per call
+  ext.call = function (kind) {
+    var args = Array.prototype.slice.call(arguments, 1), out = [];
+    (extReg[kind] || []).slice().forEach(function (fn, i) {
+      if (typeof fn !== 'function') return;
+      try {
+        var r = fn.apply(null, args);
+        (Array.isArray(r) ? r : [r]).forEach(function (x) { if (x != null && x !== false) out.push(x); });
+      } catch (e) { var k = kind + '#' + i + ':' + String((e && e.message) || e); if (!extLogged[k]) { extLogged[k] = 1; logError('ext ' + kind + ' #' + i, e); } }
+    });
+    return out;
+  };
+  ext.nodes = function (kind) { return ext.call.apply(ext, arguments).filter(function (n) { return n && n.nodeType === 1; }); };
+  // link entries with a plain http(s) address; anything else is dropped (patent text may have been used to build a URL)
+  ext.linkItems = function (P) {
+    return ext.call('links', P).filter(function (l) { return l && typeof l.href === 'string' && /^https?:\/\//i.test(l.href) && l.label; })
+      .map(function (l) { return { label: String(l.label), href: l.href, title: l.title ? String(l.title) : '' }; });
+  };
+
   /* ------------------------------------------------------------ errors */
   function logError(where, e) {
     var rec = { t: now(), where: where, code: (e && e.code) || null, message: String((e && (e.message || e.reason)) || e || '').slice(0, 300) };
@@ -208,6 +265,8 @@
   function loadExtras() {
     var files = (App.manifest && App.manifest.files) || {}, names = Object.keys(files), jobs = [], have = {};
     OPTIONAL_ENGINES.forEach(function (f) { if (files[f]) jobs.push(f); });
+    // extension engines (engine/x-*.js) load before the views that use them, in name order
+    names.filter(function (f) { return /^engine\/x-[a-z0-9._-]+\.js$/.test(f); }).sort().forEach(function (f) { jobs.push(f); });
     BUILTIN.forEach(function (id) { var f = 'app/views/' + id + '.js'; jobs.push(f); have[f] = 1; });
     names.filter(function (f) { return /^app\/views\/[a-z0-9._-]+\.js$/.test(f) && !have[f]; }).sort().forEach(function (f) { jobs.push(f); });
     names.filter(function (f) { return /^app\/[a-z0-9._-]+\.css$/.test(f) && f !== 'app/app.css'; }).sort().forEach(loadCss);
@@ -221,8 +280,9 @@
     if (App.booted) { drawRail(); if (App.route && App.route.view === v.id) show(App.route, true); }
   };
   function railIds() {
-    var ids = RAIL.filter(function (id) { return App.views[id]; });
-    Object.keys(App.views).forEach(function (id) { if (App.views[id].rail && ids.indexOf(id) < 0) ids.push(id); });
+    var ids = RAIL.filter(function (id) { return App.views[id] && id !== 'system'; });
+    Object.keys(App.views).forEach(function (id) { if (App.views[id].rail && ids.indexOf(id) < 0 && id !== 'system') ids.push(id); });
+    if (App.views.system) ids.push('system');      // extension entries sit before System, so they stay visible on a phone
     return ids;
   }
   function drawRail() {

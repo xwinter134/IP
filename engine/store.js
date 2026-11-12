@@ -6,7 +6,7 @@
    in its JSON-escaped form (at most twice as long) it stays below the 256 KiB limit of the db capability. */
 (function (g) {
   'use strict';
-  var KINDS = ['profiles', 'opinions', 'marks', 'searches', 'settings', 'diag'];
+  var KINDS = ['profiles', 'opinions', 'marks', 'searches', 'settings', 'diag', 'markush', 'screens', 'designs', 'notes', 'alerts'];
   var PART = 120000, PREFIX = 'lnp:';
   var S = { backend: null, db: null, ready: null, listeners: {}, mem: new Map(), log: [], readonly: false, session: new Map() };
   function mkErr(code, message) { return { code: code, message: message }; }
@@ -88,7 +88,7 @@
       return Promise.resolve(user && user.isOwner ? user.isOwner() : false).then(function (owner) {
         if (!owner) return flag.set({ u: new Date().toISOString(), moved: 0 });
         var cols = [], moved = 0;
-        ['profiles', 'opinions', 'marks', 'searches', 'settings'].forEach(function (k) { cols.push(k); cols.push(k + '-parts'); });
+        ['profiles', 'opinions', 'marks', 'searches', 'settings', 'markush', 'screens', 'designs', 'notes', 'alerts'].forEach(function (k) { cols.push(k); cols.push(k + '-parts'); });
         var chain = Promise.resolve();
         cols.forEach(function (col) {
           chain = chain.then(function () { return S.db.collection(col).get(); }).then(function (q) {

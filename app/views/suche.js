@@ -34,7 +34,7 @@
 
   function mount(host, route, App) {
     var D = g.LnpData, S = g.LnpSearch, M = App.manifest;
-    var st = { q: '', a: [], k: [], y: [], p: [], c: [], t: [], r: [], e: [], x: [], s: '', m: '' };
+    var st = { q: '', a: [], k: [], y: [], p: [], c: [], t: [], r: [], e: [], x: [], f: [], s: '', m: '' };   // f: extension facets, items "<facetId>:<value>"
     var seq = 0, res = null, blocks = [], io = null, ro = null, selected = new Map(), cur = -1, destroyed = false, aiCtl = null, openFacets = { t: 1, a: 1, p: 1, y: 1 };
     var density = 'comfortable'; try { density = g.localStorage.getItem('lnp.density') || density; } catch (e) { /* ignore */ }
 
@@ -74,18 +74,22 @@
       if (ev.key === 'Enter') { ev.preventDefault(); live.cancel(); st.q = qInput.value.trim(); if (st.m === 'ai') { commit(true, true); runAi(); } else commit(true); }
       else if (ev.key === 'ArrowDown' && results.querySelector('.hrow')) { ev.preventDefault(); focusHit(0); }
     });
+    var offExt = App.ext && App.ext.on ? App.ext.on(function (kind, entry) {      // a facet of a selected value registers late: apply it now
+      if (kind !== 'searchFacet' || destroyed || !st.f.some(function (it) { return extSplit(it)[0] === entry.id; })) return;
+      extComb.clear(); if (st.m !== 'ai') run();
+    }) : function () { };
     var offKey = App.on('key', onKey), offMarks = App.on('marks', onMarks), offCaps = App.on('caps', drawAi);
 
     /* ---------------- state <-> route */
     function fromRoute(r) {
       var p = r.params || {};
       st.q = r.arg || '';
-      ['a', 'k', 'y', 'p', 'c', 't', 'r', 'e', 'x'].forEach(function (k) { st[k] = R.list(p[k]); });
+      ['a', 'k', 'y', 'p', 'c', 't', 'r', 'e', 'x', 'f'].forEach(function (k) { st[k] = R.list(p[k]); });
       st.s = typeof p.s === 'string' ? p.s : ''; st.m = p.m === 'ai' ? 'ai' : '';
       if (qInput.value.trim() !== st.q) qInput.value = st.q;
     }
-    function toRoute() { return { view: 'suche', arg: st.q, params: { a: st.a, k: st.k, y: st.y, p: st.p, c: st.c, t: st.t, r: st.r, e: st.e, x: st.x, s: st.s, m: st.m } }; }
-    function filters() {
+    function toRoute() { return { view: 'suche', arg: st.q, params: { a: st.a, k: st.k, y: st.y, p: st.p, c: st.c, t: st.t, r: st.r, e: st.e, x: st.x, f: st.f, s: st.s, m: st.m } }; }
+    function filters(skipExt) {            // skipExt: true = leave out the extension facets, an id = leave out that facet
       var f = {};
       if (st.a.length) f.auth = st.a.slice();
       if (st.k.length) f.kinds = st.k.slice();
@@ -102,9 +106,10 @@
       if (st.x.indexOf('de') >= 0) f.deInForce = true;
       if (st.x.indexOf('indep') >= 0) f.indepOnly = true;
       if (st.x.indexOf('seed') >= 0) f.seedOnly = true;
+      if (st.f.length && skipExt !== true) { var xps = extPs(skipExt); if (xps) f.ps = xps; }
       return f;
     }
-    function nFilters() { return st.a.length + st.k.length + (st.y.length ? 1 : 0) + st.p.length + st.c.length + st.t.length + st.r.length + st.e.length + st.x.length; }
+    function nFilters() { return st.a.length + st.k.length + (st.y.length ? 1 : 0) + st.p.length + st.c.length + st.t.length + st.r.length + st.e.length + st.x.length + st.f.length; }
     function commit(typed, noRun) {
       R.go(toRoute(), { replace: true, silent: true });
       App.route = R.current();
@@ -129,7 +134,8 @@
       if (aiCtl) { try { aiCtl.abort(); } catch (e) { /* ignore */ } aiCtl = null; }
       App.state.lastQuery = st.q;
       root.setAttribute('aria-busy', 'true');
-      S.search(st.q, opts()).then(function (r) {
+      extAll = {};
+      afterExt(function () { return S.search(st.q, opts()); }).then(function (r) {
         if (my !== seq || destroyed) return;
         res = r; res.wall = Date.now() - t0;
         App.state.lastParsed = r.parsed || null;
@@ -139,6 +145,7 @@
         drawFacets(r.facets || {});
         root.removeAttribute('aria-busy');
         refineFacets(my);
+        drawExtResult(r); loadExt(my);
       }, function (e) {
         if (my !== seq || destroyed) return;
         root.removeAttribute('aria-busy');
@@ -191,7 +198,8 @@
       st.r.forEach(function (v) { chip(TIER[v] || 'Tier ' + v, function () { toggle('r', v); }); });
       st.e.forEach(function (v) { chip('Key family tier ' + v, function () { toggle('e', v); }); });
       st.x.forEach(function (v) { chip(SWITCH[v] || v, function () { toggle('x', v); }); });
-      if (nFilters() > 1) active.appendChild(h('button.btn.quiet.sm', { type: 'button', onclick: function () { ['a', 'k', 'y', 'p', 'c', 't', 'r', 'e', 'x'].forEach(function (k) { st[k] = []; }); commit(); } }, 'Clear all filters'));
+      st.f.forEach(function (it) { chip(extChip(it), function () { toggle('f', it); }); });
+      if (nFilters() > 1) active.appendChild(h('button.btn.quiet.sm', { type: 'button', onclick: function () { ['a', 'k', 'y', 'p', 'c', 't', 'r', 'e', 'x', 'f'].forEach(function (k) { st[k] = []; }); commit(); } }, 'Clear all filters'));
       U.set(fToggle, U.icon('filter'), h('span', { text: 'Filters' + (nFilters() ? ' (' + nFilters() + ')' : '') }));
       drawAi();
     }
@@ -342,6 +350,7 @@
       facets.appendChild(facetBox('r', 'Relevance tier', st.r.length + st.e.length, rowsOf('r', f.tier, { label: function (k) { return TIER[k] || 'Tier ' + k; }, sort: function (a, b) { return a - b; } })
         .concat(rowsOf('e', f.seedTier, { label: function (k) { return 'Key family tier ' + k; }, toState: function (k) { return +k > 0 ? k : null; }, sort: function (a, b) { return a - b; } }))));
       facets.appendChild(facetBox('x', 'Content', st.x.filter(function (v) { return v !== 'de'; }).length, [switchRow('text', f.text), switchRow('comp'), switchRow('img'), switchRow('indep'), switchRow('seed')]));
+      if (extFacets().length) { drawExt(); facets.appendChild(extHost); }
     }
     function histogram(years) {
       var ks = Object.keys(years).map(Number).filter(function (y) { return y >= 1970 && y <= 2100; }).sort(function (a, b) { return a - b; });
@@ -373,6 +382,107 @@
       a.addEventListener('change', apply); b.addEventListener('change', apply);
       out.push(h('div.hist-in', null, a, '–', b));
       return out;
+    }
+
+    /* ---------------- extension facets and result actions (LnpApp.ext.searchFacet / resultAction)
+       A selected value is applied as filters.ps: the patent indexes of the value (spec.ps), several values intersect
+       (spec.combine === 'or' makes the values of one facet a union). Counts come from spec.counts(all), where all = the
+       patent indexes of the current result, requested after the first page has been painted; a facet with a selection is
+       counted on the result without its own selection, so its other values stay selectable. */
+    var extCache = new Map(), extComb = new Map(), extCounts = {}, extErr = {}, extHost = null, extAll = {}, extResNodes = [];
+    function extFacets() { return App.ext ? App.ext.list('searchFacet').filter(function (x) { return /^[A-Za-z][A-Za-z0-9]*$/.test(x.id) && typeof x.counts === 'function' && typeof x.ps === 'function'; }) : []; }
+    function extSplit(it) { var i = it.indexOf(':'); return i > 0 ? [it.slice(0, i), it.slice(i + 1)] : [it, '']; }
+    function extVals(id) { return st.f.map(extSplit).filter(function (x) { return x[0] === id; }).map(function (x) { return x[1]; }); }
+    function extSpec(id) { return extFacets().filter(function (x) { return x.id === id; })[0] || null; }
+    function extChip(it) {
+      var sp = extSplit(it), spec = extSpec(sp[0]), row = ((extCounts[sp[0]] || []).filter(function (x) { return String(x.value) === sp[1]; })[0]) || null;
+      if (!spec) return sp[0] + ': ' + sp[1] + ' (loading filter \u2026)';
+      return (spec ? spec.title || spec.id : sp[0]) + ': ' + (row && row.label ? row.label : sp[1]);
+    }
+    function extResolve() {
+      return Promise.all(st.f.map(function (it) {
+        var sp = extSplit(it), spec = extSpec(sp[0]);
+        if (!spec || extCache.has(it)) return null;      // spec missing: pending, the filter is applied when the facet registers
+        return Promise.resolve().then(function () { return spec.ps(sp[1]); }).then(function (a) { extCache.set(it, a instanceof Uint32Array ? a : Uint32Array.from(a || [])); });
+      }));
+    }
+    function setIntersect(arrs) {
+      arrs = arrs.slice().sort(function (a, b) { return a.length - b.length; });
+      var set = new Set(arrs[0]);
+      for (var i = 1; i < arrs.length && set.size; i++) { var nx = new Set(); for (var j = 0; j < arrs[i].length; j++) if (set.has(arrs[i][j])) nx.add(arrs[i][j]); set = nx; }
+      return Uint32Array.from(set);
+    }
+    function extPs(skipId) {              // null = no extension facet restricts the result
+      var key = (skipId || '') + '|' + st.f.join(','), hit = extComb.get(key);
+      if (hit !== undefined) return hit;
+      var groups = {}, ids = [], out = null, complete = true;
+      st.f.forEach(function (it) {
+        var sp = extSplit(it), a = extCache.get(it);
+        if (sp[0] === skipId) return;
+        if (!a || !extSpec(sp[0])) { complete = false; return; }
+        if (!groups[sp[0]]) { groups[sp[0]] = []; ids.push(sp[0]); }
+        groups[sp[0]].push(a);
+      });
+      var parts = ids.map(function (id) {
+        var arrs = groups[id];
+        if (arrs.length === 1) return arrs[0];
+        if (extSpec(id).combine === 'or') { var u = new Set(); arrs.forEach(function (a) { for (var i = 0; i < a.length; i++) u.add(a[i]); }); return Uint32Array.from(u); }
+        return setIntersect(arrs);
+      });
+      if (parts.length) out = parts.length === 1 ? parts[0] : setIntersect(parts);
+      if (extComb.size > 40) extComb.clear();
+      if (complete) extComb.set(key, out);      // a partial result (spec not registered yet) is never cached
+      return out;
+    }
+    function afterExt(fn) { return st.f.length ? extResolve().then(fn) : fn(); }
+    function extAllFor(skip) {            // patent indexes of the result (Uint32Array), with or without the selection of one facet
+      var k = skip || '';
+      if (!extAll[k]) extAll[k] = afterExt(function () {
+        return S.search(st.q, { filters: filters(skip || undefined), limit: 1, facets: false, snippets: false, all: true, sort: 'score' }).then(function (r) { return r.all ? r.all : Uint32Array.from((r.hits || []).map(function (x) { return x.p; })); });
+      });
+      return extAll[k];
+    }
+    function toggleExt(id, v) { toggle('f', id + ':' + v); }
+    function extRows(spec) {
+      var list = extCounts[spec.id], on = extVals(spec.id);
+      if (!list) return [h('p.faint', { style: { padding: '0 6px 6px', 'font-size': '12.5px' }, text: extErr[spec.id] || 'Counting …' })];
+      list = list.slice();
+      on.forEach(function (v) { if (!list.some(function (x) { return String(x.value) === v; })) list.push({ value: v, label: v, n: 0 }); });
+      var out = [], rest = [], shown = 0;
+      list.forEach(function (x) {
+        var v = String(x.value), isOn = on.indexOf(v) >= 0, n = +x.n || 0;
+        var row = h('label.f-row' + (n ? '' : '.zero'), null, h('input.chk', { type: 'checkbox', checked: isOn, onchange: function () { toggleExt(spec.id, v); } }),
+          h('span.l', { text: String(x.label != null ? x.label : v), title: String(x.label != null ? x.label : v) }), h('span.n', { text: U.num(n) }));
+        if (shown < 8 || isOn) { out.push(row); shown++; } else rest.push(row);
+      });
+      if (rest.length) { var more = h('button.btn.quiet.sm.f-more', { type: 'button', onclick: function () { rest.forEach(function (r2) { more.parentNode.insertBefore(r2, more); }); more.parentNode.removeChild(more); } }, rest.length + ' more'); out.push(more); }
+      return out;
+    }
+    function drawExt() {
+      if (!extHost) extHost = h('div', { style: { display: 'contents' } });
+      U.clear(extHost);
+      extFacets().forEach(function (spec) { if (extCounts[spec.id] && !extCounts[spec.id].length && !extVals(spec.id).length) return; extHost.appendChild(facetBox('x_' + spec.id, spec.title || spec.id, extVals(spec.id).length, extRows(spec))); });
+    }
+    function loadExt(my) {
+      var specs = extFacets();
+      if (!specs.length || st.m === 'ai') return;
+      specs.forEach(function (spec) {
+        var skip = extVals(spec.id).length ? spec.id : null;
+        extAllFor(skip).then(function (all) { return spec.counts(all); }).then(function (list) {
+          if (my !== seq || destroyed) return;
+          extCounts[spec.id] = Array.isArray(list) ? list : []; delete extErr[spec.id]; drawExt(); drawBar();
+        }, function (e) {
+          App.logError('ext searchFacet ' + spec.id, e);
+          if (my !== seq || destroyed) return;
+          delete extCounts[spec.id]; extErr[spec.id] = 'The counts could not be computed.'; drawExt();
+        });
+      });
+    }
+    function drawExtResult(r) {
+      extResNodes.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); }); extResNodes = [];
+      if (!App.ext || !App.ext.has('resultAction')) return;
+      var info = { query: st.q, parsed: r.parsed || null, filters: filters(), total: r.total, all: function () { return extAllFor(null); } }, ref = csvBtn;
+      App.ext.nodes('resultAction', info).forEach(function (n) { ref.parentNode.insertBefore(n, ref.nextSibling); ref = n; extResNodes.push(n); });
     }
 
     /* ---------------- selection, keyboard, marks */
@@ -438,7 +548,7 @@
       var pop;
       function doSave() {
         var id = 's' + Date.now().toString(36);
-        g.LnpStore.put('searches', id, { name: name.value.trim() || st.q || 'Search', q: st.q, hash: R.build(toRoute()), filters: filters(), sort: st.s, total: res ? res.total : null, ts: new Date().toISOString() })
+        g.LnpStore.put('searches', id, { name: name.value.trim() || st.q || 'Search', q: st.q, hash: R.build(toRoute()), filters: filters(true), sort: st.s, total: res ? res.total : null, ts: new Date().toISOString() })
           .then(function () { U.toast('Search saved'); }, function (e) { U.toast('Save failed: ' + U.errText(e), { error: true }); });
         U.closePopover();
       }
@@ -525,7 +635,7 @@
       Promise.resolve().then(function () {
         var STAGE = { expand: 'Expanding query', search: 'Searching claims', rerank: 'Rating claims', done: 'done' };
         function onStage(s) { var k = typeof s === 'string' ? s : s && (s.stage || s.text); status.textContent = (STAGE[k] || k || 'Claude is working') + (s && s.done != null && s.total ? ' (' + s.done + ' of ' + s.total + ')' : '') + ' \u2026'; }
-        return A.semanticSearch(st.q, { filters: filters(), n: 60, signal: aiCtl ? aiCtl.signal : undefined, onStage: onStage, onStatus: onStage });
+        return afterExt(function () { return A.semanticSearch(st.q, { filters: filters(), n: 60, signal: aiCtl ? aiCtl.signal : undefined, onStage: onStage, onStatus: onStage }); });
       }).then(function (out) {
         if (my !== seq || destroyed) return;
         // engine/ai.js answers per claim: {hits: [{p, claimNo, lang, score 0-3 | null, reason, text}], used, degraded[]}
@@ -567,7 +677,7 @@
 
     return {
       update: function (r) { fromRoute(r); drawBar(); if (st.m === 'ai' && aiFn()) drawAiIdle(); else run(); return true; },
-      destroy: function () { destroyed = true; seq++; live.cancel(); teardownBlocks(); if (ro) ro.disconnect(); offKey(); offMarks(); offCaps(); if (aiCtl) { try { aiCtl.abort(); } catch (e) { /* ignore */ } } }
+      destroy: function () { destroyed = true; seq++; live.cancel(); teardownBlocks(); if (ro) ro.disconnect(); offKey(); offExt(); offMarks(); offCaps(); if (aiCtl) { try { aiCtl.abort(); } catch (e) { /* ignore */ } } }
     };
   }
 

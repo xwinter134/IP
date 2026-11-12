@@ -120,6 +120,10 @@
   var LIT = { wortsinngemaess_erfuellt: 'literally met', wortsinngemaess_moeglich: 'literally possible', wortsinngemaess_nicht_erfuellt: 'literally not met', nicht_beurteilbar: 'cannot be assessed' };
   K.litLabel = function (l) { return LIT[l] || (l ? String(l).replace(/_/g, ' ') : '–'); };
   var VERD = { erfuellt: ['met', 'crit'], nicht_erfuellt: ['not met', 'good'], unklar: ['unclear', 'warn'], formel_fehlt: ['formula not available', 'hollow'], nicht_beurteilbar: ['cannot be assessed', 'hollow'] };
+  // verdict of one Markush rule (variable) for a molecule: one label and colour set for every view (met = the molecule
+  // satisfies the claimed rule = risk, shown red)
+  K.RULE_VERDICT = { met: ['met', 'crit'], not_met: ['not met', 'good'], unclear: ['unclear', 'warn'], 'n/a': ['not present', 'hollow'] };
+  K.ruleVerdictPill = function (v) { var x = K.RULE_VERDICT[v] || [v ? String(v).replace(/_/g, ' ') : '–', 'hollow']; return h('span.pill.' + x[1], { text: x[0] }); };
   K.verdictPill = function (v) { var x = VERD[v] || [v ? String(v).replace(/_/g, ' ') : '–', 'hollow']; return h('span.pill.' + x[1], { text: x[0] }); };
 
   /* ------------------------------------------------------------ chart tooltip (one for the page) */
@@ -159,6 +163,14 @@
       });
       document.body.appendChild(inp); inp.click();
     });
+  };
+  // OpenChemLib parse errors ("Class$S18: SmilesParser: unknown element label found. Position:0") -> plain text
+  K.chemErr = function (m) {
+    var s = String(m == null ? '' : (m && m.message) || m);
+    var hit = /(?:Class\$\w+:\s*)?SmilesParser:\s*([\s\S]*)$/.exec(s) || /((?:dangling ring closure|unknown element|valence)[\s\S]*)$/i.exec(s);
+    if (!hit) return s.replace(/\.{2,}/g, '.');
+    var d = hit[1].replace(/\.?\s*Position:\s*(\d+)/i, function (x, p) { return ' at position ' + (Number(p) + 1); }).replace(/\s+label found\b|\s+found\b/i, '').replace(/[.\s]+$/, '');
+    return 'not a valid SMILES (' + d.replace(/\.{2,}/g, '.').trim() + ')';
   };
   K.plural = function (n, one, many) { return U.num(n) + ' ' + (n === 1 ? one : many); };
 

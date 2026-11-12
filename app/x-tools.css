@@ -1,0 +1,45 @@
+/* LNP Patent Desk: Tools hub (#tools). Tokens come from index.html (:root, light and dark), components from app.css / views.css. */
+
+.tl-page { min-width: 0; }
+
+/* ------------------------------------------------------------------ cards */
+.tl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; min-width: 0; }
+.tl-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.tl-card[data-state="missing"] { background: var(--bg); border-style: dashed; }
+.tl-card[data-state="missing"] .tl-title, .tl-card[data-state="missing"] .tl-what { color: var(--dim); }
+.tl-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tl-ico { display: inline-flex; flex: none; width: 28px; height: 28px; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--dim); background: var(--bg); }
+.tl-ico .ico { width: 16px; height: 16px; }
+.tl-title { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 15px; font-weight: 500; letter-spacing: 0; overflow-wrap: anywhere; }
+.tl-top .pill { flex: none; }
+.tl-what { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text); }
+.tl-av { list-style: none; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--dim); }
+.tl-av li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; align-items: baseline; min-width: 0; }
+.tl-k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.tl-av span:last-child { overflow-wrap: anywhere; }
+.tl-note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--dim); }
+.tl-note.warn { color: var(--warn); }
+.tl-foot { margin-top: auto; padding-top: 2px; display: flex; gap: 8px; }
+.tl-foot .btn { text-decoration: none; }
+#tl-note { margin-top: 12px; max-width: 100ch; }
+
+/* ------------------------------------------------------------------ for AI tools */
+.tl-ai { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.tl-ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; min-width: 0; }
+.tl-ai-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.tl-ai-card h3, .tl-mk h3 { margin: 0; font-size: 14.5px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-ai-card p { margin: 0; font-size: 13px; line-height: 1.5; max-width: 70ch; }
+.tl-code { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: var(--mono); font-size: 12px; line-height: 1.5; overflow-x: auto; max-width: 100%; white-space: pre; }
+.tl-code code { font-family: inherit; }
+.tl-mk { display: flex; flex-direction: column; gap: 10px; min-width: 0; max-width: 820px; }
+.tl-mk textarea { width: 100%; max-width: 560px; }
+.tl-mk .k-row { flex-wrap: wrap; gap: 8px; align-items: center; }
+.tl-prev { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: var(--mono); font-size: 11.5px; line-height: 1.5; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.tl-prev[hidden] { display: none; }
+.ctx-actions { display: inline-flex; gap: 4px; align-items: center; }
+
+@media (max-width: 480px) {
+  .tl-card, .tl-ai-card { padding: 12px; }
+  .tl-av li { grid-template-columns: 52px minmax(0, 1fr); }
+  .tl-mk .k-row .btn { flex: 1 1 auto; }
+}
