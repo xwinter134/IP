@@ -5,8 +5,8 @@ below was read from the pipeline code, its summary files or the build manifests 
 something could not be determined it says so. The results of the tool are a pre-screening, not legal advice.
 
 **Snapshot.** Both builds described here were made from the same corpus file, written 2026-11-12 08:30 UTC:
-the claude.ai Artifact build (`dist/`, built 2026-11-12 08:48 UTC) and the website build (`dist-pages/`,
-built 2026-11-12 08:49 UTC). The US full-text download (`pipeline/fetch_us.py`) continues after these builds, so
+the claude.ai Artifact build (`dist/`, built 2026-11-12 08:58 UTC) and the website build (`dist-pages/`,
+built 2026-11-12 08:58 UTC). The US full-text download (`pipeline/fetch_us.py`) continues after these builds, so
 the US numbers grow with the next build. All counts are for that snapshot.
 
 | Source snapshot | Date |
@@ -139,10 +139,10 @@ the next build picks up the new ones.
 | Size budget | 215 MB (host limit 240 MB, 500 files, 15 MB per file); data as base64 text, which is about a third larger | 900 MB budget; raw binary files |
 | Built size / files | 214.67 MB / 460 files | 438.63 MB / 623 files |
 | Publications in the table and searchable by title, abstract, assignee | 125,104 | 125,104 |
-| Publications with claims in the build | 28,522 of 41,678 (68.4 %): EP 10,310 (48.2 %), US 18,212 (89.8 %) | 41,678 (100 %) |
-| Claims in the search index | 730,847 | 1,118,827 |
-| Publications with definition paragraphs | 5,216 of 39,473 (13.2 %): EP 971, US 4,245 | 39,473 (100 %) |
-| Search index | 1,025,284 searchable units, 313,815 terms | 1,413,264 units, 426,591 terms |
+| Publications with claims in the build | 28,523 of 41,678 (68.4 %): EP 10,311 (48.2 %), US 18,212 (89.8 %) | 41,678 (100 %) |
+| Claims in the search index | 730,863 | 1,118,827 |
+| Publications with definition paragraphs | 5,218 of 39,473 (13.2 %): EP 971, US 4,247 | 39,473 (100 %) |
+| Search index | 1,025,300 searchable units, 313,840 terms | 1,413,264 units, 426,591 terms |
 | Formula images | 4,943 images of 181 publications (25 MB image budget; 37,870 images left out) | 42,813 images of 2,007 publications |
 | Compounds | 84,691 | 84,691 |
 | Range quotes | not shipped as a file; cut from the claim text when it is in the build | separate quote file (`ranges-q.gz.bin`) |
@@ -150,10 +150,11 @@ the next build picks up the new ones.
 
 The text cut of the Artifact build (`pipeline/build_dist.py`): seed-family publications always keep claims and
 definitions; then claims are kept by priority (seed tier, then tier 0 to 5, newest first); then definition
-paragraphs in the same order, with 10 MB reserved for them. In this build all 13,156 publications that lost their
-claims (EP 11,077, US 2,079; 387,980 claims, 117.0 million characters) were tier 5, the oldest of that tier:
-published from 1976-01-13 to 2019-10-16 (first cut: EP2921171B1, last kept: EP2920167B1, both of 2019-10-16). 34,257
-publications lost their definition paragraphs (22,552 of them kept their claims). A
+paragraphs in the same order, with 10 MB reserved for them. In this build all 13,155 publications that lost their
+claims (EP 11,076, US 2,079; 387,964 claims, 117.0 million characters) were tier 5, the oldest of that tier:
+published from 1976-01-13 to 2019-10-16 (first cut: EP2948477B1, last kept: EP2921171B1, both of 2019-10-16). 34,255
+publications lost their definition paragraphs (22,551 of them kept their claims). The cut shifts by a few hundred publications
+between builds; the System view shows the exact figures of the build in use. A
 publication that lost its claims stays in the table with its biblio data, status and compounds, can be found by
 title, abstract or assignee, and is flagged "text cut" in the app. The full list is written to
 `data/work/dist_build/cut.jsonl`.
@@ -284,7 +285,7 @@ the Artifact, Claude) translates it into a record first.
 | Tags | regex rules can over- or under-tag | rule tests on synthetic records (`tests/tags_test.py`); random spot-check sample printed by `tags_build.py` |
 | Families | simple families only; synthetic families for 6,355 records | - |
 | Status age | EP Register snapshot about 2.5 months older than the build; US status is a calculation | status date shown with every status |
-| Artifact text cut | 13,156 publications without claims in the Artifact | "text cut" flag; website build has them |
+| Artifact text cut | 13,155 publications without claims in the Artifact | "text cut" flag; website build has them |
 
 What code decides and what Claude does: quotes in an FTO analysis must be substrings of the claim text (checked in
 `web/engine/fto.js`); numeric ranges are extracted and compared in code; structure and Markush matches are computed
