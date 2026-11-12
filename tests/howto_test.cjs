@@ -53,6 +53,17 @@ ok(D.tutorials.length >= 14, 'at least 14 tutorials');
 ok(/not legal advice/i.test(D.common.join(' ')) && /Artifact/.test(D.common.join(' ')) && /snapshot/i.test(D.common.join(' ')), 'common limits name the snapshot, legal advice and the Artifact-only Claude features');
 ok(/pre-screening/i.test(D.tutorials.find((t) => t.id === 'fto').limits.join(' ')), 'FTO limits say pre-screening');
 shotNames.forEach((n) => ok(used.has(n), 'shot ' + n + ' is used by a tutorial'));
+// "About the data" is the last entry, text only, and links docs/DATA.md (which must exist)
+const dataT = D.tutorials[D.tutorials.length - 1];
+ok(dataT.id === 'data', 'the last tutorial is "About the data"');
+ok(dataT.steps.every((s) => !s.img), 'About the data has no screenshots');
+ok(dataT.steps.some((s) => s.link && s.link.href === 'https://github.com/xwinter134/IP/blob/lnp-tools/docs/DATA.md'), 'About the data links docs/DATA.md on GitHub');
+ok(fs.existsSync(path.join(ROOT, 'docs/DATA.md')), 'docs/DATA.md exists');
+D.tutorials.forEach((t) => t.steps.forEach((s) => {
+  if (s.table) ok(Array.isArray(s.table.cols) && s.table.rows.every((r) => r.length === s.table.cols.length && r.every((c) => typeof c === 'string')), t.id + ': table rows match the columns and hold plain strings');
+  if (s.list) ok(s.list.every((x) => typeof x === 'string' && x.length > 5), t.id + ': list items are plain strings');
+  if (s.link) ok(/^https:\/\//.test(s.link.href) && s.link.label, t.id + ': link is https with a label');
+}));
 
 // files
 const files = fs.existsSync(IMG) ? fs.readdirSync(IMG).filter((f) => /\.jpg$/.test(f)) : [];

@@ -23,7 +23,15 @@ function render() {
     L.push('', '## ' + (i + 1) + '. ' + t.title, '', t.summary, '');
     L.push('Try it in the app: `' + t.route + '`', '');
     t.steps.forEach((s, j) => {
-      L.push('**Step ' + (j + 1) + '.** ' + s.text, '');
+      L.push('**Step ' + (j + 1) + '.' + (s.head ? ' ' + s.head + '.' : '') + '** ' + s.text, '');
+      if (s.list) { s.list.forEach((x) => L.push('- ' + x)); L.push(''); }
+      if (s.table) {
+        const cell = (c) => String(c).replace(/\|/g, '\\|');
+        L.push('| ' + s.table.cols.map(cell).join(' | ') + ' |', '|' + s.table.cols.map((c, k) => (k ? '---:' : '---')).join('|') + '|');
+        s.table.rows.forEach((r) => L.push('| ' + r.map(cell).join(' | ') + ' |'));
+        L.push('');
+      }
+      if (s.link) L.push('[' + s.link.label + '](' + s.link.href + ')', '');
       if (s.img) L.push('![' + s.alt.replace(/[\[\]]/g, '') + '](../web/app/howto/' + s.img + '.jpg)', '');
       if (s.route && s.route !== t.route) L.push('Try it: `' + s.route + '`', '');
     });

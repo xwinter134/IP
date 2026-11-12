@@ -26,6 +26,14 @@
 .hw-step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .hw-text { margin: 0; max-width: 78ch; line-height: 1.55; overflow-wrap: anywhere; }
 .hw-fig { margin: 0; min-width: 0; }
+/* text-only steps ("About the data"): sub-heading, list, table */
+.hw-sub { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.hw-list-x { margin: 0; padding-left: 18px; max-width: 78ch; display: flex; flex-direction: column; gap: 4px; line-height: 1.5; }
+.hw-list-x li { overflow-wrap: anywhere; }
+.hw-table { max-width: 980px; }
+.hw-table td { overflow-wrap: normal; }
+.hw-table td:first-child { min-width: 10em; }
+.hw-table td.num { text-align: right; white-space: nowrap; }
 .hw-shot { display: block; width: 100%; max-width: 980px; margin: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--muted); overflow: hidden; cursor: zoom-in; box-shadow: var(--shadow); font: inherit; }
 .hw-shot:hover { border-color: var(--ring); }
 .hw-shot:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }

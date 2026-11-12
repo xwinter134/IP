@@ -1,7 +1,8 @@
 /* LNP Patent Desk: How to. Route: #howto, deep link #howto-<id> (for example #howto-markush). Step-by-step tutorials with screenshots.
    The text comes from app/views/lib/howto-data.js (the same source makes docs/TUTORIALS.md), the pictures from app/howto/<id>-<n>.jpg
    (made by tests/howto_shots.cjs from the website build, light theme). All text is inserted with textContent; nothing here reads patent text.
-   A picture that cannot be loaded (a build without the image files) is replaced by its description. Needs no capability and no data. */
+   A picture that cannot be loaded (a build without the image files) is replaced by its description. A step without a picture may carry a
+   heading, a list, a table and an external link (the "About the data" entry), built as DOM elements. Needs no capability and no data. */
 (function (g) {
   'use strict';
   var U = g.LnpUI, R = g.LnpRouter, h = U.h;
@@ -92,13 +93,23 @@
       if (!r) return null;
       return h('a.btn.sm.hw-try', { href: r, 'aria-label': (label || 'Try it') + ': open ' + r.replace(/^#/, '').split('-')[0] }, U.icon('link'), label || 'Try it');
     }
+    /* text-only steps may carry a list, a table ({cols, rows}) and an external link ({href, label}); all plain strings */
+    function extras(s) {
+      var out = [];
+      if (s.list) out.push(h('ul.hw-list-x', null, s.list.map(function (x) { return h('li', { text: x }); })));
+      if (s.table) out.push(h('div.table-wrap.hw-table', null, h('table.data', null,
+        h('thead', null, h('tr', null, s.table.cols.map(function (c) { return h('th', { scope: 'col', text: c }); }))),
+        h('tbody', null, s.table.rows.map(function (r) { return h('tr', null, r.map(function (c, j) { return h(j ? 'td.num' : 'td', { text: c }); })); })))));
+      if (s.link && /^https:\/\//.test(s.link.href)) out.push(h('p.hw-act', null, h('a.btn.sm', { href: s.link.href, target: '_blank', rel: 'noopener noreferrer' }, U.icon('ext'), s.link.label)));
+      return out;
+    }
     function draw() {
       var t = byId[cur];
       page.dataset.tutorial = cur;
       var steps = h('ol.hw-steps');
       t.steps.forEach(function (s, i) {
         steps.appendChild(h('li.hw-step', { data: { step: String(i + 1), img: s.img || '' } },
-          h('div.hw-step-body', null, h('p.hw-text', { text: s.text }), s.route && s.route !== t.route ? h('p.hw-act', null, tryLink(s.route, 'Try it')) : null),
+          h('div.hw-step-body', null, s.head ? h('h3.hw-sub', { text: s.head }) : null, h('p.hw-text', { text: s.text }), extras(s), s.route && s.route !== t.route ? h('p.hw-act', null, tryLink(s.route, 'Try it')) : null),
           s.img ? picture(s) : null));
       });
       var lim = h('ul.hw-limits-list');
