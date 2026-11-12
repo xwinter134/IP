@@ -105,7 +105,9 @@ class Client:
                 time.sleep(w)
                 delay = min(delay * 2, 300)
                 if st == 403 and not reopened:
-                    pass
+                    self.log("ppubs: HTTP 403, re-opening session")
+                    self.reopen()
+                    reopened = True
                 continue
             break
         raise PpubsError(st, raw[:300].decode("utf8", "replace"))
