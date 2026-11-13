@@ -1,9 +1,10 @@
 /* LNP Patent Desk: navigation bar (back / forward + breadcrumbs). Tokens come from index.html (:root, light and dark).
    The bar takes its own grid row between the top band and the work area, so the scrolling area sits under it. */
-.app { grid-template-rows: auto auto minmax(0, 1fr); }
-.rail { grid-row: 2 / 4; }
-.view { grid-row: 3; }
-.xnav { grid-row: 2; grid-column: 2; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 40px; padding-block: 5px;
+/* app.css sits later in the document than the extension styles, so these overrides carry one more class to win */
+.app#app { grid-template-rows: auto auto minmax(0, 1fr); }
+.app > .rail { grid-row: 2 / 4; }
+.app > .view { grid-row: 3; }
+.app > .xnav { grid-row: 2; grid-column: 2; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 40px; padding-block: 5px;
   padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
   background: var(--bg); border-bottom: 1px solid var(--line); }
 .app[data-state="boot"] .xnav { display: none; }
@@ -24,13 +25,18 @@ a.xnav-c:hover { color: var(--text); text-decoration: underline; text-underline-
 .xnav-c[aria-current="page"] { max-width: 46ch; color: var(--text); font-weight: 500; }
 .xnav-c[aria-current="page"]::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 8px; border-radius: 50%; background: var(--signal); vertical-align: 1px; }
 @media (max-width: 760px) {
-  .app { grid-template-rows: auto auto minmax(0, 1fr) auto; }
-  .rail { grid-row: 4; }
-  .xnav { grid-column: 1; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .app#app { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .app > .rail { grid-row: 4; }
+  .app > .xnav { grid-column: 1; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 }
 @media (max-width: 560px) {
   .xnav-list li:not(:nth-last-child(-n+2)) { display: none; }
   .xnav-list li:nth-last-child(2):first-child::before, .xnav-list li:nth-last-child(2)::before { content: none; }
-  .xnav-c { max-width: 18ch; }
-  .xnav-c[aria-current="page"] { max-width: 26ch; }
+  .xnav { gap: 8px; } .xnav-list { letter-spacing: .04em; }
+  .xnav-list li + li::before { margin: 0 6px; }
+  .xnav-list { font-size: 10px; }
+  .xnav-list li:nth-last-child(2) { flex: 1 1 0; min-width: 5ch; }
+  .xnav-list li:last-child { flex: 0 0 auto; max-width: 72%; }
+  .xnav-c { max-width: 100%; }
+  .xnav-c[aria-current="page"] { max-width: 100%; }
 }
