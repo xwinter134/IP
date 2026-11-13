@@ -387,7 +387,14 @@
     if (syn && arr(syn.offene_fragen).length) { h(3, L.openQ); ul(syn.offene_fragen); }
     if (op.usage || op.run) { h(3, L.s_usage); p((op.run ? op.run.calls + ' ' + L.calls + (op.run.resumedSteps ? ', ' + op.run.resumedSteps + ' ' + L.resumed : '') : '') + (op.usage ? '; ' + op.usage.bytesIn + ' / ' + op.usage.bytesOut + ' bytes in/out' : '')); }
     N.push({ limits: str(op.limits) });
-    return { nodes: N, lang: lang, title: str(op.title || L.title) };
+    /* presentation metadata for the HTML cover and summary (derived from the same fields; not rendered by Markdown/JSON) */
+    var rights = {};
+    arr(op.matrix).forEach(function (m) { if (m && m.pn) rights[m.pn] = { risk: str(m.risk) }; });
+    var meta = { id: str(op.id), created: str(op.finished || op.created).slice(0, 10), snapshot: str(op.statusSnapshot || snap.ep_register || '').slice(0, 10), rights: rights,
+      markets: op.overall ? arr(op.overall.markets).map(function (m) { return { market: m.market === 'EP_UPC' ? 'EP / UPC' : str(m.market), risk: str(m.risk), drivers: arr(m.drivers).map(str) }; }) : [],
+      pending: op.overall && op.overall.pending && op.overall.pending.risk ? { risk: str(op.overall.pending.risk), drivers: arr(op.overall.pending.drivers).map(str) } : null,
+      nPatents: arr(op.patents).length, nNot: arr(op.notCharted).length, aiUsed: !!op.aiUsed };
+    return { nodes: N, lang: lang, title: str(op.title || L.title), meta: meta };
   }
 
   // ------------------------------------------------------------------------------------------------ markdown
@@ -420,25 +427,184 @@
     });
     return out.join('\n');
   }
-  var CSS = 'body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1c1f24;background:#fff;max-width:1100px;margin:0 auto;padding:24px 16px}' +
-    'h1{font-size:24px;margin:20px 0 8px}h2{font-size:19px;margin:28px 0 8px;border-bottom:2px solid #1c1f24;padding-bottom:4px}h3{font-size:16px;margin:20px 0 6px}h4{font-size:14px;margin:16px 0 4px}h5{font-size:13px;margin:12px 0 4px}' +
-    'p{margin:6px 0}ul{margin:6px 0 6px 20px;padding:0}table{border-collapse:collapse;width:100%;margin:8px 0;font-size:12.5px}th,td{border:1px solid #c9ced6;padding:4px 6px;vertical-align:top;text-align:left;overflow-wrap:anywhere}' +
-    'th{background:#eef1f5}.limits{white-space:pre-wrap;border:2px solid #8a1f11;background:#fdf3f1;padding:12px;font:12.5px/1.45 system-ui,sans-serif;margin:0 0 16px}.warn{border-left:4px solid #b54708;background:#fff6e8;padding:6px 10px;font-weight:600}' +
-    'dl{margin:6px 0;display:grid;grid-template-columns:minmax(120px,240px) 1fr;gap:2px 12px}dt{font-weight:600}dd{margin:0;overflow-wrap:anywhere}.model{border-left:3px solid #c9ced6;padding-left:10px}.tw{overflow-x:auto}' +
-    '@media print{body{max-width:none;padding:0;font-size:11px}h2{break-after:avoid}table{break-inside:auto}tr{break-inside:avoid}.tw{overflow:visible}}';
+  /* Report design: the app's tokens (warm neutrals, header-band gradient, risk scale) with system font fallbacks only; no remote fonts,
+     images or scripts. Light theme for paper; an optional dark theme for on-screen reading. Print: A4, running footer in the page margin
+     boxes (where the browser supports them), headings kept with their content, tables split by row with a repeated header. */
+  var CSS = ':root{--bg:#fff;--surface:#faf9f9;--muted:#f2efef;--line:#e7e4e4;--line-strong:#d7d0d0;--text:#292424;--dim:#574e4e;--faint:#796b6b;' +
+    '--good:#3b7b34;--warn:#b45309;--crit:#bc2706;--info:#4128da;--good-bg:#edf5ec;--warn-bg:#fbf1e3;--crit-bg:#fbece8;--info-bg:#eeecfb;' +
+    '--risk0:#3b7b34;--risk1:#8a9a2a;--risk2:#b45309;--risk3:#dc2b05;--risk4:#97260c;--band-a:#473f96;--band-b:#6b3d89;--band-c:#953c65;--band-d:#a03d57;--band-e:#b0412a;' +
+    '--font:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--mono:"Martian Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}' +
+    '@media screen and (prefers-color-scheme:dark){:root{--bg:#171212;--surface:#1c1717;--muted:#292424;--line:#3a3232;--line-strong:#4a4040;--text:#f2efef;--dim:#c9c0c0;--faint:#a99d9d;' +
+    '--good:#78d771;--warn:#fcd34d;--crit:#fa856b;--info:#9ca8ff;--good-bg:#1d2b1b;--warn-bg:#33290f;--crit-bg:#381b14;--info-bg:#201f3d;--risk0:#78d771;--risk1:#c3d45c;--risk2:#fcd34d;--risk3:#f95834;--risk4:#fa856b}}' +
+    '*{box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    'body{margin:0 auto;max-width:980px;padding:24px 16px 56px;background:var(--bg);color:var(--text);font:14.5px/1.55 var(--font);overflow-wrap:break-word}' +
+    'h1,h2,h3,h4,h5{font-weight:600;letter-spacing:-.02em;line-height:1.25;margin:0;break-after:avoid;page-break-after:avoid}' +
+    'h2{font-size:23px;letter-spacing:-.03em;margin:0 0 14px}h3{font-size:17px;margin:26px 0 8px}h4{font-size:14.5px;margin:20px 0 6px}h5{font-size:13px;margin:14px 0 4px;color:var(--dim)}' +
+    'p{margin:6px 0}ul,ol{margin:6px 0;padding-left:20px}li{margin:2px 0}strong{font-weight:600}' +
+    /* notice (the verbatim limits block, first and last element of the document) */
+    'pre.limits{white-space:pre-wrap;overflow-wrap:break-word;margin:0 0 18px;padding:14px 16px 14px 18px;border:1px solid var(--crit);border-left:6px solid var(--crit);border-radius:10px;background:var(--crit-bg);color:var(--text);font:13px/1.5 var(--font);break-inside:avoid;page-break-inside:avoid}' +
+    'pre.limits::first-line{font-weight:700;color:var(--crit)}body>pre.limits:last-child{margin:36px 0 0}' +
+    /* cover */
+    '.cover{position:relative;overflow:hidden;border-radius:16px;padding:30px 32px 26px;color:#fff;background:linear-gradient(120deg,var(--band-a) 0%,var(--band-b) 28%,var(--band-c) 56%,var(--band-d) 78%,var(--band-e) 100%);break-inside:avoid;page-break-inside:avoid}' +
+    '.cover .mark{display:flex;align-items:center;gap:10px;font-size:15px;letter-spacing:-.01em}.cover .mark .lg{display:inline-block;width:22px;height:22px;border-radius:7px;border:2px solid #ffffffcc;background:linear-gradient(135deg,#ffffff55,#ffffff11)}.cover .mark strong{font-weight:700}.cover .mark span{font-weight:300}' +
+    '.cover .kick{margin:34px 0 8px;font:600 11px/1.2 var(--font);letter-spacing:.12em;text-transform:uppercase;opacity:.85}' +
+    '.cover h1{font-size:33px;font-weight:600;letter-spacing:-.032em;line-height:1.12;margin:0;max-width:30ch}' +
+    '.cover .tag{display:inline-block;margin:16px 0 0;padding:5px 12px;border:1px solid #ffffffb3;border-radius:999px;background:#ffffff1f;font-size:12.5px;font-weight:600}' +
+    '.cover dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 20px;margin:26px 0 0;padding-top:16px;border-top:1px solid #ffffff55}.cover dt{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.8;font-weight:500}.cover dd{margin:2px 0 0;font-size:13px;font-weight:500;overflow-wrap:anywhere}' +
+    /* contents */
+    '.toc{margin:26px 0 0;padding:18px 22px;border:1px solid var(--line);border-radius:12px;background:var(--surface);break-inside:avoid;page-break-inside:avoid}.toc h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}' +
+    '.toc ol{list-style:none;margin:0;padding:0}.toc>ol>li{margin:5px 0;font-weight:500}.toc ol ol{margin:3px 0 6px 18px}.toc ol ol li{font-weight:400;font-size:13px;margin:2px 0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.toc a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--line-strong)}.toc a:hover{border-bottom-color:var(--text)}' +
+    /* sections */
+    '.sec{margin:44px 0 0}.sec>h2{padding-bottom:8px;border-bottom:2px solid var(--text)}' +
+    '.right{margin:30px 0 0;padding:18px 20px 6px;border:1px solid var(--line);border-top:4px solid var(--line-strong);border-radius:12px;background:var(--bg)}.right.r5,.right.r4{border-top-color:var(--risk4)}.right.r3{border-top-color:var(--risk3)}.right.r2{border-top-color:var(--risk2)}.right.r1{border-top-color:var(--risk0)}' +
+    '.rhead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between;break-after:avoid;page-break-after:avoid}.rhead h3{margin:0;font-size:18px}' +
+    /* risk, verdict and quote markers: always text plus a symbol, never colour alone */
+    '.rk{display:inline-flex;align-items:center;gap:7px;padding:2px 9px 2px 8px;border:1px solid var(--line-strong);border-left:4px solid var(--faint);border-radius:6px;background:var(--surface);font-size:.92em;font-weight:600;line-height:1.35;white-space:nowrap}' +
+    '.rk .pips{font-size:.72em;letter-spacing:.06em;color:var(--faint)}.rk.r1{border-left-color:var(--risk0)}.rk.r1 .pips{color:var(--risk0)}.rk.r2{border-left-color:var(--risk1)}.rk.r2 .pips{color:var(--risk1)}.rk.r3{border-left-color:var(--risk2)}.rk.r3 .pips{color:var(--risk2)}.rk.r4{border-left-color:var(--risk3)}.rk.r4 .pips{color:var(--risk3)}.rk.r5{border-left-color:var(--risk4)}.rk.r5 .pips{color:var(--risk4)}' +
+    '.rk.r0::before{content:"?";font-weight:700;color:var(--faint)}.rsep{color:var(--faint);margin:0 4px}' +
+    '.vd,.qm{display:inline-block;padding:1px 7px;border:1px solid var(--line-strong);border-radius:6px;font-size:.92em;font-weight:600;line-height:1.4}.vd .g,.qm .g{margin-right:5px}' +
+    '.vd.met{border-color:var(--crit);background:var(--crit-bg)}.vd.not{border-color:var(--good);background:var(--good-bg)}.vd.unc{border-color:var(--warn);background:var(--warn-bg)}' +
+    '.qm.ok{border-color:var(--good);background:var(--good-bg)}.qm.dev{border-color:var(--warn);background:var(--warn-bg)}.qm.bad{border-color:var(--crit);background:var(--crit-bg);color:var(--crit)}' +
+    /* executive summary */
+    '.exec{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;margin:0 0 20px;break-inside:avoid;page-break-inside:avoid}' +
+    '.hero{padding:18px 20px;border:1px solid var(--line-strong);border-left:8px solid var(--faint);border-radius:12px;background:var(--surface)}.hero.r1{border-left-color:var(--risk0)}.hero.r2{border-left-color:var(--risk1)}.hero.r3{border-left-color:var(--risk2)}.hero.r4{border-left-color:var(--risk3)}.hero.r5{border-left-color:var(--risk4)}' +
+    '.hero .lab{font:600 11px/1.2 var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}.hero .lvl{display:block;margin:6px 0 2px;font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.1}.hero .pips{display:block;font-size:15px;letter-spacing:.14em;color:var(--faint)}.hero.r1 .pips{color:var(--risk0)}.hero.r2 .pips{color:var(--risk1)}.hero.r3 .pips{color:var(--risk2)}.hero.r4 .pips{color:var(--risk3)}.hero.r5 .pips{color:var(--risk4)}.hero .why{margin:8px 0 0;font-size:12.5px;color:var(--dim)}' +
+    '.mk{display:grid;gap:8px;align-content:start}.mk .row{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}.mk .row strong{font-weight:600}.mk .cnt{font-size:12.5px;color:var(--dim);padding:0 2px}' +
+    /* callouts */
+    '.co{margin:16px 0;padding:2px 14px 8px;border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:8px;background:var(--surface)}.co>h4,.co>h5:first-child{margin-top:10px}' +
+    '.co.evidence{border-left-color:var(--info);background:var(--info-bg)}.co.openq{border-left-color:var(--warn);background:var(--warn-bg)}.co.redteam{border-left-color:var(--risk3)}.co.da{border-left-color:var(--good)}.co.appnotes{border-left-color:var(--faint)}.co.verdict{border-left-color:var(--band-a)}' +
+    '.co{break-inside:avoid;page-break-inside:avoid}.co.evidence{break-inside:auto;page-break-inside:auto}table.chart th:nth-child(3){width:16%}table.chart td:nth-child(3){min-width:15ch}.co table{background:var(--bg)}' +
+    /* facts, prose, tables */
+    'dl.kv{display:grid;grid-template-columns:minmax(120px,230px) 1fr;gap:3px 16px;margin:8px 0}dl.kv dt{font-weight:600;color:var(--dim)}dl.kv dd{margin:0;overflow-wrap:anywhere}' +
+    '.facts{padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);break-inside:avoid;page-break-inside:avoid}' +
+    '.model{border-left:3px solid var(--line-strong);padding:0 0 0 12px;margin:8px 0}.warn{border:1px solid var(--warn);border-left:5px solid var(--warn);border-radius:8px;background:var(--warn-bg);padding:7px 12px;font-weight:600}' +
+    '.tw{overflow-x:auto;margin:8px 0}table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.45}' +
+    'th{padding:6px 8px;border-bottom:2px solid var(--text);text-align:left;vertical-align:bottom;font-weight:600;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--dim)}td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;overflow-wrap:break-word}table.matrix td{overflow-wrap:anywhere}' +
+    'thead{display:table-header-group}tfoot{display:table-footer-group}tr{break-inside:avoid;page-break-inside:avoid}' +
+    'table.chart td.q{font-family:var(--font);font-style:italic;color:var(--text);border-left:3px solid var(--line-strong);background:var(--surface)}table.chart td.f{font-family:var(--mono);font-size:.88em;white-space:nowrap}table.chart td.f+td{min-width:22ch}' +
+    'td .rk{display:flex;width:max-content;max-width:100%;margin:1px 0;white-space:nowrap;padding:1px 7px 1px 6px}td .rk .pips{display:none}td .rsep{display:none}table.matrix td:first-child{font-weight:600}table.matrix{font-size:11.5px;table-layout:fixed;min-width:760px}table.matrix th{overflow-wrap:anywhere}table.matrix th:nth-child(1){width:11%}table.matrix th:nth-child(2){width:8%}table.matrix th:nth-child(3){width:9.5%}table.matrix th:nth-child(4),table.matrix th:nth-child(5){width:11.5%}table.matrix th:nth-child(6){width:9%}table.matrix th:nth-child(7){width:14%}table.matrix th:nth-child(8){width:9%}table.matrix th:nth-child(9){width:16%}table.matrix td .rk{white-space:normal;padding:1px 5px}table.queries td{font-family:var(--mono);font-size:.86em}' +
+    '.about{margin:36px 0 0;padding:18px 22px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13px;color:var(--dim);break-inside:avoid;page-break-inside:avoid}.about h2{font-size:15px;color:var(--text);margin:0 0 6px}.about h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:14px 0 4px}.about ul{margin:4px 0}' +
+    '.about .scale{display:flex;flex-wrap:wrap;gap:6px 8px;margin:6px 0}' +
+    '.endnote{margin:20px 0 0;font-size:11.5px;color:var(--faint)}' +
+    '@media (max-width:720px){body{font-size:14px;padding:16px}.cover{padding:22px 20px}.cover h1{font-size:25px}.exec{grid-template-columns:1fr}dl.kv{grid-template-columns:1fr;gap:0}dl.kv dd{margin-bottom:6px}.right{padding:14px 14px 4px}.rk{white-space:normal}}' +
+    '@page{size:A4;margin:16mm 14mm 20mm}' +
+    '@media print{html{font-size:10pt}body{max-width:none;margin:0;padding:0;background:#fff;color:#292424;font-size:9.6pt;line-height:1.45}:root{--bg:#fff}' +
+    'h2{font-size:15pt}h3{font-size:12pt;margin-top:16px}h4{font-size:10.5pt;margin-top:13px}h5{font-size:9.6pt}' +
+    '.cover{padding:20px 22px 18px;border-radius:10px}.cover h1{font-size:23pt}.cover .kick{margin-top:22px}.cover dl{margin-top:16px}' +
+    'body>pre.limits:first-child{font-size:8pt;line-height:1.35;padding:8px 12px 8px 14px;margin-bottom:12px}pre.limits{font-size:9pt}' +
+    '.toc{margin-top:14px;padding:12px 16px}.sec{margin-top:26px}.right{margin-top:20px;padding:12px 14px 2px;border-radius:8px}.right+.right{break-before:page;page-break-before:always}' +
+    '.tw{overflow:visible}table{font-size:8.2pt}table.matrix{font-size:7.4pt;min-width:0}table.matrix th{font-size:6.4pt;letter-spacing:0}th{font-size:7.2pt}th,td{padding:4px 5px}.rk,.vd,.qm{font-size:.94em}.hero .lvl{font-size:22pt}' +
+    'h2,h3,h4,h5,.rhead{break-after:avoid;page-break-after:avoid}.co>h4{break-after:avoid}p,li{orphans:3;widows:3}a{color:inherit;text-decoration:none}.tw{break-inside:auto}}';
+  var UI = {
+    en: { kick: 'Freedom-to-operate pre-screening', tag: 'Pre-screening, not legal advice', toc: 'Contents', overall: 'Overall risk', basis: 'Highest level across the target markets, computed by the app from the individual assessments.',
+      pendingL: 'Pending applications', analysed: 'patent rights analysed', notAn: 'not analysed', byAI: 'AI analysis not available in this run', drivers: 'Driven by', about: 'How to read this report', scale: 'Risk scale (1 to 5; "cannot be assessed" is not a low risk)',
+      markers: 'Marks', mq: 'quote found verbatim in the claim text (checked by code)', md: 'quote found only with an omission or relaxed spelling, to be checked by hand', mb: 'quote not verified; the row is treated as unclear',
+      mv: 'Verdict "met" means the claim feature is found in the product; it is the adverse reading for the product.', method: 'Method', mt: 'Quotes are verified against the claim text, numeric ranges and structure matches are computed in code, and the final risk is the more adverse of the claim chart and the red-team review. The model only translates and explains. Evidence computed by the app only adds flags, questions and risk floors; it never lowers a risk.',
+      foot: 'LNP Patent Desk \u00b7 FTO pre-screening, not legal advice', snap: 'Status snapshot', page: 'Page', of: 'of', end: 'This document is a pre-screening and not legal advice. It is based on the corpus snapshot and legal status stated above; see the limits block.', created: 'Created', cannot: 'cannot be assessed' },
+    de: { kick: 'FTO-Vorpr\u00fcfung', tag: 'Vorpr\u00fcfung, keine Rechtsberatung', toc: 'Inhalt', overall: 'Gesamtrisiko', basis: 'H\u00f6chste Stufe \u00fcber die Zielm\u00e4rkte, von der App aus den Einzelbewertungen berechnet.',
+      pendingL: 'Anh\u00e4ngige Anmeldungen', analysed: 'Schutzrechte analysiert', notAn: 'nicht analysiert', byAI: 'KI-Analyse in diesem Lauf nicht verf\u00fcgbar', drivers: 'Getrieben durch', about: 'Hinweise zum Lesen', scale: 'Risikoskala (1 bis 5; \u201enicht beurteilbar\u201c ist kein geringes Risiko)',
+      markers: 'Markierungen', mq: 'Zitat w\u00f6rtlich im Anspruchstext gefunden (von Code gepr\u00fcft)', md: 'Zitat nur mit Auslassung oder gelockerter Schreibweise gefunden, von Hand zu pr\u00fcfen', mb: 'Zitat nicht verifiziert; die Zeile gilt als unklar',
+      mv: 'Urteil \u201eerf\u00fcllt\u201c hei\u00dft: das Anspruchsmerkmal findet sich im Produkt; das ist die f\u00fcr das Produkt ung\u00fcnstige Lesart.', method: 'Methode', mt: 'Zitate werden gegen den Anspruchstext verifiziert, Zahlenbereiche und Strukturtreffer berechnet der Code; das Gesamtrisiko ist das ung\u00fcnstigere von Merkmalsanalyse und Gegenpr\u00fcfung. Das Modell \u00fcbersetzt und erkl\u00e4rt nur. Von der App berechnete Belege setzen nur Kennzeichen, Fragen und Risikountergrenzen und senken nie ein Risiko.',
+      foot: 'LNP Patent Desk \u00b7 FTO-Vorpr\u00fcfung, keine Rechtsberatung', snap: 'Rechtsstand', page: 'Seite', of: 'von', end: 'Dieses Dokument ist eine Vorpr\u00fcfung und keine Rechtsberatung. Grundlage sind der oben genannte Korpus- und Rechtsstand; siehe Hinweisblock.', created: 'Erstellt', cannot: 'nicht beurteilbar' }
+  };
+  function lvl(code) { var m = /^(\d)_/.exec(str(code)); return m ? +m[1] : 0; }
+  function pips(n) { return n ? '<span class="pips" aria-hidden="true">' + new Array(n + 1).join('\u25cf') + new Array(6 - n).join('\u25cb') + '</span>' : ''; }
+  /* only fixed text and the safe characters of a date may enter a CSS string */
+  function cssStr(s) { return str(s).replace(/[^0-9A-Za-z .,:\-\u00b7\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df]/g, '').replace(/\u00b7/g, '\\00b7 '); }
   function toHtml(doc) {
-    var out = [];
-    doc.nodes.forEach(function (n) {
-      if (n.limits !== undefined) out.push('<pre class="limits">' + esc(n.limits) + '</pre>');
-      else if (n.h) { var l = Math.max(1, Math.min(6, n.h)); out.push('<h' + l + '>' + esc(n.t) + '</h' + l + '>'); }
+    var lang = doc.lang === 'de' ? 'de' : 'en', L = T[lang], U = UI[lang], meta = doc.meta || { rights: {}, markets: [] }, out = [], nodes = doc.nodes;
+    function riskChip(code, text) { var n = lvl(code); return '<span class="rk r' + n + '">' + pips(n) + '<span>' + esc(text || RISK[lang][code] || code || L.notAssessed) + '</span></span>'; }
+    var byLabel = {}; Object.keys(RISK[lang]).forEach(function (k) { byLabel[RISK[lang][k]] = k; });
+    var qByLabel = {}; Object.keys(QCHK[lang]).forEach(function (k) { qByLabel[QCHK[lang][k]] = k; });
+    var vByLabel = {}; Object.keys(VERD[lang]).forEach(function (k) { vByLabel[VERD[lang][k]] = k; });
+    var QCLS = { ok: ['ok', '\u2714'], elided: ['dev', '\u2248'], approx: ['dev', '\u2248'], fail: ['bad', '\u2716'], empty: ['bad', '\u2716'] };
+    var VCLS = { erfuellt: ['met', '\u25a0'], nicht_erfuellt: ['not', '\u25a1'], unklar: ['unc', '?'], moeglich: ['unc', '\u25d0'] };
+    /* a table cell: a risk level, a verdict or a quote check becomes a text-plus-symbol marker; everything else is plain escaped text */
+    function cell(c, ch) {
+      var parts = c.split(' / '), k;
+      if (parts.length && parts.every(function (x) { return Object.prototype.hasOwnProperty.call(byLabel, x); })) return parts.map(function (x) { return riskChip(byLabel[x], x); }).join('<span class="rsep">/</span>');
+      if (ch) {
+        if (Object.prototype.hasOwnProperty.call(qByLabel, c)) { k = QCLS[qByLabel[c]]; return '<span class="qm ' + k[0] + '"><span class="g" aria-hidden="true">' + k[1] + '</span>' + esc(c) + '</span>'; }
+        if (Object.prototype.hasOwnProperty.call(vByLabel, c)) { k = VCLS[vByLabel[c]]; return '<span class="vd ' + k[0] + '"><span class="g" aria-hidden="true">' + k[1] + '</span>' + esc(c) + '</span>'; }
+      }
+      return esc(c);
+    }
+    function tableHtml(t) {
+      var ch = t.cls === 'chart', cls = t.cls === 'chart' || t.cls === 'matrix' || t.cls === 'queries' ? ' class="' + t.cls + '"' : '';
+      return '<div class="tw"><table' + cls + '><thead><tr>' + t.head.map(function (c) { return '<th scope="col">' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        t.rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td' + (ch && i === 1 ? ' class="q"' : ch && i === 0 ? ' class="f"' : '') + '>' + cell(c, ch) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    }
+    var CO = {}; [['evidence', 'evidence'], ['questions', 'openq'], ['openQ', 'openq'], ['redteam', 'redteam'], ['designAround', 'da'], ['appNotes', 'appnotes'], ['shortVerdict', 'verdict']].forEach(function (x) { if (L[x[0]]) CO[L[x[0]]] = x[1]; });
+
+    // first pass: ids for the contents list
+    var toc = [], secNo = 0, rightNo = 0, i, n;
+    for (i = 0; i < nodes.length; i++) {
+      n = nodes[i];
+      if (n.h === 2) { secNo++; toc.push({ id: 's' + secNo, t: n.t, sub: [] }); }
+      else if (n.h === 3 && toc.length && /^4\./.test(toc[toc.length - 1].t)) { rightNo++; toc[toc.length - 1].sub.push({ id: 'r' + rightNo, t: n.t }); }
+    }
+    function rightKey(t) { return str(t).split(' - ')[0]; }
+
+    // cover
+    var title = '', coverKv = null, started = 0;
+    for (i = 0; i < nodes.length; i++) { if (nodes[i].h === 1) { title = nodes[i].t; if (nodes[i + 1] && nodes[i + 1].kv) coverKv = nodes[i + 1].kv; break; } }
+    var cover = '<header class="cover"><div class="mark" aria-label="LNP Patent Desk"><span class="lg" aria-hidden="true"></span><span><strong>LNP</strong> <span>Patent Desk</span></span></div><p class="kick">' + esc(U.kick) + '</p><h1>' + esc(title) + '</h1><p class="tag">' + esc(U.tag) + '</p>' +
+      (coverKv ? '<dl>' + coverKv.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' : '') + '</header>';
+    var tocHtml = '<nav class="toc" aria-label="' + esc(U.toc) + '"><h2>' + esc(U.toc) + '</h2><ol>' + toc.map(function (e) {
+      return '<li><a href="#' + e.id + '">' + esc(e.t) + '</a>' + (e.sub.length ? '<ol>' + e.sub.map(function (s) { var m = meta.rights[rightKey(s.t)]; return '<li><a href="#' + s.id + '">' + esc(s.t) + '</a>' + (m && m.risk ? riskChip(m.risk) : '') + '</li>'; }).join('') + '</ol>' : '') + '</li>';
+    }).join('') + '</ol></nav>';
+    // executive summary block
+    function hero() {
+      var top = 0, anyNa = false;
+      meta.markets.forEach(function (m) { var l = lvl(m.risk); if (l > top) top = l; if (!l) anyNa = true; });
+      var topCode = top ? ['', '1_sehr_gering', '2_gering', '3_mittel', '4_hoch', '5_sehr_hoch'][top] : 'nicht_beurteilbar';
+      var drivers = []; meta.markets.forEach(function (m) { if (lvl(m.risk) === top) m.drivers.forEach(function (d) { if (drivers.indexOf(d) < 0) drivers.push(d); }); });
+      var h = '<div class="exec"><div class="hero r' + top + '"><span class="lab">' + esc(U.overall) + '</span><span class="lvl">' + esc(RISK[lang][topCode]) + '</span>' + pips(top) + '<p class="why">' + esc(U.basis) + (drivers.length ? ' ' + esc(U.drivers) + ' ' + esc(drivers.join(', ')) + '.' : '') + (anyNa && top ? ' ' + esc(RISK[lang].nicht_beurteilbar.charAt(0).toUpperCase() + RISK[lang].nicht_beurteilbar.slice(1)) + ' \u2260 ' + esc(RISK[lang]['1_sehr_gering']) + '.' : '') + '</p></div><div class="mk">';
+      meta.markets.forEach(function (m) { h += '<div class="row"><strong>' + esc(m.market) + '</strong>' + riskChip(m.risk) + '</div>'; });
+      if (meta.pending) h += '<div class="row"><strong>' + esc(U.pendingL) + '</strong>' + riskChip(meta.pending.risk) + '</div>';
+      h += '<div class="cnt">' + esc(meta.nPatents + ' ' + U.analysed + (meta.nNot ? ' \u00b7 ' + meta.nNot + ' ' + U.notAn : '') + (meta.aiUsed ? '' : ' \u00b7 ' + U.byAI)) + '</div></div></div>';
+      return h;
+    }
+
+    // main pass
+    var stack = [], inRights = false, secIdx = 0, rIdx = 0, firstSec = true;
+    function popTo(level) { while (stack.length && stack[stack.length - 1].level >= level) out.push(stack.pop().close); }
+    out.push(null); // limits (first)
+    out.push(cover, tocHtml);
+    for (i = 0; i < nodes.length; i++) {
+      n = nodes[i];
+      if (n.limits !== undefined) { if (i === 0) { out[0] = '<pre class="limits">' + esc(n.limits) + '</pre>'; } else { popTo(0); out.push(aboutHtml(), '<pre class="limits">' + esc(n.limits) + '</pre>'); } }
+      else if (n.h === 1) { /* in the cover */ }
+      else if (n.kv && nodes[i - 1] && nodes[i - 1].h === 1) { /* in the cover */ }
+      else if (n.h === 2) {
+        popTo(0); secIdx++; inRights = /^4\./.test(n.t);
+        out.push('<section class="sec' + (firstSec ? ' first' : '') + '" id="s' + secIdx + '"><h2>' + esc(n.t) + '</h2>' + (/^1\./.test(n.t) ? hero() : '')); stack.push({ level: 2, close: '</section>' }); firstSec = false;
+      } else if (n.h === 3 && inRights) {
+        popTo(3); rIdx++; var rm = meta.rights[rightKey(n.t)], rl = rm ? lvl(rm.risk) : 0;
+        out.push('<section class="right r' + rl + '" id="r' + rIdx + '"><div class="rhead"><h3>' + esc(n.t) + '</h3>' + (rm && rm.risk ? riskChip(rm.risk) : '') + '</div>'); stack.push({ level: 3, close: '</section>' });
+      } else if (n.h) {
+        var l = Math.max(1, Math.min(6, n.h)); popTo(l);
+        var co = CO[n.t];
+        if (co && l >= 3) { out.push('<div class="co ' + co + '">'); stack.push({ level: l, close: '</div>' }); }
+        out.push('<h' + l + '>' + esc(n.t) + '</h' + l + '>');
+      }
       else if (n.p !== undefined) out.push('<p' + (n.cls === 'warn' ? ' class="warn"' : '') + '>' + esc(n.p) + '</p>');
       else if (n.md !== undefined) out.push('<div class="model">' + mdToHtml(n.md) + '</div>');
       else if (n.ul) out.push('<ul>' + n.ul.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>');
-      else if (n.kv) out.push('<dl>' + n.kv.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>');
-      else if (n.table) out.push('<div class="tw"><table><thead><tr>' + n.table.head.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-        n.table.rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>');
-    });
-    return '<!doctype html>\n<html lang="' + (doc.lang === 'de' ? 'de' : 'en') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(doc.title) + '</title><style>' + CSS + '</style></head><body>\n' + out.join('\n') + '\n</body></html>';
+      else if (n.kv) out.push('<dl class="kv' + (inRights && stack.length && stack[stack.length - 1].level === 3 ? ' facts' : '') + '">' + n.kv.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>');
+      else if (n.table) out.push(tableHtml(n.table));
+    }
+    popTo(0);
+    function aboutHtml() {
+      var scale = [1, 2, 3, 4, 5].map(function (k) { return riskChip(['', '1_sehr_gering', '2_gering', '3_mittel', '4_hoch', '5_sehr_hoch'][k]); }).join('') + riskChip('nicht_beurteilbar');
+      return '<aside class="about" aria-label="' + esc(U.about) + '"><h2>' + esc(U.about) + '</h2><h3>' + esc(U.scale) + '</h3><div class="scale">' + scale + '</div><h3>' + esc(U.markers) + '</h3><ul>' +
+        '<li><span class="qm ok"><span class="g" aria-hidden="true">\u2714</span>' + esc(QCHK[lang].ok) + '</span> ' + esc(U.mq) + '</li>' +
+        '<li><span class="qm dev"><span class="g" aria-hidden="true">\u2248</span>' + esc(QCHK[lang].elided.split(':')[0]) + '</span> ' + esc(U.md) + '</li>' +
+        '<li><span class="qm bad"><span class="g" aria-hidden="true">\u2716</span>' + esc(QCHK[lang].fail.split(':')[0]) + '</span> ' + esc(U.mb) + '</li></ul><p>' + esc(U.mv) + '</p><h3>' + esc(U.method) + '</h3><p>' + esc(U.mt) + '</p></aside>';
+    }
+    var foot = '@page{@bottom-left{content:"' + cssStr(U.foot + ' \u00b7 ' + (meta.snapshot ? U.snap + ' ' + meta.snapshot : '')) + '";font:7.5pt Arial,sans-serif;color:#574e4e;vertical-align:top;padding-top:6mm}' +
+      '@bottom-right{content:"' + cssStr(U.page) + ' " counter(page) " ' + cssStr(U.of) + ' " counter(pages);font:7.5pt Arial,sans-serif;color:#574e4e;vertical-align:top;padding-top:6mm}}';
+    return '<!doctype html>\n<html lang="' + lang + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>' + esc(doc.title) + '</title><style>' + CSS + foot + '</style></head><body>\n' + out.join('\n') + '\n</body></html>';
   }
 
   function toJson(op) {

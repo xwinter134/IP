@@ -405,6 +405,7 @@ async function main() {
     const events = [];
     opinion = await S8.F.run(profile, { patents: cands, depth: 'standard', onEvent: (e) => events.push(e) });
     if (process.env.DEBUG) console.log(JSON.stringify(events.filter((e) => e.type === 'repair' || e.type === 'warn'), null, 1), JSON.stringify(opinion.notCharted.map((n) => [n.pn, n.reason])), JSON.stringify(opinion.patents.map((p) => [p.pn, p.risk, p.flags])));
+    if (process.env.FTO_DUMP_OPINION) fs.writeFileSync(process.env.FTO_DUMP_OPINION, JSON.stringify(opinion, null, 1));
     cleanCalls = S8.mock.calls.map((c) => c.step + (c.id ? ':' + c.id : '') + (c.repair ? ':repair' : ''));
     const by = Object.fromEntries(opinion.patents.map((p) => [p.pn, p]));
     const nc = Object.fromEntries(opinion.notCharted.map((p) => [p.pn, p]));
@@ -505,10 +506,10 @@ async function main() {
     ok(!/<script/i.test(html) && !/<img/i.test(html) && !/<b>x<\/b>/.test(html), 'no <script>, <img> or other tag from claim text or model output in the HTML');
     ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;') && html.includes('&lt;img src=x onerror=alert(3)&gt;') && html.includes('&lt;script&gt;alert(9)&lt;/script&gt;'), 'the text is still there, escaped');
     const tags = [...html.matchAll(/<\/?([a-zA-Z0-9]+)/g)].map((m) => m[1].toLowerCase());
-    const allowed = new Set(['html', 'head', 'meta', 'title', 'style', 'body', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'strong', 'br']);
+    const allowed = new Set(['html', 'head', 'meta', 'title', 'style', 'body', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'strong', 'br', 'header', 'nav', 'section', 'ol', 'aside', 'span', 'a']);
     ok(tags.every((t) => allowed.has(t)), 'HTML uses only a fixed set of structural tags', [...new Set(tags.filter((t) => !allowed.has(t)))].join(','));
     ok(!/<[^>]*\son[a-z]+\s*=/i.test(html), 'no event-handler attribute inside any tag');
-    ok(!/<[^>]+(href|src)\s*=/i.test(html) && !/https?:\/\//.test(html.replace(/&[a-z#0-9]+;/g, '')), 'self-contained: no links, no external resources');
+    ok(!/<[^>]+\ssrc\s*=/i.test(html) && [...html.matchAll(/<[^>]+\shref\s*=\s*"([^"]*)"/gi)].every((m) => m[1].startsWith('#')) && !/https?:\/\//.test(html.replace(/&[a-z#0-9]+;/g, '')), 'self-contained: only in-page anchors, no external resources');
     ok(html.includes('<li>Punkt eins</li>') && html.includes('<li>Punkt zwei &lt;script&gt;'), 'model Markdown: lists rendered from escaped text');
     // structure
     for (const h of ['## 1. Summary', '### Risk matrix', '## 2. Subject of the screen', '## 3. Search record', '## 4. Individual assessment', '#### Claim chart: Claim 1', '#### Dependent claims', '#### Red team', '#### Open questions for counsel', '#### Design-around ideas (ideas only', '## 6. Patent rights not analysed, and why', '## 7. Next steps'])

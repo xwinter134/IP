@@ -693,8 +693,12 @@ taken from the globals or from `LnpFto.configure({data, search, chem, store, ai,
   `limits`, `warnings`); nothing is saved.
 - `LnpFto.render(opinion, "md" | "html" | "json")` -> string. Every rendering starts and ends with the verbatim limits block
   (`LIMITS_DE` / `LIMITS_EN` with the status snapshot date). HTML is a self-contained printable document (inline CSS, no
-  scripts, no links, fixed tag set, every string escaped); `LnpFtoRender.fragment(opinion)` is the same without the
-  document frame. Sections: summary with risk matrix, product profile as understood, search record, per patent (status,
+  scripts, only in-page anchors, fixed tag set, every string escaped); `LnpFtoRender.fragment(opinion)` is the same without the
+  document frame. The HTML has a cover band (app tokens, system font fallbacks, no remote resources), executive summary with
+  the overall risk as a text level, contents, per-right sections and an A4 print stylesheet (running footer with the status
+  snapshot date and page numbers in the page margin boxes, repeated table headers). The "PDF" export of the pre-screen view
+  prints this same HTML from a hidden frame (browser "Save as PDF"); where printing is blocked (artifact sandbox) it saves
+  the print-ready HTML instead. Sample: `docs/samples/fto-report-sample.{html,pdf}`; test: `tests/report_test.mjs`. Sections: summary with risk matrix, product profile as understood, search record, per patent (status,
   claim chart, formula test, equivalence questions, dependent claims, red team, questions for counsel, design-around
   ideas), cross-cutting points, rights not analysed and why, next steps.
 - `LnpFto.list()` (heads only), `LnpFto.load(id)` -> saved `Opinion`, `LnpFto.remove(id)`; pure helpers `verifyQuote`,

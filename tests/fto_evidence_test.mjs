@@ -260,6 +260,7 @@ async function main() {
   ok(evIn && evIn.markush.length === CURATED.length && evIn.ranges.built === '2026-11-11T22:20:40Z', 'evidenceInputs lists record ids + updated and the range build', JSON.stringify(evIn).slice(0, 200));
 
   section('5 rendering: evidence block, escaping, limits');
+  if (process.env.FTO_DUMP_OPINION) fs.writeFileSync(process.env.FTO_DUMP_OPINION, JSON.stringify(op, null, 1));
   const md = S.F.render(op, 'md'), html = S.F.render(op, 'html'), js = JSON.parse(S.F.render(op, 'json'));
   ok((md.match(/#### Evidence computed by the app/g) || []).length === op.patents.length, 'md: one evidence block per charted patent');
   ok(md.includes('Markush check (code-verified; stored and curated records)') && md.includes('| 1 | ALC-0315 | covered | reviewed |') && md.includes('Numeric ranges in the claims (compared by code)'), 'md: Markush table and range table');
@@ -288,7 +289,7 @@ async function main() {
         lastPlain = oN;
         ok(oH.id === oN.id, variant + ': opinion id identical (' + oH.id + ')');
         eq(strip(oN), strip(oH), variant + ': opinion identical');
-        ok(N.F.render(oN, 'md') === H.F.render(oH, 'md') && N.F.render(oN, 'html') === H.F.render(oH, 'html') && N.F.render(oN, 'json') === H.F.render(oH, 'json'), variant + ': md / html / json identical');
+        ok(N.F.render(oN, 'md') === H.F.render(oH, 'md') && N.F.render(oN, 'json') === H.F.render(oH, 'json'), variant + ': md / json identical (the HTML design differs from HEAD on purpose)');
         eq(N.mock.calls, H.mock.calls, variant + ': same model calls');
         const xH = await H.F.chartOne(pH, 'EP1000008B1', {}), xN = await N.F.chartOne(pN, 'EP1000008B1', {});
         eq(strip(xN), strip(xH), variant + ': chartOne identical');

@@ -1,0 +1,4337 @@
+{
+ "v": 1,
+ "id": "op17f3cf07ae2d4452",
+ "kind": "fto-opinion",
+ "created": "2026-11-10T12:00:00.000Z",
+ "finished": "2026-11-10T12:00:00.000Z",
+ "lang": "en",
+ "depth": "standard",
+ "markets": [
+  "DE",
+  "EP",
+  "US"
+ ],
+ "aiUsed": true,
+ "title": "FTO pre-screen (not a legal opinion): Testprodukt LNP-1",
+ "snapshot": {
+  "surechembl": "2026-11-03",
+  "ep_register": "2026-08-23",
+  "ep_text": "2026-11-10",
+  "us_text": "2026-11-10",
+  "corpus": "T"
+ },
+ "statusSnapshot": "2026-08-23",
+ "limits": "Important notice – limits of this FTO pre-screen\n1. This is an automated (AI-assisted) pre-screen. It is not legal advice and not a freedom-to-operate opinion, and it does not replace review by a patent attorney.\n2. The screened corpus is restricted to the LNP/lipid field (EP/US/WO; defined CPC classes, keywords and applicants). Rights outside this restriction – including utility models, national rights of other countries and supplementary protection certificates – are not covered.\n3. Markush/generic claims may cover structures that are not individually indexed in the corpus. No Markush search (e.g. CAS STN MARPAT) was performed. The formula test is only applied to claims whose text is in the corpus; formulae embedded as images may be missing.\n4. Legal status (grant, opposition, limitation, lapse, term, PTA/PTE, SPC, UPC opt-out) reflects a data snapshot of 2026-08-23 and may be stale or incomplete. Expiry dates are estimates.\n5. Claim texts may be machine translations or OCR text; only the text in the language of proceedings, as granted or maintained, is authoritative.\n6. Pending applications: claims may change before grant; divisionals and continuations may be filed. Applications not yet published (up to 18 months from priority) are not covered.\n7. The assessment rests on the product/process data and assumptions listed under \"Subject of the screen\". If they change, the result changes.\n8. Claim construction, equivalence and exemptions (experimental use, Bolar, safe harbor) depend on the individual case and current case law; prosecution files were not reviewed.\n9. AI models make mistakes (wrong substituent mapping, wrong chain-length counts, overlooked provisos). Verify quotes and feature mappings against the original document before any decision.",
+ "profile": {
+  "schema_version": "pf-1",
+  "output_language": "en",
+  "bezeichnung": "Testprodukt LNP-1",
+  "ionizable_lipid": {
+   "name_user": "ALC-0315",
+   "name_normalised": "ALC-0315",
+   "cas": null,
+   "smiles": "CCCCCCCCC(CCCCCC)C(=O)OCCCCCCN(CCCCO)CCCCCCOC(=O)C(CCCCCC)CCCCCCCC",
+   "inchikey": "QGWBEETXHOVFQS-UHFFFAOYSA-N",
+   "descriptors": {
+    "formula": "C48H95NO5",
+    "mw": 766.3,
+    "c_atoms_total": 48,
+    "n_atoms": 1,
+    "n_ester": 2,
+    "n_amide": 0,
+    "n_carbonate": 0,
+    "n_ether": 0,
+    "n_hydroxyl": 1,
+    "n_disulfide": 0,
+    "n_double_bonds_cc": 0,
+    "amine_type": "tertiaer",
+    "fragments": [
+     {
+      "id": "F1",
+      "rolle": "kopfgruppe",
+      "smiles_fragment": "OCCCCN",
+      "c_atoms": null,
+      "verzweigt": null,
+      "verzweigungsposition": null,
+      "doppelbindungen": null,
+      "gebunden_an": [],
+      "app": {
+       "klasse": "hydroxyalkyl-tert-amine",
+       "hydroxyl": true,
+       "c_zwischen_amin_und_linker": 6,
+       "methyl_am_n": 0
+      }
+     },
+     {
+      "id": "F2",
+      "rolle": "linker",
+      "smiles_fragment": "ester x2",
+      "c_atoms": null,
+      "verzweigt": null,
+      "verzweigungsposition": null,
+      "doppelbindungen": null,
+      "gebunden_an": []
+     },
+     {
+      "id": "F3",
+      "rolle": "kette",
+      "smiles_fragment": "CCCCCCCCC(CCCCCC)C(=O)",
+      "c_atoms": 16,
+      "verzweigt": true,
+      "verzweigungsposition": "position 2, arms 8+6 C",
+      "doppelbindungen": 0,
+      "gebunden_an": [],
+      "app": {
+       "acyl": true,
+       "dreifachbindungen": 0,
+       "methylverzweigungen": 0,
+       "ring": false
+      }
+     },
+     {
+      "id": "F4",
+      "rolle": "kette",
+      "smiles_fragment": "CCCCCCCCC(CCCCCC)C(=O)",
+      "c_atoms": 16,
+      "verzweigt": true,
+      "verzweigungsposition": "position 2, arms 8+6 C",
+      "doppelbindungen": 0,
+      "gebunden_an": [],
+      "app": {
+       "acyl": true,
+       "dreifachbindungen": 0,
+       "methylverzweigungen": 0,
+       "ring": false
+      }
+     }
+    ],
+    "zaehlkonvention": "Computed by the app (OpenChemLib), not by the model. A chain (kette) is a hydrocarbon group of 6 or more carbons on one hetero atom or carbonyl carbon; c_atoms of an acyl chain (app.acyl = true) INCLUDES the carbonyl carbon; verzweigungsposition counts from the atom the chain hangs on; arms = chain lengths after the first branch point; n_double_bonds_cc counts C=C in the chains only.",
+    "app": {
+     "head": "hydroxyalkyl-tert-amine",
+     "amine": {
+      "class": "tertiary",
+      "count": 1
+     },
+     "nTails": 2,
+     "nChainEnds": 4,
+     "tailCarbons": 32,
+     "nBranchedTails": 2,
+     "biodegradable": true,
+     "rings": 0,
+     "charge": 0,
+     "logPest": 15,
+     "links": {
+      "ester": 2,
+      "amide": 0,
+      "carbonate": 0,
+      "ether": 0,
+      "hydroxyl": 1,
+      "disulfide": 0
+     }
+    }
+   },
+   "pka_apparent": null,
+   "pka_methode": null,
+   "strukturbeschreibung": "Tertiäres Amin mit zwei Esterarmen. [Computed by the app: head group hydroxyalkyl-tert-amine (OCCCCN); amine: tertiary; linkers: 2 x ester; chains: Acyl C16 branched at position 2 (8+6) | Acyl C16 branched at position 2 (8+6).]",
+   "quelle": "nutzer"
+  },
+  "weitere_lipide": [
+   {
+    "rolle": "helferlipid_phospholipid",
+    "name_user": "DSPC",
+    "name_normalised": "1,2-distearoyl-sn-glycero-3-phosphocholine",
+    "smiles": "DSPC-SMILES",
+    "quelle": "nutzer"
+   },
+   {
+    "rolle": "sterol",
+    "name_user": "cholesterol",
+    "name_normalised": "Cholesterol",
+    "quelle": "nutzer",
+    "smiles": "CHOL-SMILES"
+   },
+   {
+    "rolle": "peg_lipid",
+    "name_user": "ALC-0159",
+    "name_normalised": "ALC-0159",
+    "peg_mw": 2000,
+    "quelle": "nutzer",
+    "smiles": "PEG-SMILES"
+   }
+  ],
+  "zusammensetzung": {
+   "molprozent": {
+    "ionizable_lipid": 46.3,
+    "phospholipid": 9.4,
+    "sterol": 42.7,
+    "peg_lipid": 1.6,
+    "sonstige": null
+   },
+   "basis": "gesamtlipid_nominal_einsatz",
+   "np_verhaeltnis": 6
+  },
+  "payload": {
+   "typ": "mRNA",
+   "nukleosidmodifikation": "m1Ψ"
+  },
+  "partikel": {
+   "groesse_nm": 80,
+   "pdi": 0.1
+  },
+  "verfahren": {
+   "mischprinzip": "t_stueck",
+   "flussratenverhaeltnis_waessrig_zu_organisch": 3,
+   "ethanol_prozent_bei_mischung": 25
+  },
+  "formulierung_lagerung": {},
+  "anwendung": {
+   "applikationsweg": "i.m."
+  },
+  "handlungen": {
+   "entwicklungsstand": "praeklinik",
+   "maerkte": [
+    "DE",
+    "EP",
+    "US"
+   ],
+   "akte": [
+    {
+     "land": "DE",
+     "akt": "herstellen",
+     "zeitpunkt": "derzeit"
+    }
+   ]
+  },
+  "merkmalsliste": [
+   {
+    "id": "P1",
+    "kategorie": "verhaeltnis",
+    "aussage": "Ionisierbares Lipid 46,3 mol-%",
+    "wert": 46.3,
+    "einheit": "mol-%",
+    "quelle": "nutzer",
+    "sicherheit": "hoch"
+   },
+   {
+    "id": "P2",
+    "kategorie": "lipid_struktur",
+    "aussage": "Formula / molecular weight: C48H95NO5 / 766.3",
+    "wert": "C48H95NO5",
+    "einheit": null,
+    "quelle": "berechnet",
+    "sicherheit": "hoch"
+   },
+   {
+    "id": "P3",
+    "kategorie": "lipid_struktur",
+    "aussage": "Head group and amine: hydroxyalkyl-tert-amine, tertiary (1)",
+    "wert": "hydroxyalkyl-tert-amine",
+    "einheit": null,
+    "quelle": "berechnet",
+    "sicherheit": "hoch"
+   },
+   {
+    "id": "P4",
+    "kategorie": "lipid_struktur",
+    "aussage": "Linkers: 2 x ester",
+    "wert": "2 x ester",
+    "einheit": null,
+    "quelle": "berechnet",
+    "sicherheit": "hoch"
+   },
+   {
+    "id": "P5",
+    "kategorie": "lipid_struktur",
+    "aussage": "Chain 1: Acyl C16 branched at position 2 (8+6) (acyl: carbonyl carbon counted)",
+    "wert": 16,
+    "einheit": "C",
+    "quelle": "berechnet",
+    "sicherheit": "hoch"
+   },
+   {
+    "id": "P6",
+    "kategorie": "lipid_struktur",
+    "aussage": "Chain 2: Acyl C16 branched at position 2 (8+6) (acyl: carbonyl carbon counted)",
+    "wert": 16,
+    "einheit": "C",
+    "quelle": "berechnet",
+    "sicherheit": "hoch"
+   },
+   {
+    "id": "P7",
+    "kategorie": "lipid_struktur",
+    "aussage": "Total carbon atoms: 48",
+    "wert": 48,
+    "einheit": "C",
+    "quelle": "berechnet",
+    "sicherheit": "hoch"
+   }
+  ],
+  "annahmen": [],
+  "offene_fragen": [
+   "Gemessen oder nominal?"
+  ],
+  "suchbegriffe": {
+   "namen_codes": [
+    "ALC-0315",
+    "ALC-0159",
+    "DSPC",
+    "cholesterol"
+   ],
+   "klassenbegriffe_en": [
+    "ionizable lipid"
+   ],
+   "klassenbegriffe_de": [
+    "ionisierbares Lipid"
+   ],
+   "verfahrensbegriffe": []
+  },
+  "_app": {
+   "v": 1,
+   "model": true,
+   "created": "2026-11-10T12:00:00.000Z",
+   "lang": "en",
+   "form": {
+    "name": "Testprodukt LNP-1",
+    "lipids": [
+     {
+      "role": "ionizable",
+      "name": "ALC-0315",
+      "smiles": "CCCCCCCCC(CCCCCC)C(=O)OCCCCCCN(CCCCO)CCCCCCOC(=O)C(CCCCCC)CCCCCCCC",
+      "molPct": 46.3
+     },
+     {
+      "role": "helper",
+      "name": "DSPC",
+      "molPct": 9.4
+     },
+     {
+      "role": "sterol",
+      "name": "cholesterol",
+      "molPct": 42.7
+     },
+     {
+      "role": "peg",
+      "name": "ALC-0159",
+      "molPct": 1.6,
+      "pegMw": 2000
+     }
+    ],
+    "ratioBasis": "nominal",
+    "np": 6,
+    "payload": {
+     "type": "mRNA",
+     "modification": "N1-methylpseudouridine"
+    },
+    "particle": {
+     "sizeNm": 80,
+     "sizeMethod": "DLS Z-average",
+     "pdi": 0.1
+    },
+    "process": {
+     "mixing": "T-junction",
+     "frr": 3,
+     "ethanolPct": 25,
+     "site": "DE"
+    },
+    "use": {
+     "route": "i.m."
+    },
+    "stage": "Praeklinik",
+    "markets": [
+     "DE",
+     "EP",
+     "US"
+    ],
+    "launchDate": "2029-01-01",
+    "freeText": "Impfstoffkandidat."
+   },
+   "lipids": [
+    {
+     "role": "ionizable",
+     "name": "ALC-0315",
+     "smiles_input": "CCCCCCCCC(CCCCCC)C(=O)OCCCCCCN(CCCCO)CCCCCCOC(=O)C(CCCCCC)CCCCCCCC",
+     "ok": true,
+     "source": "smiles",
+     "smiles": "CCCCCCCCC(CCCCCC)C(=O)OCCCCCCN(CCCCO)CCCCCCOC(=O)C(CCCCCC)CCCCCCCC",
+     "smiles_canonical": "CCCCCCCCC(CCCCCC)C(=O)OCCCCCCN(CCCCO)CCCCCCOC(=O)C(CCCCCC)CCCCCCCC",
+     "idcode": "IDALC-0315",
+     "formula": "C48H95NO5",
+     "mw": 766.3,
+     "ref_name": "ALC-0315",
+     "desc": {
+      "formula": "C48H95NO5",
+      "mw": 766.3,
+      "charge": 0,
+      "el": {
+       "C": 48,
+       "N": 1,
+       "O": 5
+      },
+      "nN": 1,
+      "amine": {
+       "class": "tertiary",
+       "count": 1
+      },
+      "amines": {
+       "tertiary": 1
+      },
+      "head": "hydroxyalkyl-tert-amine",
+      "headgroup": {
+       "smiles": "OCCCCN",
+       "hasOH": true,
+       "nCarbonsToAmine": 6,
+       "nMethylOnN": 0
+      },
+      "links": {
+       "ester": 2,
+       "amide": 0,
+       "carbonate": 0,
+       "ether": 0,
+       "hydroxyl": 1,
+       "disulfide": 0
+      },
+      "linkers": [
+       {
+        "type": "ester",
+        "count": 2
+       }
+      ],
+      "tails": [
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       },
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       }
+      ],
+      "nTails": 2,
+      "nChainEnds": 4,
+      "totalCarbons": 48,
+      "tailCarbons": 32,
+      "tailDoubleBonds": 0,
+      "nBranchedTails": 2,
+      "rings": 0,
+      "biodegradable": true,
+      "logPest": 15
+     },
+     "ref": {
+      "name": "ALC-0315",
+      "role": "ionizable",
+      "inchikey": "QGWBEETXHOVFQS-UHFFFAOYSA-N",
+      "cid": null,
+      "note": null
+     }
+    },
+    {
+     "role": "helper",
+     "name": "DSPC",
+     "smiles_input": null,
+     "ok": true,
+     "source": "reference lipid name",
+     "smiles": "DSPC-SMILES",
+     "smiles_canonical": "DSPC-SMILES",
+     "idcode": "IDDSPC",
+     "formula": "C48H95NO5",
+     "mw": 766.3,
+     "ref_name": "DSPC",
+     "desc": {
+      "formula": "C48H95NO5",
+      "mw": 766.3,
+      "charge": 0,
+      "el": {
+       "C": 48,
+       "N": 1,
+       "O": 5
+      },
+      "nN": 1,
+      "amine": {
+       "class": "tertiary",
+       "count": 1
+      },
+      "amines": {
+       "tertiary": 1
+      },
+      "head": "hydroxyalkyl-tert-amine",
+      "headgroup": {
+       "smiles": "OCCCCN",
+       "hasOH": true,
+       "nCarbonsToAmine": 6,
+       "nMethylOnN": 0
+      },
+      "links": {
+       "ester": 2,
+       "amide": 0,
+       "carbonate": 0,
+       "ether": 0,
+       "hydroxyl": 1,
+       "disulfide": 0
+      },
+      "linkers": [
+       {
+        "type": "ester",
+        "count": 2
+       }
+      ],
+      "tails": [
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       },
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       }
+      ],
+      "nTails": 2,
+      "nChainEnds": 4,
+      "totalCarbons": 48,
+      "tailCarbons": 32,
+      "tailDoubleBonds": 0,
+      "nBranchedTails": 2,
+      "rings": 0,
+      "biodegradable": true,
+      "logPest": 15
+     },
+     "ref": {
+      "name": "DSPC",
+      "role": "helper",
+      "inchikey": null,
+      "cid": null,
+      "note": null
+     }
+    },
+    {
+     "role": "sterol",
+     "name": "cholesterol",
+     "smiles_input": null,
+     "ok": true,
+     "source": "reference lipid name",
+     "smiles": "CHOL-SMILES",
+     "smiles_canonical": "CHOL-SMILES",
+     "idcode": "IDcholesterol",
+     "formula": "C48H95NO5",
+     "mw": 766.3,
+     "ref_name": "cholesterol",
+     "desc": {
+      "formula": "C48H95NO5",
+      "mw": 766.3,
+      "charge": 0,
+      "el": {
+       "C": 48,
+       "N": 1,
+       "O": 5
+      },
+      "nN": 1,
+      "amine": {
+       "class": "tertiary",
+       "count": 1
+      },
+      "amines": {
+       "tertiary": 1
+      },
+      "head": "hydroxyalkyl-tert-amine",
+      "headgroup": {
+       "smiles": "OCCCCN",
+       "hasOH": true,
+       "nCarbonsToAmine": 6,
+       "nMethylOnN": 0
+      },
+      "links": {
+       "ester": 2,
+       "amide": 0,
+       "carbonate": 0,
+       "ether": 0,
+       "hydroxyl": 1,
+       "disulfide": 0
+      },
+      "linkers": [
+       {
+        "type": "ester",
+        "count": 2
+       }
+      ],
+      "tails": [
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       },
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       }
+      ],
+      "nTails": 2,
+      "nChainEnds": 4,
+      "totalCarbons": 48,
+      "tailCarbons": 32,
+      "tailDoubleBonds": 0,
+      "nBranchedTails": 2,
+      "rings": 0,
+      "biodegradable": true,
+      "logPest": 15
+     }
+    },
+    {
+     "role": "peg",
+     "name": "ALC-0159",
+     "smiles_input": null,
+     "ok": true,
+     "source": "reference lipid name",
+     "smiles": "PEG-SMILES",
+     "smiles_canonical": "PEG-SMILES",
+     "idcode": "IDALC-0159",
+     "formula": "C48H95NO5",
+     "mw": 766.3,
+     "ref_name": "ALC-0159",
+     "desc": {
+      "formula": "C48H95NO5",
+      "mw": 766.3,
+      "charge": 0,
+      "el": {
+       "C": 48,
+       "N": 1,
+       "O": 5
+      },
+      "nN": 1,
+      "amine": {
+       "class": "tertiary",
+       "count": 1
+      },
+      "amines": {
+       "tertiary": 1
+      },
+      "head": "hydroxyalkyl-tert-amine",
+      "headgroup": {
+       "smiles": "OCCCCN",
+       "hasOH": true,
+       "nCarbonsToAmine": 6,
+       "nMethylOnN": 0
+      },
+      "links": {
+       "ester": 2,
+       "amide": 0,
+       "carbonate": 0,
+       "ether": 0,
+       "hydroxyl": 1,
+       "disulfide": 0
+      },
+      "linkers": [
+       {
+        "type": "ester",
+        "count": 2
+       }
+      ],
+      "tails": [
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       },
+       {
+        "smiles": "CCCCCCCCC(CCCCCC)C(=O)",
+        "nC": 16,
+        "acyl": true,
+        "branched": true,
+        "branchPosition": 2,
+        "arms": [
+         8,
+         6
+        ],
+        "nDoubleBonds": 0
+       }
+      ],
+      "nTails": 2,
+      "nChainEnds": 4,
+      "totalCarbons": 48,
+      "tailCarbons": 32,
+      "tailDoubleBonds": 0,
+      "nBranchedTails": 2,
+      "rings": 0,
+      "biodegradable": true,
+      "logPest": 15
+     }
+    }
+   ],
+   "warnings": [
+    "SMILES from the model reply discarded (differs from the input)."
+   ]
+  }
+ },
+ "search": {
+  "record": {
+   "created": "2026-11-10T12:00:00.000Z",
+   "snapshot": {
+    "surechembl": "2026-11-03",
+    "ep_register": "2026-08-23",
+    "ep_text": "2026-11-10",
+    "us_text": "2026-11-10",
+    "corpus": "T"
+   },
+   "counts": {
+    "patents": 12
+   },
+   "markets": [
+    "DE",
+    "EP",
+    "US"
+   ],
+   "structure": [
+    {
+     "lipid": "ALC-0315",
+     "role": "ionizable",
+     "mode": "exact",
+     "compounds": 1,
+     "publications": 2
+    },
+    {
+     "lipid": "ALC-0315",
+     "role": "ionizable",
+     "mode": "sub",
+     "compounds": 0,
+     "publications": 0
+    },
+    {
+     "lipid": "ALC-0315",
+     "role": "ionizable",
+     "mode": "sim",
+     "compounds": 0,
+     "publications": 0
+    },
+    {
+     "lipid": "DSPC",
+     "role": "helper",
+     "mode": "exact",
+     "compounds": 0,
+     "publications": 0
+    },
+    {
+     "lipid": "cholesterol",
+     "role": "sterol",
+     "mode": "exact",
+     "compounds": 0,
+     "publications": 0
+    },
+    {
+     "lipid": "ALC-0159",
+     "role": "peg",
+     "mode": "exact",
+     "compounds": 0,
+     "publications": 0
+    },
+    {
+     "lipid": "ALC-0159",
+     "role": "peg",
+     "mode": "sub",
+     "compounds": 0,
+     "publications": 0
+    },
+    {
+     "lipid": "ALC-0159",
+     "role": "peg",
+     "mode": "sim",
+     "compounds": 0,
+     "publications": 0
+    }
+   ],
+   "text": [
+    {
+     "id": "name-claims",
+     "label": "Names/codes in the claims",
+     "query": "claims:(\"ALC-0315\" OR \"ALC-0159\")",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "name-any",
+     "label": "Names/codes in title, abstract, claims",
+     "query": "(\"ALC-0315\" OR \"ALC-0159\")",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "lnp-cationic",
+     "label": "LNP with cationic/ionizable lipid (independent claims)",
+     "query": "same:((\"lipid nanoparticle\" OR \"lipid nanoparticles\" OR \"nucleic acid-lipid particle\" OR \"lipid particle\" OR \"lipid particles\" OR lipidnanopartikel OR \"lipid-nanopartikel\" OR \"lipidpartikel\" OR liposom* OR \"lipid vesicle\") AND (\"cationic lipid\" OR \"ionizable lipid\" OR \"ionisable lipid\" OR \"amino lipid\" OR \"kationisches lipid\" OR \"kationische lipid\" OR \"ionisierbares lipid\" OR \"ionisierbare lipid\")) indep:1",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "molar-ratio",
+     "label": "Molar ratios / mol-%",
+     "query": "same:((\"cationic lipid\" OR \"ionizable lipid\" OR \"ionisable lipid\" OR \"amino lipid\" OR \"kationisches lipid\" OR \"kationische lipid\" OR \"ionisierbares lipid\" OR \"ionisierbare lipid\") AND (\"mol %\" OR \"mol%\" OR \"mol percent\" OR \"molar ratio\" OR molprozent OR \"mol-%\" OR \"molverhältnis\") AND (cholesterol OR cholesterin OR sterol OR phospholipid OR \"non-cationic lipid\" OR \"neutral lipid\")) indep:1",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "peg-lipid",
+     "label": "PEG-/polymer-conjugated lipid",
+     "query": "same:((\"conjugated lipid\" OR \"peg-lipid\" OR \"pegylated lipid\" OR \"peg lipid\" OR \"polymer conjugated lipid\" OR \"polyethylene glycol\" OR \"pegyliertes lipid\" OR \"polyethylenglykol\") AND (\"lipid nanoparticle\" OR \"lipid nanoparticles\" OR \"nucleic acid-lipid particle\" OR \"lipid particle\" OR \"lipid particles\" OR lipidnanopartikel OR \"lipid-nanopartikel\" OR \"lipidpartikel\" OR liposom* OR \"lipid vesicle\")) indep:1",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "formula",
+     "label": "Lipid compound claims with a generic formula (C07C/C07D)",
+     "query": "indep:(\"compound of formula\" OR \"lipid of formula\" OR \"compound having\" OR \"having the structure\" OR \"following structure\" OR \"verbindung der formel\" OR \"lipid der formel\" OR \"compound of the formula\") cpc:C07C,C07D",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "payload",
+     "label": "Payload mRNA in LNP",
+     "query": "same:((mrna OR \"messenger rna\" OR \"messenger ribonucleic acid\" OR \"ribonucleic acid\" OR rna OR boten*) AND (\"lipid nanoparticle\" OR \"lipid nanoparticles\" OR \"nucleic acid-lipid particle\" OR \"lipid particle\" OR \"lipid particles\" OR lipidnanopartikel OR \"lipid-nanopartikel\" OR \"lipidpartikel\" OR liposom* OR \"lipid vesicle\") AND (\"cationic lipid\" OR \"ionizable lipid\" OR \"ionisable lipid\" OR \"amino lipid\" OR \"kationisches lipid\" OR \"kationische lipid\" OR \"ionisierbares lipid\" OR \"ionisierbare lipid\")) indep:1",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "process",
+     "label": "Manufacturing process (mixing, ethanol, microfluidics)",
+     "query": "same:((mixing OR mischen OR vermischen OR \"t-connector\" OR \"t-junction\" OR microfluidic* OR mikrofluid* OR herringbone OR \"impinging jet\") AND (ethanol OR alcohol OR alkohol OR \"organic solvent\") AND lipid* AND (nanoparticle* OR particle* OR vesicle* OR liposom* OR partikel* OR nanopartikel*)) indep:1",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    },
+    {
+     "id": "particle",
+     "label": "Particle parameters (size, PDI)",
+     "query": "same:((diameter OR durchmesser OR \"particle size\" OR polydispersity OR polydispersität* OR \"mean size\") AND (\"lipid nanoparticle\" OR \"lipid nanoparticles\" OR \"nucleic acid-lipid particle\" OR \"lipid particle\" OR \"lipid particles\" OR lipidnanopartikel OR \"lipid-nanopartikel\" OR \"lipidpartikel\" OR liposom* OR \"lipid vesicle\") AND (\"cationic lipid\" OR \"ionizable lipid\" OR \"ionisable lipid\" OR \"amino lipid\" OR \"kationisches lipid\" OR \"kationische lipid\" OR \"ionisierbares lipid\" OR \"ionisierbare lipid\")) indep:1",
+     "total": 8,
+     "taken": 8,
+     "warnings": []
+    }
+   ],
+   "seed": [
+    {
+     "tier": 1,
+     "total": 1,
+     "taken": 1
+    },
+    {
+     "tier": 2,
+     "total": 2,
+     "taken": 2
+    }
+   ],
+   "semantic": null,
+   "family": {
+    "added": 1
+   },
+   "wo": {
+    "found": 1
+   },
+   "notes": [
+    "1 WO publication(s) among the hits: not enforceable, used only as pointers to the EP/US family members."
+   ],
+   "total": 11,
+   "returned": 11,
+   "must": 1,
+   "cut": 0
+  },
+  "candidates": 11,
+  "triage": {
+   "A": 5,
+   "B": 2,
+   "C": 1
+  },
+  "charted": 7,
+  "report": {
+   "korpus_stand": {
+    "surechembl": "2026-11-03",
+    "ep_register": "2026-08-23",
+    "ep_text": "2026-11-10",
+    "us_text": "2026-11-10",
+    "corpus": "T"
+   },
+   "maerkte": [
+    "DE",
+    "EP",
+    "US"
+   ],
+   "tiefe": "standard",
+   "routen": {
+    "struktur": [
+     {
+      "lipid": "ALC-0315",
+      "role": "ionizable",
+      "mode": "exact",
+      "compounds": 1,
+      "publications": 2
+     },
+     {
+      "lipid": "ALC-0315",
+      "role": "ionizable",
+      "mode": "sub",
+      "compounds": 0,
+      "publications": 0
+     },
+     {
+      "lipid": "ALC-0315",
+      "role": "ionizable",
+      "mode": "sim",
+      "compounds": 0,
+      "publications": 0
+     },
+     {
+      "lipid": "DSPC",
+      "role": "helper",
+      "mode": "exact",
+      "compounds": 0,
+      "publications": 0
+     },
+     {
+      "lipid": "cholesterol",
+      "role": "sterol",
+      "mode": "exact",
+      "compounds": 0,
+      "publications": 0
+     },
+     {
+      "lipid": "ALC-0159",
+      "role": "peg",
+      "mode": "exact",
+      "compounds": 0,
+      "publications": 0
+     },
+     {
+      "lipid": "ALC-0159",
+      "role": "peg",
+      "mode": "sub",
+      "compounds": 0,
+      "publications": 0
+     },
+     {
+      "lipid": "ALC-0159",
+      "role": "peg",
+      "mode": "sim",
+      "compounds": 0,
+      "publications": 0
+     }
+    ],
+    "text": [
+     {
+      "id": "name-claims",
+      "label": "Names/codes in the claims",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "name-any",
+      "label": "Names/codes in title, abstract, claims",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "lnp-cationic",
+      "label": "LNP with cationic/ionizable lipid (independent claims)",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "molar-ratio",
+      "label": "Molar ratios / mol-%",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "peg-lipid",
+      "label": "PEG-/polymer-conjugated lipid",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "formula",
+      "label": "Lipid compound claims with a generic formula (C07C/C07D)",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "payload",
+      "label": "Payload mRNA in LNP",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "process",
+      "label": "Manufacturing process (mixing, ethanol, microfluidics)",
+      "treffer": 8,
+      "ausgewertet": 8
+     },
+     {
+      "id": "particle",
+      "label": "Particle parameters (size, PDI)",
+      "treffer": 8,
+      "ausgewertet": 8
+     }
+    ],
+    "schluesselfamilien": [
+     {
+      "tier": 1,
+      "total": 1,
+      "taken": 1
+     },
+     {
+      "tier": 2,
+      "total": 2,
+      "taken": 2
+     }
+    ],
+    "semantisch": null,
+    "hinweise": [
+     "1 WO publication(s) among the hits: not enforceable, used only as pointers to the EP/US family members."
+    ]
+   },
+   "kandidaten": 11,
+   "triage": {
+    "A": 5,
+    "B": 2,
+    "C": 1
+   },
+   "analysiert": 7,
+   "nicht_analysiert": [
+    {
+     "patent_id": "EP1000005B1",
+     "grund_code": "dead",
+     "grund": "Legal status: expired (snapshot 2026-08-23); expiry (estimate) 2020-03-01; no claim chart (only at depth \"deep\")"
+    },
+    {
+     "patent_id": "EP1000012B1",
+     "grund_code": "no_text",
+     "grund": "no claim text in the corpus (biblio only); check a family member"
+    },
+    {
+     "patent_id": "EP1000011B1",
+     "grund_code": "no_text",
+     "grund": "no claim text in the corpus (biblio only); check a family member"
+    },
+    {
+     "patent_id": "EP1000007B1",
+     "grund_code": "triage_c",
+     "grund": "Triage C: Grund EP1000007B1"
+    }
+   ],
+   "gesamtrisiko_app": [
+    {
+     "markt": "DE",
+     "risiko": "5_sehr_hoch",
+     "treibende_schutzrechte": [
+      "EP1000001B1",
+      "EP1000008B1",
+      "EP1000009B1"
+     ]
+    },
+    {
+     "markt": "EP_UPC",
+     "risiko": "5_sehr_hoch",
+     "treibende_schutzrechte": [
+      "EP1000001B1",
+      "EP1000008B1",
+      "EP1000009B1"
+     ]
+    },
+    {
+     "markt": "US",
+     "risiko": "4_hoch",
+     "treibende_schutzrechte": [
+      "US9000003B2"
+     ]
+    }
+   ],
+   "anhaengig_app": {
+    "risiko": "3_mittel",
+    "schutzrechte": [
+     "US20250000006A1"
+    ]
+   }
+  }
+ },
+ "patents": [
+  {
+   "p": 0,
+   "pn": "EP1000001B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000001B1",
+   "assignee": "Assignee 0",
+   "player": "Arbutus/Genevant/Protiva",
+   "family": 1000,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "seed",
+    "text"
+   ],
+   "score": 19,
+   "why": [
+    "Key family (tier 1) of a watched applicant: ARB-069 (Arbutus/Genevant/Protiva)",
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "relWhy": "Grund EP1000001B1",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "right": {
+    "jurisdiction": "EP",
+    "markets": [
+     "DE",
+     "EP"
+    ],
+    "granted": true,
+    "pending": false,
+    "code": "granted",
+    "text": "The patent has been granted",
+    "src": "ep-register",
+    "asof": "2026-08-23",
+    "stale": false,
+    "unverified": false,
+    "inForceDe": true,
+    "lapsedIn": [],
+    "opposition": null,
+    "appeal": false,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-06-01",
+     "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+     "estimate": true,
+     "ptaDays": null
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [],
+    "notes": [],
+    "recordDate": "2026-08-23",
+    "appealOpen": false
+   },
+   "statusDetail": {
+    "events": [
+     {
+      "date": "2020-01-01",
+      "text": "grant"
+     }
+    ],
+    "fees_paid_years": null,
+    "src": "ep-register"
+   },
+   "expiry": {
+    "date": "2035-06-01",
+    "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+    "estimate": true,
+    "ptaDays": null
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "5_sehr_hoch",
+    "e": "4_hoch",
+    "final": "5_sehr_hoch"
+   },
+   "literal": {
+    "b": "wortsinngemaess_erfuellt",
+    "e": "wortsinngemaess_erfuellt",
+    "final": "wortsinngemaess_erfuellt",
+    "claim": 1
+   },
+   "flags": [
+    "literal_neu_berechnet",
+    "unteransprueche_zitat_nicht_verifiziert",
+    "unteransprueche_kette_neu_berechnet"
+   ],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "EP1000001B1",
+    "jurisdiction": "EP",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A nucleic acid-lipid particle comprising",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "a cationic lipid comprising from 40 mol % to 65 mol % of the total lipid present in the particle",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": "the term \"cationic lipid\" refers to any lipid that carries a net positive charge at a selected pH",
+         "definition_para": "d1",
+         "weite_auslegung": "umfasst ionisierbare Lipide",
+         "enge_auslegung": "nur permanent kationisch",
+         "ergebnis_abhaengig_von_auslegung": true
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "numerik": {
+         "anspruch_min": 40,
+         "anspruch_max": 65,
+         "einheit": "mol %",
+         "ungefaehr_begriff": false,
+         "produktwert": 46.3,
+         "abstand_zur_grenze": 6.3,
+         "abstand_relativ_prozent": 15.7
+        },
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null,
+         "def_quote": "ok"
+        }
+       },
+       {
+        "feature_id": "M3",
+        "claim_quote": "a   non-cationic lipid comprising a mixture of\n a phospholipid and cholesterol",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M3",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M4",
+        "claim_quote": "a conjugated lipid that inhibits aggregation of particles comprising from 0.5 mol % to 2 mol %",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M4",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_moeglich",
+      "tragende_merkmale": [],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_moeglich",
+       "flags": [
+        "literal_neu_berechnet"
+       ],
+       "literal": "wortsinngemaess_erfuellt",
+       "literal_final": "wortsinngemaess_erfuellt",
+       "literal_e": "wortsinngemaess_moeglich"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "3_mittel",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_erfuellt",
+     "claim_worst": 1,
+     "flags": [
+      "literal_neu_berechnet"
+     ],
+     "notes": [
+      "Claim 1: result recomputed from the feature rows (literally possible -> literally met)",
+      "Risk raised from medium (3) to very high (5): an independent claim is literally met according to the feature rows"
+     ],
+     "quotes": {
+      "total": 4,
+      "ok": 4,
+      "near": 0,
+      "failed": 0
+     },
+     "risk_model": "3_mittel",
+     "risk": "5_sehr_hoch",
+     "forced": 0,
+     "images_sent": 0
+    }
+   },
+   "dependent": {
+    "schema_version": "da-1",
+    "patent_id": "EP1000001B1",
+    "abhaengigkeiten": [
+     {
+      "claim_no": 2,
+      "bezieht_sich_auf": [
+       1
+      ],
+      "wurzel": [
+       1
+      ],
+      "eigene_kategorie": false
+     }
+    ],
+    "unteransprueche": [
+     {
+      "claim_no": 2,
+      "zusatzmerkmale": [
+       {
+        "claim_quote": "wherein the nucleic acid is an mRNA",
+        "verdict": "erfuellt",
+        "product_refs": [
+         "P9"
+        ],
+        "begruendung": "mRNA",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt"
+        }
+       }
+      ],
+      "ketten_ergebnis": "moeglich",
+      "fehlstelle": "keine",
+      "einzelnennung": "entfaellt",
+      "einzelnennung_quote": null,
+      "app": {
+       "flags": [
+        "kette_neu_berechnet"
+       ],
+       "ketten_ergebnis": "erfuellt"
+      }
+     },
+     {
+      "claim_no": 3,
+      "zusatzmerkmale": [
+       {
+        "claim_quote": "wherein the conjugated lipid is a PEG-lipid having a C12 anchor",
+        "verdict": "nicht_erfuellt",
+        "product_refs": [],
+        "begruendung": "C14",
+        "app": {
+         "quote": "fail",
+         "verified": false,
+         "near": false,
+         "verdict": "unklar"
+        }
+       }
+      ],
+      "ketten_ergebnis": "nicht_erfuellt",
+      "fehlstelle": "zusatzmerkmal",
+      "einzelnennung": "nein",
+      "einzelnennung_quote": null,
+      "app": {
+       "flags": [
+        "kette_neu_berechnet"
+       ],
+       "ketten_ergebnis": "moeglich"
+      }
+     }
+    ],
+    "rueckzugspositionen": [
+     {
+      "unabhaengiger_anspruch": 1,
+      "engster_noch_treffender_anspruch": 2,
+      "produkt_faellt_heraus_bei": "Anspruch 3",
+      "erlaeuterung": "r"
+     }
+    ],
+    "auslegungshinweise": [
+     {
+      "begriff": "conjugated lipid",
+      "unteranspruch": 3,
+      "hinweis": "weiter als PEG-Lipid"
+     }
+    ],
+    "revision_empfohlen": [],
+    "konfidenz": "mittel",
+    "app": {
+     "flags": [
+      "zitat_nicht_verifiziert",
+      "kette_neu_berechnet"
+     ]
+    }
+   },
+   "redteam": {
+    "schema_version": "rt-1",
+    "patent_id": "EP1000001B1",
+    "claims": [
+     {
+      "claim_no": 1,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_moeglich"
+     }
+    ],
+    "weitere_angriffswege": [
+     {
+      "weg": "mittelbare_verletzung",
+      "beschreibung": "Lieferung",
+      "relevanz": "mittel"
+     }
+    ],
+    "ausnahmen_pruefung": [],
+    "revidiert": {
+     "risiko": "4_hoch",
+     "eskalation": false,
+     "herabstufung_wegen_fehler": false,
+     "begruendung": "rt"
+    },
+    "zu_klaeren": [
+     "Analytik"
+    ],
+    "konfidenz": "mittel",
+    "app": {
+     "risk_e": "4_hoch",
+     "literal_worst": "wortsinngemaess_erfuellt",
+     "claim_worst": 1,
+     "notes": [
+      "Claim 1: red-team result more favourable (literally possible), not adopted",
+      "The red-team review considers a lower risk arguable (high (4)): not adopted automatically, question for counsel"
+     ],
+     "escalation": false
+    }
+   },
+   "digest": {
+    "patent_id": "EP1000001B1",
+    "family_id": "1000",
+    "jurisdiction": "EP",
+    "assignees": [
+     "Assignee 0"
+    ],
+    "title": "TITLE EP1000001B1",
+    "is_granted": true,
+    "status": "granted, in force in DE (snapshot 2026-08-23)",
+    "status_snapshot_date": "2026-08-23",
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-06-01",
+    "relevanz": "A",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "literal_b": "wortsinngemaess_erfuellt",
+      "literal_e": "wortsinngemaess_moeglich",
+      "tragende_merkmale": [],
+      "unklare_merkmale": [],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": 2
+     }
+    ],
+    "risiko_b": "5_sehr_hoch",
+    "risiko_e": "4_hoch",
+    "risiko_final": "5_sehr_hoch",
+    "modifikatoren": [],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?",
+     "Analytik"
+    ],
+    "zitat_pruefung_fehlgeschlagen": false
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  },
+  {
+   "p": 7,
+   "pn": "EP1000008B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000008B1",
+   "assignee": "Assignee 7",
+   "player": null,
+   "family": 1007,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "text"
+   ],
+   "score": 8.8,
+   "why": [
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "relWhy": "Grund EP1000008B1",
+   "status": "unknown, DE part unknown (unverified, no record; treated as in force)",
+   "right": {
+    "jurisdiction": "EP",
+    "markets": [
+     "DE",
+     "EP"
+    ],
+    "granted": true,
+    "pending": false,
+    "code": "unknown",
+    "text": null,
+    "src": null,
+    "asof": null,
+    "stale": false,
+    "unverified": true,
+    "inForceDe": null,
+    "lapsedIn": [],
+    "opposition": null,
+    "appeal": null,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-06-01",
+     "basis": "computed by the app from the filing date 2015-06-01 + 20 years (no legal-status record); PTA/PTE/SPC not taken into account",
+     "estimate": true,
+     "ptaDays": null
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [
+     "rechtsstand_ungeprueft"
+    ],
+    "notes": [],
+    "appealOpen": false
+   },
+   "statusDetail": null,
+   "expiry": {
+    "date": "2035-06-01",
+    "basis": "computed by the app from the filing date 2015-06-01 + 20 years (no legal-status record); PTA/PTE/SPC not taken into account",
+    "estimate": true,
+    "ptaDays": null
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "5_sehr_hoch",
+    "e": null,
+    "final": "5_sehr_hoch"
+   },
+   "literal": {
+    "b": "wortsinngemaess_erfuellt",
+    "e": null,
+    "final": "wortsinngemaess_erfuellt",
+    "claim": 1
+   },
+   "flags": [],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "EP1000008B1",
+    "jurisdiction": "EP",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A lipid nanoparticle comprising a cationic lipid",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the particle has a mean diameter of 60 nm to 120 nm",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_erfuellt",
+      "tragende_merkmale": [],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_erfuellt",
+       "flags": [],
+       "literal": "wortsinngemaess_erfuellt"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "5_sehr_hoch",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_erfuellt",
+     "claim_worst": 1,
+     "flags": [],
+     "notes": [],
+     "quotes": {
+      "total": 2,
+      "ok": 2,
+      "near": 0,
+      "failed": 0
+     },
+     "risk_model": "5_sehr_hoch",
+     "risk": "5_sehr_hoch",
+     "forced": 0,
+     "images_sent": 0
+    }
+   },
+   "dependent": null,
+   "redteam": null,
+   "digest": {
+    "patent_id": "EP1000008B1",
+    "family_id": "1007",
+    "jurisdiction": "EP",
+    "assignees": [
+     "Assignee 7"
+    ],
+    "title": "TITLE EP1000008B1",
+    "is_granted": true,
+    "status": "unknown, DE part unknown (unverified, no record; treated as in force)",
+    "status_snapshot_date": null,
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-06-01",
+    "relevanz": "A",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "literal_b": "wortsinngemaess_erfuellt",
+      "literal_e": null,
+      "tragende_merkmale": [],
+      "unklare_merkmale": [],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": null
+     }
+    ],
+    "risiko_b": "5_sehr_hoch",
+    "risiko_e": null,
+    "risiko_final": "5_sehr_hoch",
+    "modifikatoren": [
+     "rechtsstand_ungeprueft"
+    ],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?"
+    ],
+    "zitat_pruefung_fehlgeschlagen": false
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  },
+  {
+   "p": 8,
+   "pn": "EP1000009B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000009B1",
+   "assignee": "Assignee 8",
+   "player": null,
+   "family": 1008,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "text"
+   ],
+   "score": 7.6,
+   "why": [
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "relWhy": "Grund EP1000009B1",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "right": {
+    "jurisdiction": "EP",
+    "markets": [
+     "DE",
+     "EP"
+    ],
+    "granted": true,
+    "pending": false,
+    "code": "granted",
+    "text": "granted",
+    "src": "ep-register",
+    "asof": "2026-08-23",
+    "stale": false,
+    "unverified": false,
+    "inForceDe": true,
+    "lapsedIn": [],
+    "opposition": null,
+    "appeal": null,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-06-01",
+     "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+     "estimate": true,
+     "ptaDays": null
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [],
+    "notes": [],
+    "recordDate": "2026-08-23",
+    "appealOpen": false
+   },
+   "statusDetail": {
+    "events": [],
+    "fees_paid_years": null,
+    "src": "ep-register"
+   },
+   "expiry": {
+    "date": "2035-06-01",
+    "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+    "estimate": true,
+    "ptaDays": null
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "5_sehr_hoch",
+    "e": "4_hoch",
+    "final": "5_sehr_hoch"
+   },
+   "literal": {
+    "b": "wortsinngemaess_moeglich",
+    "e": "wortsinngemaess_moeglich",
+    "final": "wortsinngemaess_moeglich",
+    "claim": 1
+   },
+   "flags": [
+    "text_gekuerzt",
+    "literal_neu_berechnet"
+   ],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "EP1000009B1",
+    "jurisdiction": "EP",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A lipid nanoparticle comprising a lipid selected from the group consisting of",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "and an mRNA.",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_erfuellt",
+      "tragende_merkmale": [],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_erfuellt",
+       "flags": [
+        "text_gekuerzt",
+        "literal_neu_berechnet"
+       ],
+       "literal": "wortsinngemaess_moeglich",
+       "literal_final": "wortsinngemaess_moeglich",
+       "literal_e": "wortsinngemaess_nicht_erfuellt"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "5_sehr_hoch",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "flags": [
+      "text_gekuerzt",
+      "literal_neu_berechnet"
+     ],
+     "notes": [
+      "Claim 1: text shortened, result at most \"possible\"",
+      "Claim 1: result recomputed from the feature rows (literally met -> literally possible)"
+     ],
+     "quotes": {
+      "total": 2,
+      "ok": 2,
+      "near": 0,
+      "failed": 0
+     },
+     "risk_model": "5_sehr_hoch",
+     "risk": "5_sehr_hoch",
+     "forced": 0,
+     "images_sent": 0
+    }
+   },
+   "dependent": null,
+   "redteam": {
+    "schema_version": "rt-1",
+    "patent_id": "EP1000009B1",
+    "claims": [
+     {
+      "claim_no": 1,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_nicht_erfuellt"
+     }
+    ],
+    "weitere_angriffswege": [
+     {
+      "weg": "mittelbare_verletzung",
+      "beschreibung": "Lieferung",
+      "relevanz": "mittel"
+     }
+    ],
+    "ausnahmen_pruefung": [],
+    "revidiert": {
+     "risiko": "4_hoch",
+     "eskalation": false,
+     "herabstufung_wegen_fehler": false,
+     "begruendung": "rt"
+    },
+    "zu_klaeren": [
+     "Analytik"
+    ],
+    "konfidenz": "mittel",
+    "app": {
+     "risk_e": "4_hoch",
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "notes": [
+      "Claim 1: red-team result more favourable (literally not met), not adopted",
+      "The red-team review considers a lower risk arguable (high (4)): not adopted automatically, question for counsel"
+     ],
+     "escalation": false
+    }
+   },
+   "digest": {
+    "patent_id": "EP1000009B1",
+    "family_id": "1008",
+    "jurisdiction": "EP",
+    "assignees": [
+     "Assignee 8"
+    ],
+    "title": "TITLE EP1000009B1",
+    "is_granted": true,
+    "status": "granted, in force in DE (snapshot 2026-08-23)",
+    "status_snapshot_date": "2026-08-23",
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-06-01",
+    "relevanz": "A",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "literal_b": "wortsinngemaess_moeglich",
+      "literal_e": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [],
+      "unklare_merkmale": [],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": null
+     }
+    ],
+    "risiko_b": "5_sehr_hoch",
+    "risiko_e": "4_hoch",
+    "risiko_final": "5_sehr_hoch",
+    "modifikatoren": [],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?",
+     "Analytik"
+    ],
+    "zitat_pruefung_fehlgeschlagen": false
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  },
+  {
+   "p": 2,
+   "pn": "US9000003B2",
+   "auth": "US",
+   "kind": "B2",
+   "title": "TITLE US9000003B2",
+   "assignee": "Assignee 2",
+   "player": null,
+   "family": 1002,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "text"
+   ],
+   "score": 13.6,
+   "why": [
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "US",
+   "markets": [
+    "US"
+   ],
+   "rel": "B",
+   "relWhy": "Grund US9000003B2",
+   "status": "granted, maintenance fees not checked (snapshot 2026-11-10)",
+   "right": {
+    "jurisdiction": "US",
+    "markets": [
+     "US"
+    ],
+    "granted": true,
+    "pending": false,
+    "code": "granted",
+    "text": "granted (maintenance fees not checked)",
+    "src": "us-calc",
+    "asof": "2026-11-10",
+    "stale": false,
+    "unverified": false,
+    "inForceDe": null,
+    "lapsedIn": [],
+    "opposition": null,
+    "appeal": null,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-11-01",
+     "basis": "earliest effective US filing date 2015-06-01 + 20 years + PTA 153 days; terminal disclaimer, PTE and maintenance fees not checked",
+     "estimate": true,
+     "ptaDays": 153
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [],
+    "notes": [],
+    "recordDate": "2026-11-10",
+    "appealOpen": false
+   },
+   "statusDetail": {
+    "events": [],
+    "fees_paid_years": null,
+    "src": "us-calc"
+   },
+   "expiry": {
+    "date": "2035-11-01",
+    "basis": "earliest effective US filing date 2015-06-01 + 20 years + PTA 153 days; terminal disclaimer, PTE and maintenance fees not checked",
+    "estimate": true,
+    "ptaDays": 153
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "2_gering",
+    "e": "4_hoch",
+    "final": "4_hoch"
+   },
+   "literal": {
+    "b": "wortsinngemaess_nicht_erfuellt",
+    "e": "wortsinngemaess_moeglich",
+    "final": "wortsinngemaess_moeglich",
+    "claim": 1
+   },
+   "flags": [
+    "eskalation_durch_gegenpruefung"
+   ],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "US9000003B2",
+    "jurisdiction": "US",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A lipid nanoparticle comprising an ionizable lipid, a phospholipid, a sterol and a PEG-lipid",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the PEG-lipid is present at less than 1.0 mol %",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "1,6 mol-%",
+        "verdict": "nicht_erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "nicht_erfuellt",
+         "forced": null,
+         "redteam": "wackelt"
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [
+       "M2"
+      ],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_nicht_erfuellt",
+       "flags": [],
+       "literal": "wortsinngemaess_nicht_erfuellt",
+       "literal_final": "wortsinngemaess_moeglich",
+       "literal_e": "wortsinngemaess_moeglich"
+      }
+     },
+     {
+      "claim_no": 8,
+      "kategorie": "zusammensetzung",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A pharmaceutical composition comprising the lipid nanoparticle and an mRNA encoding an antigen",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the composition is lyophilized",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "nicht_erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "nicht_erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [
+       "M2"
+      ],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_nicht_erfuellt",
+       "flags": [],
+       "literal": "wortsinngemaess_nicht_erfuellt",
+       "literal_final": "wortsinngemaess_nicht_erfuellt",
+       "literal_e": "wortsinngemaess_nicht_erfuellt"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "2_gering",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_nicht_erfuellt",
+     "claim_worst": 1,
+     "flags": [],
+     "notes": [],
+     "quotes": {
+      "total": 4,
+      "ok": 4,
+      "near": 0,
+      "failed": 0
+     },
+     "risk_model": "2_gering",
+     "risk": "2_gering",
+     "forced": 0,
+     "images_sent": 0
+    }
+   },
+   "dependent": null,
+   "redteam": {
+    "schema_version": "rt-1",
+    "patent_id": "US9000003B2",
+    "claims": [
+     {
+      "claim_no": 1,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [
+       {
+        "feature_id": "M2",
+        "angriffsart": [
+         "produktfakten"
+        ],
+        "claim_quote": null,
+        "argument_patentinhaber": "Gemessene Zusammensetzung kann unter 1,0 mol-% liegen",
+        "gegenargument_nutzer": "Nominalwert 1,6",
+        "ergebnis": "wackelt",
+        "verdict_revidiert": "unklar",
+        "aequivalenz_risiko_revidiert": "mittel"
+       }
+      ],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_moeglich"
+     },
+     {
+      "claim_no": 8,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_nicht_erfuellt"
+     }
+    ],
+    "weitere_angriffswege": [
+     {
+      "weg": "mittelbare_verletzung",
+      "beschreibung": "Lieferung",
+      "relevanz": "mittel"
+     }
+    ],
+    "ausnahmen_pruefung": [],
+    "revidiert": {
+     "risiko": "4_hoch",
+     "eskalation": false,
+     "herabstufung_wegen_fehler": false,
+     "begruendung": "rt"
+    },
+    "zu_klaeren": [
+     "Analytik"
+    ],
+    "konfidenz": "mittel",
+    "app": {
+     "risk_e": "4_hoch",
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "notes": [
+      "Claim 1: red-team result more adverse (literally not met -> literally possible)"
+     ],
+     "escalation": true
+    }
+   },
+   "digest": {
+    "patent_id": "US9000003B2",
+    "family_id": "1002",
+    "jurisdiction": "US",
+    "assignees": [
+     "Assignee 2"
+    ],
+    "title": "TITLE US9000003B2",
+    "is_granted": true,
+    "status": "granted, maintenance fees not checked (snapshot 2026-11-10)",
+    "status_snapshot_date": "2026-11-10",
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-11-01",
+    "relevanz": "B",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "literal_b": "wortsinngemaess_nicht_erfuellt",
+      "literal_e": "wortsinngemaess_moeglich",
+      "tragende_merkmale": [
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the PEG-lipid is present at less than 1.0 mol %",
+        "product_value": "1,6 mol-%",
+        "robustheit": "robust",
+        "redteam": "wackelt"
+       }
+      ],
+      "unklare_merkmale": [],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": null
+     },
+     {
+      "claim_no": 8,
+      "kategorie": "zusammensetzung",
+      "literal_b": "wortsinngemaess_nicht_erfuellt",
+      "literal_e": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the composition is lyophilized",
+        "product_value": "46,3 mol-%",
+        "robustheit": "robust",
+        "redteam": null
+       }
+      ],
+      "unklare_merkmale": [],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": null
+     }
+    ],
+    "risiko_b": "2_gering",
+    "risiko_e": "4_hoch",
+    "risiko_final": "4_hoch",
+    "modifikatoren": [],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?",
+     "Analytik"
+    ],
+    "zitat_pruefung_fehlgeschlagen": false
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  },
+  {
+   "p": 3,
+   "pn": "EP1000004B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000004B1",
+   "assignee": "Assignee 3",
+   "player": null,
+   "family": 1003,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "structure",
+    "markush",
+    "text"
+   ],
+   "score": 31.4,
+   "why": [
+    "Possible generic formula claim: ALC-0315 is disclosed in the document and an independent claim contains a formula that exists only as an image – formula test needed",
+    "Exact structure: ALC-0315 = SCHEMBL1 in the claims (SureChEMBL occurrence, no evidence of claim scope)",
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "relWhy": "Grund EP1000004B1",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "right": {
+    "jurisdiction": "EP",
+    "markets": [
+     "DE",
+     "EP"
+    ],
+    "granted": true,
+    "pending": false,
+    "code": "granted",
+    "text": "The patent has been granted",
+    "src": "ep-register",
+    "asof": "2026-08-23",
+    "stale": false,
+    "unverified": false,
+    "inForceDe": true,
+    "lapsedIn": [],
+    "opposition": null,
+    "appeal": null,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-06-01",
+     "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+     "estimate": true,
+     "ptaDays": null
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [],
+    "notes": [],
+    "recordDate": "2026-08-23",
+    "appealOpen": false
+   },
+   "statusDetail": {
+    "events": [],
+    "fees_paid_years": null,
+    "src": "ep-register"
+   },
+   "expiry": {
+    "date": "2035-06-01",
+    "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+    "estimate": true,
+    "ptaDays": null
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "nicht_beurteilbar",
+    "e": "1_sehr_gering",
+    "final": "nicht_beurteilbar"
+   },
+   "literal": {
+    "b": "wortsinngemaess_moeglich",
+    "e": "wortsinngemaess_moeglich",
+    "final": "wortsinngemaess_moeglich",
+    "claim": 1
+   },
+   "flags": [
+    "formel_fehlt",
+    "literal_neu_berechnet",
+    "urteil_von_app_auf_unklar_gesetzt"
+   ],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "EP1000004B1",
+    "jurisdiction": "EP",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "stoff",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A compound having the following structure of Formula (I): [chem]",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "nicht_erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "markush": {
+         "ergebnis": "faellt_nicht_unter_formel",
+         "formel_bezeichnung": "Formula (I)",
+         "geruest": "guessed",
+         "variablen": [
+          {
+           "name": "R1",
+           "definition_quote": "R1 and R2 are each independently C6-C24 alkyl",
+           "app": {
+            "quote": "ok"
+           }
+          }
+         ],
+         "mappings": [
+          {
+           "mapping_id": "m1",
+           "beschreibung": "x",
+           "zuordnung": [
+            {
+             "variable": "R1",
+             "fragment": "C16",
+             "verdict": "nicht_erfuellt",
+             "begruendung": "x"
+            }
+           ],
+           "alle_erfuellt": "nein"
+          }
+         ],
+         "bestes_mapping": "m1",
+         "gesamtbedingungen": [],
+         "massgaben": [],
+         "nicht_zugeordnete_teile": [],
+         "einzelverbindung_genannt": "nein",
+         "abstand": 1,
+         "konfidenz": "mittel",
+         "app_ergebnis": "formel_fehlt"
+        },
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "unklar",
+         "forced": "formel_fehlt"
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "G1 is C1-C6 alkylene",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [
+       "M1"
+      ],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_nicht_erfuellt",
+       "flags": [
+        "formel_fehlt",
+        "literal_neu_berechnet"
+       ],
+       "literal": "wortsinngemaess_moeglich",
+       "literal_final": "wortsinngemaess_moeglich",
+       "literal_e": "wortsinngemaess_nicht_erfuellt"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "1_sehr_gering",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "flags": [
+      "formel_fehlt",
+      "literal_neu_berechnet",
+      "urteil_von_app_auf_unklar_gesetzt"
+     ],
+     "notes": [
+      "Claim 1: result recomputed from the feature rows (literally not met -> literally possible)",
+      "Risk raised from very low (1) to medium (3): no feature is clearly not met",
+      "Risk raised from medium (3) to cannot be assessed: claim text incomplete: the formula exists only as an image and was not read"
+     ],
+     "quotes": {
+      "total": 2,
+      "ok": 2,
+      "near": 0,
+      "failed": 0
+     },
+     "risk_model": "1_sehr_gering",
+     "risk": "nicht_beurteilbar",
+     "forced": 1,
+     "images_sent": 0
+    }
+   },
+   "dependent": {
+    "schema_version": "da-1",
+    "patent_id": "EP1000004B1",
+    "abhaengigkeiten": [
+     {
+      "claim_no": 2,
+      "bezieht_sich_auf": [
+       1
+      ],
+      "wurzel": [
+       1
+      ],
+      "eigene_kategorie": false
+     }
+    ],
+    "unteransprueche": [
+     {
+      "claim_no": 2,
+      "zusatzmerkmale": [
+       {
+        "claim_quote": "A lipid nanoparticle comprising the compound of claim 1.",
+        "verdict": "unklar",
+        "product_refs": [],
+        "begruendung": "x",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "unklar"
+        }
+       }
+      ],
+      "ketten_ergebnis": "moeglich",
+      "fehlstelle": "keine",
+      "einzelnennung": "entfaellt",
+      "einzelnennung_quote": null,
+      "app": {
+       "flags": [],
+       "ketten_ergebnis": "moeglich"
+      }
+     }
+    ],
+    "rueckzugspositionen": [
+     {
+      "unabhaengiger_anspruch": 1,
+      "engster_noch_treffender_anspruch": 2,
+      "produkt_faellt_heraus_bei": "Anspruch 3",
+      "erlaeuterung": "r"
+     }
+    ],
+    "auslegungshinweise": [
+     {
+      "begriff": "conjugated lipid",
+      "unteranspruch": 3,
+      "hinweis": "weiter als PEG-Lipid"
+     }
+    ],
+    "revision_empfohlen": [],
+    "konfidenz": "mittel",
+    "app": {
+     "flags": []
+    }
+   },
+   "redteam": {
+    "schema_version": "rt-1",
+    "patent_id": "EP1000004B1",
+    "claims": [
+     {
+      "claim_no": 1,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_nicht_erfuellt"
+     }
+    ],
+    "weitere_angriffswege": [
+     {
+      "weg": "mittelbare_verletzung",
+      "beschreibung": "Lieferung",
+      "relevanz": "mittel"
+     }
+    ],
+    "ausnahmen_pruefung": [],
+    "revidiert": {
+     "risiko": "1_sehr_gering",
+     "eskalation": false,
+     "herabstufung_wegen_fehler": false,
+     "begruendung": "rt"
+    },
+    "zu_klaeren": [
+     "Analytik"
+    ],
+    "konfidenz": "mittel",
+    "app": {
+     "risk_e": "1_sehr_gering",
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "notes": [
+      "Claim 1: red-team result more favourable (literally not met), not adopted",
+      "The red-team review considers a lower risk arguable (very low (1)): not adopted automatically, question for counsel"
+     ],
+     "escalation": false
+    }
+   },
+   "digest": {
+    "patent_id": "EP1000004B1",
+    "family_id": "1003",
+    "jurisdiction": "EP",
+    "assignees": [
+     "Assignee 3"
+    ],
+    "title": "TITLE EP1000004B1",
+    "is_granted": true,
+    "status": "granted, in force in DE (snapshot 2026-08-23)",
+    "status_snapshot_date": "2026-08-23",
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-06-01",
+    "relevanz": "A",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "stoff",
+      "literal_b": "wortsinngemaess_moeglich",
+      "literal_e": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [],
+      "unklare_merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A compound having the following structure of Formula (I): [chem]",
+        "klaerung": "set to unklar by the app: formel_fehlt"
+       }
+      ],
+      "markush_ergebnis": "formel_fehlt",
+      "markush_fehlende_variablen": [
+       "R1"
+      ],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": 2
+     }
+    ],
+    "risiko_b": "nicht_beurteilbar",
+    "risiko_e": "1_sehr_gering",
+    "risiko_final": "nicht_beurteilbar",
+    "modifikatoren": [
+     "formel_fehlt"
+    ],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?",
+     "Analytik"
+    ],
+    "zitat_pruefung_fehlgeschlagen": false
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  },
+  {
+   "p": 1,
+   "pn": "EP1000002B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000002B1",
+   "assignee": "Assignee 1",
+   "player": null,
+   "family": 1001,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "text"
+   ],
+   "score": 14.8,
+   "why": [
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "relWhy": "Grund EP1000002B1",
+   "status": "granted, not in force in DE, opposition/appeal pending (snapshot 2026-08-23)",
+   "right": {
+    "jurisdiction": "EP",
+    "markets": [
+     "DE",
+     "EP"
+    ],
+    "granted": true,
+    "pending": false,
+    "code": "granted",
+    "text": "The patent has been granted",
+    "src": "ep-register",
+    "asof": "2026-08-23",
+    "stale": false,
+    "unverified": false,
+    "inForceDe": false,
+    "lapsedIn": [
+     {
+      "cc": "DE",
+      "date": "2024-03-01"
+     }
+    ],
+    "opposition": {
+     "filed": true,
+     "opponents": [
+      "X"
+     ],
+     "outcome": "pending"
+    },
+    "appeal": null,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-06-01",
+     "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+     "estimate": true,
+     "ptaDays": null
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [
+     "einspruch_ipr_anhaengig"
+    ],
+    "notes": [
+     "not in force in DE according to the register; possibly in force in other validation states"
+    ],
+    "recordDate": "2026-08-23",
+    "appealOpen": false
+   },
+   "statusDetail": {
+    "events": [],
+    "fees_paid_years": null,
+    "src": "ep-register"
+   },
+   "expiry": {
+    "date": "2035-06-01",
+    "basis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+    "estimate": true,
+    "ptaDays": null
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "3_mittel",
+    "e": "2_gering",
+    "final": "3_mittel"
+   },
+   "literal": {
+    "b": "wortsinngemaess_moeglich",
+    "e": "wortsinngemaess_moeglich",
+    "final": "wortsinngemaess_moeglich",
+    "claim": 1
+   },
+   "flags": [
+    "literal_neu_berechnet",
+    "zitat_nicht_verifiziert",
+    "urteil_von_app_auf_unklar_gesetzt"
+   ],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "EP1000002B1",
+    "jurisdiction": "EP",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "herstellungsverfahren",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "mixing an ethanolic lipid solution with an aqueous nucleic acid solution in a T-connector",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the mixing is performed at a Reynolds number above 2000 in a turbulent regime",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "nicht_erfuellt",
+        "begruendung": "<img src=x onerror=alert(3)> **fett** <b>x</b>",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "fail",
+         "verified": false,
+         "near": false,
+         "verdict": "unklar",
+         "forced": "zitat_nicht_verifiziert",
+         "flag": "zitat_nicht_verifiziert",
+         "konfidenz": "niedrig"
+        }
+       },
+       {
+        "feature_id": "M3",
+        "claim_quote": "<script>alert(1)</script> <img src=x onerror=alert(2)>",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "unklar",
+        "begruendung": "Begruendung M3",
+        "annahme": null,
+        "klaerung": "Messung",
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "unklar",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M4",
+        "claim_quote": "wherein the flow rate ratio is from 2:1 to 4:1.",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M4",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [
+       "M2"
+      ],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "aequivalenz": [
+       {
+        "feature_id": "M2",
+        "austauschmittel": "laminar",
+        "funktion_des_merkmals": "Mischen",
+        "funktion_quelle": "angenommen",
+        "aequivalenz_risiko": "gering",
+        "begruendung": "eq"
+       }
+      ],
+      "app": {
+       "literal_model": "wortsinngemaess_nicht_erfuellt",
+       "flags": [
+        "literal_neu_berechnet"
+       ],
+       "literal": "wortsinngemaess_moeglich",
+       "literal_final": "wortsinngemaess_moeglich",
+       "literal_e": "wortsinngemaess_nicht_erfuellt"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "1_sehr_gering",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "flags": [
+      "literal_neu_berechnet",
+      "zitat_nicht_verifiziert",
+      "urteil_von_app_auf_unklar_gesetzt"
+     ],
+     "notes": [
+      "Claim 1: result recomputed from the feature rows (literally not met -> literally possible)",
+      "Risk raised from very low (1) to medium (3): no feature is clearly not met"
+     ],
+     "quotes": {
+      "total": 4,
+      "ok": 3,
+      "near": 0,
+      "failed": 1
+     },
+     "risk_model": "1_sehr_gering",
+     "risk": "3_mittel",
+     "forced": 1,
+     "images_sent": 0
+    }
+   },
+   "dependent": null,
+   "redteam": {
+    "schema_version": "rt-1",
+    "patent_id": "EP1000002B1",
+    "claims": [
+     {
+      "claim_no": 1,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_nicht_erfuellt"
+     }
+    ],
+    "weitere_angriffswege": [
+     {
+      "weg": "mittelbare_verletzung",
+      "beschreibung": "Lieferung",
+      "relevanz": "mittel"
+     }
+    ],
+    "ausnahmen_pruefung": [],
+    "revidiert": {
+     "risiko": "2_gering",
+     "eskalation": false,
+     "herabstufung_wegen_fehler": false,
+     "begruendung": "rt"
+    },
+    "zu_klaeren": [
+     "Analytik"
+    ],
+    "konfidenz": "mittel",
+    "app": {
+     "risk_e": "2_gering",
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "notes": [
+      "Claim 1: red-team result more favourable (literally not met), not adopted",
+      "The red-team review considers a lower risk arguable (low (2)): not adopted automatically, question for counsel"
+     ],
+     "escalation": false
+    }
+   },
+   "digest": {
+    "patent_id": "EP1000002B1",
+    "family_id": "1001",
+    "jurisdiction": "EP",
+    "assignees": [
+     "Assignee 1"
+    ],
+    "title": "TITLE EP1000002B1",
+    "is_granted": true,
+    "status": "granted, not in force in DE, opposition/appeal pending (snapshot 2026-08-23)",
+    "status_snapshot_date": "2026-08-23",
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-06-01",
+    "relevanz": "A",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "herstellungsverfahren",
+      "literal_b": "wortsinngemaess_moeglich",
+      "literal_e": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [],
+      "unklare_merkmale": [
+       {
+        "feature_id": "M2",
+        "claim_quote": "wherein the mixing is performed at a Reynolds number above 2000 in a turbulent regime",
+        "klaerung": "set to unklar by the app: zitat_nicht_verifiziert"
+       },
+       {
+        "feature_id": "M3",
+        "claim_quote": "<script>alert(1)</script> <img src=x onerror=alert(2)>",
+        "klaerung": "Messung"
+       }
+      ],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "gering",
+      "engster_treffender_unteranspruch": null
+     }
+    ],
+    "risiko_b": "3_mittel",
+    "risiko_e": "2_gering",
+    "risiko_final": "3_mittel",
+    "modifikatoren": [
+     "einspruch_ipr_anhaengig"
+    ],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?",
+     "Analytik"
+    ],
+    "zitat_pruefung_fehlgeschlagen": true
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  },
+  {
+   "p": 5,
+   "pn": "US20250000006A1",
+   "auth": "US",
+   "kind": "A1",
+   "title": "TITLE US20250000006A1",
+   "assignee": "Assignee 5",
+   "player": null,
+   "family": 1005,
+   "filing": "2015-06-01",
+   "priority": "2014-06-01",
+   "routes": [
+    "text"
+   ],
+   "score": 10,
+   "why": [
+    "Text search \"Names/codes in the claims\" (claim 1)",
+    "Text search \"Names/codes in title, abstract, claims\" (claim 1)",
+    "Text search \"LNP with cationic/ionizable lipid (independent claims)\" (claim 1)"
+   ],
+   "jurisdiction": "US",
+   "markets": [
+    "US"
+   ],
+   "rel": "B",
+   "relWhy": "Grund US20250000006A1",
+   "status": "pending (snapshot 2026-11-10)",
+   "right": {
+    "jurisdiction": "US",
+    "markets": [
+     "US"
+    ],
+    "granted": false,
+    "pending": true,
+    "code": "pending",
+    "text": "pending application",
+    "src": "us-calc",
+    "asof": "2026-11-10",
+    "stale": false,
+    "unverified": false,
+    "inForceDe": null,
+    "lapsedIn": [],
+    "opposition": null,
+    "appeal": null,
+    "unitary": null,
+    "note": null,
+    "expiry": {
+     "date": "2035-06-01",
+     "basis": "earliest effective US filing date 2015-06-01 + 20 years; terminal disclaimer, PTE and maintenance fees not checked",
+     "estimate": true,
+     "ptaDays": null
+    },
+    "dead": false,
+    "deadReason": null,
+    "modifiers": [
+     "anmeldung_ansprueche_veraenderlich"
+    ],
+    "notes": [],
+    "recordDate": "2026-11-10",
+    "appealOpen": false
+   },
+   "statusDetail": {
+    "events": [],
+    "fees_paid_years": null,
+    "src": "us-calc"
+   },
+   "expiry": {
+    "date": "2035-06-01",
+    "basis": "earliest effective US filing date 2015-06-01 + 20 years; terminal disclaimer, PTE and maintenance fees not checked",
+    "estimate": true,
+    "ptaDays": null
+   },
+   "claimsLang": "en",
+   "risk": {
+    "b": "3_mittel",
+    "e": "3_mittel",
+    "final": "3_mittel"
+   },
+   "literal": {
+    "b": "wortsinngemaess_moeglich",
+    "e": "wortsinngemaess_moeglich",
+    "final": "wortsinngemaess_moeglich",
+    "claim": 1
+   },
+   "flags": [],
+   "failed": null,
+   "chart": {
+    "schema_version": "cc-1",
+    "patent_id": "US20250000006A1",
+    "jurisdiction": "US",
+    "claims_version": "as granted",
+    "textqualitaet": {
+     "quelle": "original",
+     "probleme": []
+    },
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "betroffene_akte": [
+       "herstellen"
+      ],
+      "merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A lipid nanoparticle comprising an ionizable lipid having a pKa of 6.0 to 6.8",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "unklar",
+        "begruendung": "Begruendung M1",
+        "annahme": null,
+        "klaerung": "Messung",
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "unklar",
+         "forced": null
+        }
+       },
+       {
+        "feature_id": "M2",
+        "claim_quote": "an mRNA",
+        "paraphrase": "p",
+        "auslegung": {
+         "definition_quote": null,
+         "definition_para": null,
+         "weite_auslegung": "weit",
+         "enge_auslegung": null,
+         "ergebnis_abhaengig_von_auslegung": false
+        },
+        "product_refs": [
+         "P1"
+        ],
+        "product_value": "46,3 mol-%",
+        "verdict": "erfuellt",
+        "begruendung": "Begruendung M2",
+        "annahme": null,
+        "klaerung": null,
+        "konfidenz": "hoch",
+        "app": {
+         "quote": "ok",
+         "verified": true,
+         "near": false,
+         "verdict": "erfuellt",
+         "forced": null
+        }
+       }
+      ],
+      "literal_ergebnis": "wortsinngemaess_moeglich",
+      "tragende_merkmale": [],
+      "robustheit": "robust",
+      "konfidenz": "mittel",
+      "app": {
+       "literal_model": "wortsinngemaess_moeglich",
+       "flags": [],
+       "literal": "wortsinngemaess_moeglich",
+       "literal_final": "wortsinngemaess_moeglich",
+       "literal_e": "wortsinngemaess_nicht_erfuellt"
+      }
+     }
+    ],
+    "gesamt": {
+     "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
+     "kritischster_anspruch": 1,
+     "risiko": "3_mittel",
+     "risiko_begruendung": "weil",
+     "modifikatoren": [
+      "anmeldung_ansprueche_veraenderlich"
+     ],
+     "rolle_des_nutzers": {
+      "unmittelbar": "ja",
+      "mittelbar_par10_patg_oder_271bc": "offen",
+      "erlaeuterung": "Rolle"
+     },
+     "ausnahmen": {
+      "versuchsprivileg_par11_nr2": "offen",
+      "zulassungsprivileg_par11_nr2b": "ja",
+      "us_safe_harbor_271e1": "entfaellt",
+      "kipppunkt": "ab Angebot",
+      "erlaeuterung": "Ausnahmen"
+     },
+     "umgehungsloesungen": [
+      {
+       "feature_id": "M2",
+       "aenderung": "mol-% unter 40",
+       "robustheit": "knapp",
+       "vorbehalt": "fachlich zu validieren"
+      }
+     ],
+     "offene_fragen": [
+      "Gemessene mol-% im Partikel?"
+     ],
+     "fuer_unteransprueche": [],
+     "konfidenz": "mittel",
+     "hinweise": []
+    },
+    "app": {
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "flags": [],
+     "notes": [],
+     "quotes": {
+      "total": 2,
+      "ok": 2,
+      "near": 0,
+      "failed": 0
+     },
+     "risk_model": "3_mittel",
+     "risk": "3_mittel",
+     "forced": 0,
+     "images_sent": 0
+    }
+   },
+   "dependent": null,
+   "redteam": {
+    "schema_version": "rt-1",
+    "patent_id": "US20250000006A1",
+    "claims": [
+     {
+      "claim_no": 1,
+      "vollstaendigkeit": {
+       "fehlende_merkmale": [],
+       "zitatfehler": [],
+       "uebersehene_alternativen": []
+      },
+      "angriffe": [],
+      "gegenfehler": [],
+      "literal_ergebnis_revidiert": "wortsinngemaess_nicht_erfuellt"
+     }
+    ],
+    "weitere_angriffswege": [
+     {
+      "weg": "mittelbare_verletzung",
+      "beschreibung": "Lieferung",
+      "relevanz": "mittel"
+     }
+    ],
+    "ausnahmen_pruefung": [],
+    "revidiert": {
+     "risiko": "3_mittel",
+     "eskalation": false,
+     "herabstufung_wegen_fehler": false,
+     "begruendung": "rt"
+    },
+    "zu_klaeren": [
+     "Analytik"
+    ],
+    "konfidenz": "mittel",
+    "app": {
+     "risk_e": "3_mittel",
+     "literal_worst": "wortsinngemaess_moeglich",
+     "claim_worst": 1,
+     "notes": [
+      "Claim 1: red-team result more favourable (literally not met), not adopted"
+     ],
+     "escalation": false
+    }
+   },
+   "digest": {
+    "patent_id": "US20250000006A1",
+    "family_id": "1005",
+    "jurisdiction": "US",
+    "assignees": [
+     "Assignee 5"
+    ],
+    "title": "TITLE US20250000006A1",
+    "is_granted": false,
+    "status": "pending (snapshot 2026-11-10)",
+    "status_snapshot_date": "2026-11-10",
+    "filing_date": "2015-06-01",
+    "expiry_estimate": "2035-06-01",
+    "relevanz": "B",
+    "claims": [
+     {
+      "claim_no": 1,
+      "kategorie": "zusammensetzung",
+      "literal_b": "wortsinngemaess_moeglich",
+      "literal_e": "wortsinngemaess_nicht_erfuellt",
+      "tragende_merkmale": [],
+      "unklare_merkmale": [
+       {
+        "feature_id": "M1",
+        "claim_quote": "A lipid nanoparticle comprising an ionizable lipid having a pKa of 6.0 to 6.8",
+        "klaerung": "Messung"
+       }
+      ],
+      "markush_ergebnis": "entfaellt",
+      "markush_fehlende_variablen": [],
+      "aequivalenz_risiko_max": "entfaellt",
+      "engster_treffender_unteranspruch": null
+     }
+    ],
+    "risiko_b": "3_mittel",
+    "risiko_e": "3_mittel",
+    "risiko_final": "3_mittel",
+    "modifikatoren": [
+     "anmeldung_ansprueche_veraenderlich"
+    ],
+    "ausnahmen": {
+     "versuchsprivileg_par11_nr2": "offen",
+     "zulassungsprivileg_par11_nr2b": "ja",
+     "us_safe_harbor_271e1": "entfaellt",
+     "kipppunkt": "ab Angebot",
+     "erlaeuterung": "Ausnahmen"
+    },
+    "umgehungsloesungen": [
+     {
+      "feature_id": "M2",
+      "aenderung": "mol-% unter 40",
+      "robustheit": "knapp",
+      "vorbehalt": "fachlich zu validieren"
+     }
+    ],
+    "offene_fragen": [
+     "Gemessene mol-% im Partikel?",
+     "Analytik"
+    ],
+    "zitat_pruefung_fehlgeschlagen": false
+   },
+   "dependentFailed": null,
+   "redteamFailed": null
+  }
+ ],
+ "notCharted": [
+  {
+   "p": 4,
+   "pn": "EP1000005B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000005B1",
+   "assignee": "Assignee 4",
+   "reason": "dead",
+   "text": "Legal status: expired (snapshot 2026-08-23); expiry (estimate) 2020-03-01; no claim chart (only at depth \"deep\")",
+   "rel": null,
+   "relWhy": null,
+   "status": "expired (snapshot 2026-08-23)",
+   "expiry": "2020-03-01",
+   "expiryBasis": "filing date 2000-03-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "score": 11.2,
+   "routes": [
+    "text"
+   ]
+  },
+  {
+   "p": 11,
+   "pn": "EP1000012B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000012B1",
+   "assignee": "Assignee 11",
+   "reason": "no_text",
+   "text": "no claim text in the corpus (biblio only); check a family member",
+   "rel": null,
+   "relWhy": null,
+   "status": "granted, in force in DE (unverified, no record; treated as in force)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "score": 9.5,
+   "routes": [
+    "family"
+   ]
+  },
+  {
+   "p": 10,
+   "pn": "EP1000011B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000011B1",
+   "assignee": "Assignee 10",
+   "reason": "no_text",
+   "text": "no claim text in the corpus (biblio only); check a family member",
+   "rel": null,
+   "relWhy": null,
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "score": 1.2,
+   "routes": [
+    "seed"
+   ]
+  },
+  {
+   "p": 6,
+   "pn": "EP1000007B1",
+   "auth": "EP",
+   "kind": "B1",
+   "title": "TITLE EP1000007B1",
+   "assignee": "Assignee 6",
+   "reason": "triage_c",
+   "text": "Triage C: Grund EP1000007B1",
+   "rel": "C",
+   "relWhy": "Grund EP1000007B1",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "score": 1.2,
+   "routes": [
+    "seed"
+   ]
+  }
+ ],
+ "overall": {
+  "markets": [
+   {
+    "market": "DE",
+    "risk": "5_sehr_hoch",
+    "drivers": [
+     "EP1000001B1",
+     "EP1000008B1",
+     "EP1000009B1"
+    ]
+   },
+   {
+    "market": "EP_UPC",
+    "risk": "5_sehr_hoch",
+    "drivers": [
+     "EP1000001B1",
+     "EP1000008B1",
+     "EP1000009B1"
+    ]
+   },
+   {
+    "market": "US",
+    "risk": "4_hoch",
+    "drivers": [
+     "US9000003B2"
+    ]
+   }
+  ],
+  "pending": {
+   "risk": "3_mittel",
+   "drivers": [
+    "US20250000006A1"
+   ]
+  }
+ },
+ "synthesis": {
+  "schema_version": "op-1",
+  "output_language": "en",
+  "titel": "FTO-Vorpruefung",
+  "gesamtrisiko": [
+   {
+    "markt": "DE",
+    "risiko": "2_gering",
+    "treibende_schutzrechte": [
+     "EP1000001B1"
+    ],
+    "begruendung": "g",
+    "app_risiko": "5_sehr_hoch",
+    "app_hinweis": "computed by the app: 5_sehr_hoch"
+   },
+   {
+    "markt": "US",
+    "risiko": "4_hoch",
+    "treibende_schutzrechte": [],
+    "begruendung": "g"
+   }
+  ],
+  "zusammenfassung": "Im geprüften Korpus bestehen mehrere Risiken.\n\n- Punkt eins\n- Punkt zwei <script>alert(9)</script>",
+  "gegenstand": "Gegenstand.",
+  "recherche": "Recherche.",
+  "einzelbewertungen": [
+   {
+    "patent_id": "EP1000001B1",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit EP1000001B1",
+    "text": "Text EP1000001B1",
+    "app_risiko": "5_sehr_hoch"
+   },
+   {
+    "patent_id": "EP1000008B1",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit EP1000008B1",
+    "text": "Text EP1000008B1",
+    "app_risiko": "5_sehr_hoch"
+   },
+   {
+    "patent_id": "EP1000009B1",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit EP1000009B1",
+    "text": "Text EP1000009B1",
+    "app_risiko": "5_sehr_hoch"
+   },
+   {
+    "patent_id": "US9000003B2",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit US9000003B2",
+    "text": "Text US9000003B2",
+    "app_risiko": "4_hoch"
+   },
+   {
+    "patent_id": "EP1000004B1",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit EP1000004B1",
+    "text": "Text EP1000004B1",
+    "app_risiko": "nicht_beurteilbar"
+   },
+   {
+    "patent_id": "EP1000002B1",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit EP1000002B1",
+    "text": "Text EP1000002B1"
+   },
+   {
+    "patent_id": "US20250000006A1",
+    "risiko": "3_mittel",
+    "kurzfazit": "Kurzfazit US20250000006A1",
+    "text": "Text US20250000006A1"
+   }
+  ],
+  "anhaengige_anmeldungen": "Anhängig.",
+  "querschnitt": "Querschnitt.",
+  "zeitachse": [
+   {
+    "patent_id": "EP1000001B1",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   },
+   {
+    "patent_id": "EP1000008B1",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   },
+   {
+    "patent_id": "EP1000009B1",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   },
+   {
+    "patent_id": "US9000003B2",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   },
+   {
+    "patent_id": "EP1000004B1",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   },
+   {
+    "patent_id": "EP1000002B1",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   },
+   {
+    "patent_id": "US20250000006A1",
+    "ablauf_geschaetzt": "2035-06-01",
+    "bemerkung": "Schätzung"
+   }
+  ],
+  "ausnahmen": "Ausnahmen.",
+  "umgehungsloesungen": [
+   {
+    "aenderung": "mol-% ändern",
+    "betrifft_schutzrechte": [
+     "EP1000001B1"
+    ],
+    "kollision_mit_anderen": [],
+    "bewertung": "technische Hypothese"
+   }
+  ],
+  "gegenpruefung": "Gegenprüfung.",
+  "offene_fragen": [
+   "Frage 1"
+  ],
+  "naechste_schritte": [
+   {
+    "prioritaet": 1,
+    "schritt": "Markush-Recherche",
+    "warum": "Lücke"
+   }
+  ],
+  "app": {
+   "flags": [
+    "gesamtrisiko_abweichend"
+   ],
+   "wording": [],
+   "cuts": []
+  }
+ },
+ "synthesisFailed": null,
+ "matrix": [
+  {
+   "pn": "EP1000001B1",
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "risk": "5_sehr_hoch",
+   "riskB": "5_sehr_hoch",
+   "riskE": "4_hoch",
+   "literal": "wortsinngemaess_erfuellt",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "dead": false,
+   "pending": false,
+   "flags": [
+    "literal_neu_berechnet",
+    "unteransprueche_zitat_nicht_verifiziert",
+    "unteransprueche_kette_neu_berechnet"
+   ]
+  },
+  {
+   "pn": "EP1000008B1",
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "risk": "5_sehr_hoch",
+   "riskB": "5_sehr_hoch",
+   "riskE": null,
+   "literal": "wortsinngemaess_erfuellt",
+   "status": "unknown, DE part unknown (unverified, no record; treated as in force)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "computed by the app from the filing date 2015-06-01 + 20 years (no legal-status record); PTA/PTE/SPC not taken into account",
+   "dead": false,
+   "pending": false,
+   "flags": []
+  },
+  {
+   "pn": "EP1000009B1",
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "risk": "5_sehr_hoch",
+   "riskB": "5_sehr_hoch",
+   "riskE": "4_hoch",
+   "literal": "wortsinngemaess_moeglich",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "dead": false,
+   "pending": false,
+   "flags": [
+    "text_gekuerzt",
+    "literal_neu_berechnet"
+   ]
+  },
+  {
+   "pn": "US9000003B2",
+   "jurisdiction": "US",
+   "markets": [
+    "US"
+   ],
+   "rel": "B",
+   "risk": "4_hoch",
+   "riskB": "2_gering",
+   "riskE": "4_hoch",
+   "literal": "wortsinngemaess_moeglich",
+   "status": "granted, maintenance fees not checked (snapshot 2026-11-10)",
+   "expiry": "2035-11-01",
+   "expiryBasis": "earliest effective US filing date 2015-06-01 + 20 years + PTA 153 days; terminal disclaimer, PTE and maintenance fees not checked",
+   "dead": false,
+   "pending": false,
+   "flags": [
+    "eskalation_durch_gegenpruefung"
+   ]
+  },
+  {
+   "pn": "EP1000004B1",
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "risk": "nicht_beurteilbar",
+   "riskB": "nicht_beurteilbar",
+   "riskE": "1_sehr_gering",
+   "literal": "wortsinngemaess_moeglich",
+   "status": "granted, in force in DE (snapshot 2026-08-23)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "dead": false,
+   "pending": false,
+   "flags": [
+    "formel_fehlt",
+    "literal_neu_berechnet",
+    "urteil_von_app_auf_unklar_gesetzt"
+   ]
+  },
+  {
+   "pn": "EP1000002B1",
+   "jurisdiction": "EP",
+   "markets": [
+    "DE",
+    "EP"
+   ],
+   "rel": "A",
+   "risk": "3_mittel",
+   "riskB": "3_mittel",
+   "riskE": "2_gering",
+   "literal": "wortsinngemaess_moeglich",
+   "status": "granted, not in force in DE, opposition/appeal pending (snapshot 2026-08-23)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
+   "dead": false,
+   "pending": false,
+   "flags": [
+    "literal_neu_berechnet",
+    "zitat_nicht_verifiziert",
+    "urteil_von_app_auf_unklar_gesetzt"
+   ]
+  },
+  {
+   "pn": "US20250000006A1",
+   "jurisdiction": "US",
+   "markets": [
+    "US"
+   ],
+   "rel": "B",
+   "risk": "3_mittel",
+   "riskB": "3_mittel",
+   "riskE": "3_mittel",
+   "literal": "wortsinngemaess_moeglich",
+   "status": "pending (snapshot 2026-11-10)",
+   "expiry": "2035-06-01",
+   "expiryBasis": "earliest effective US filing date 2015-06-01 + 20 years; terminal disclaimer, PTE and maintenance fees not checked",
+   "dead": false,
+   "pending": true,
+   "flags": []
+  }
+ ],
+ "warnings": [
+  "Step B.EP1000009B1: input shortened (description excerpt d2 -101 bytes, description excerpt d1 -170 bytes, claim 1 -265448 bytes)",
+  "Step E.EP1000009B1: input shortened (description excerpt d2 -101 bytes, description excerpt d1 -170 bytes, claim 1 -256483 bytes)"
+ ],
+ "usage": {
+  "calls": 18,
+  "bytesIn": 878450,
+  "bytesOut": 26500,
+  "failed": 0,
+  "repairs": 1
+ },
+ "run": {
+  "calls": 18,
+  "resumedSteps": 0
+ }
+}
