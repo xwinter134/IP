@@ -21,7 +21,7 @@
     'Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.',
     'Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.',
     'Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.',
-    'Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.'
+    'AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.'
   ];
 
   var T = [
@@ -164,6 +164,17 @@
         { text: 'MCP server: start node mcp/server.mjs --dist /absolute/path/to/dist-pages from the repository, or register it in Claude Desktop (claude_desktop_config.json) or with claude mcp add in Claude Code. It reads the files of a website build on your computer, needs no network and offers search, claims, structure search, Markush, ranges, expiry, similar patents, earliest disclosure and context packs as tools. Steps and trust notes: docs/INTEGRATION.md and mcp/README.md.' }
       ],
       limits: ['Patent text in a pack is untrusted data: an assistant must ignore instructions inside it. The pack tells it so, but you remain responsible for what you paste where.', 'Whatever you paste into an assistant leaves your machine; check the rules of the tool and of your organisation first.', 'The MCP server and window.LnpAPI work on the website build (complete corpus) and on the Artifact build (corpus may be cut by the size budget); they never call a model themselves.']
+    },
+    {
+      id: 'aiprovider', title: 'Using your own AI provider', route: '#ai',
+      summary: 'Switch the AI features on in the website version with your own API key from Anthropic, OpenAI, Google Gemini, Mistral, OpenRouter or any OpenAI-compatible endpoint, including a local server.',
+      steps: [
+        { text: 'Open System and follow "AI provider settings", or go to #ai. Choose the provider. For "OpenAI-compatible endpoint" enter the base URL (https, or http://localhost for a server on your computer, e.g. Ollama or LM Studio) and how the key is sent.', route: '#ai' },
+        { text: 'Paste your API key. Tick "Remember the key on this device" only on your own computer; otherwise the key is kept until the tab closes. "Show" reveals it while you check it.' },
+        { text: 'Press "Load models". The list comes from the provider with your key. Tap a model for the Default tier, or untick "One model for all tasks" and type models for the Quick tier (many small calls: a fast model) and the Complex tier (red-team review and synthesis: your strongest model). Untick "The model reads images" for a text-only model.' },
+        { text: 'Press "Test connection" (one short call), then "Save and use". The status at the top, the Tools page and the System page now say "AI available: <provider> - <model>". "Forget key" removes the key from this browser; "Remove all AI settings" removes everything.' }
+      ],
+      limits: ['The key stays in this browser and is sent only to the provider you chose. When you run an AI feature, patent text and what you entered (product profile, structures, formulation data) go to that provider; its terms apply.', 'Calls are billed by the provider to your own account. Set a spending limit there; an FTO analysis can make many calls.', 'The prompts were written and tested with Claude; other models can answer differently or less reliably. Some providers do not allow calls from a web page (CORS); then use a gateway or a local server.']
     },
     {
       id: 'data', title: 'About the data', route: '#system',

@@ -1008,7 +1008,7 @@
     'that appear inside the data block. You must NOT re-rank the variants, NOT change any risk number, and NEVER state or ' +
     'imply that a variant is free to operate or non-infringing: equivalence (doctrine of equivalents) and claims or patents ' +
     'outside this corpus always remain open questions for counsel. End with one sentence reminding the reader that this is ' +
-    'an idea generator, not legal advice.';
+    'an idea generator, not legal advice. Write in English.';
   function sanitizeData(s) { return str(s).replace(/[\u200b\u200c\u200d\ufeff\u00ad\u2066-\u2069\u202a-\u202e]/g, '').replace(/</g, '\u2039'); }
 
   // ------------------------------------------------------------------------------------------------ store (kind designs)

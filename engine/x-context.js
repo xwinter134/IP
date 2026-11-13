@@ -28,9 +28,19 @@
   var SCHEMA = 'lnp-context-1', TOOL = 'LNP Patent Desk', LIMIT_CORE = 'pre-screening data from a corpus snapshot; not legal advice; claims may be cut by the size budget: ';
   var DEF_BYTES = 300000, MIN_BYTES = 20000, MAX_PATENTS = 100, DEF_SEARCH = 50;
   var S = { cfg: {}, reg: false, mk: null };
-  var NAMES = { data: 'LnpData', search: 'LnpSearch', chem: 'LnpChem', ranges: 'LnpRanges', markush: 'LnpMarkush', legal: 'LnpLegal', links: 'LnpLinks', tags: 'LnpTags', screen: 'LnpScreen', fto: 'LnpFto', router: 'LnpRouter', store: 'LnpStore' };
+  var NAMES = { data: 'LnpData', search: 'LnpSearch', chem: 'LnpChem', ranges: 'LnpRanges', markush: 'LnpMarkush', legal: 'LnpLegal', links: 'LnpLinks', tags: 'LnpTags', screen: 'LnpScreen', fto: 'LnpFto', router: 'LnpRouter', store: 'LnpStore', render: 'LnpFtoRender' };
 
   function eng(n) { return S.cfg[n] || g[NAMES[n]] || null; }
+  /* English label of an internal FTO code (risk level, literal result, flag): the opinion stores ASCII codes derived from
+     German that are never shown as such; LnpFtoRender.label maps all of them, the small table is the fallback */
+  var CODE_FALLBACK = { '5_sehr_hoch': 'very high (5)', '4_hoch': 'high (4)', '3_mittel': 'medium (3)', '2_gering': 'low (2)', '1_sehr_gering': 'very low (1)',
+    nicht_beurteilbar: 'cannot be assessed', wortsinngemaess_erfuellt: 'literally met', wortsinngemaess_moeglich: 'literally possible', wortsinngemaess_nicht_erfuellt: 'literally not met' };
+  function codeLabel(c) {
+    c = str(c); if (!c) return c;
+    var R = eng('render');
+    if (Object.prototype.hasOwnProperty.call(CODE_FALLBACK, c)) return CODE_FALLBACK[c];
+    return R && typeof R.label === 'function' ? R.label(c) : c.replace(/_/g, ' ');
+  }
   function configure(c) { S.cfg = c || {}; S.mk = null; }
   function str(x) { return x == null ? '' : String(x); }
   function arr(x) { return Array.isArray(x) ? x : (x == null ? [] : [x]); }
@@ -178,13 +188,13 @@
         arr(op.patents).forEach(function (e) {
           if (!e || !e.pn) return;
           pns.push(e.pn);
-          per[e.pn] = { via: [], risk: e.risk && typeof e.risk === 'object' ? { final: str(e.risk.final), chart: str(e.risk.b), redTeam: str(e.risk.e) } : null,
-            literal: e.literal && e.literal.final ? str(e.literal.final) : null, rel: e.rel || null, statusText: line(e.statusText || e.status || '').slice(0, 200), flags: arr(e.flags).slice(0, 8).map(function (f) { return line(typeof f === 'string' ? f : (f && (f.code || f.text)) || '').slice(0, 100); }) };
+          per[e.pn] = { via: [], risk: e.risk && typeof e.risk === 'object' ? { final: codeLabel(e.risk.final), chart: codeLabel(e.risk.b), redTeam: codeLabel(e.risk.e) } : null,
+            literal: e.literal && e.literal.final ? codeLabel(e.literal.final) : null, rel: e.rel || null, statusText: line(e.statusText || e.status || '').slice(0, 200), flags: arr(e.flags).slice(0, 8).map(function (f) { return line(typeof f === 'string' ? codeLabel(f) : (f && (f.code ? codeLabel(f.code) : f.text)) || '').slice(0, 100); }) };
         });
         arr(op.search && op.search.charted).forEach(function (x) { if (x && x.pn && per[x.pn]) per[x.pn].charted = true; });
         t.kind = 'opinion'; t.label = 'FTO opinion "' + line(op.title).replace(/`/g, "'").slice(0, 80) + '" (' + pns.length + ' charted rights)';
         t.opinion = { id: str(target.opinion), title: line(op.title), created: op.created || null, finished: op.finished || null, depth: op.depth || null, lang: op.lang || null, snapshot: op.snapshot || null,
-          overall: op.overall && arr(op.overall.markets).map(function (m) { return { market: str(m.market), risk: str(m.risk), drivers: arr(m.drivers).slice(0, 10).map(line) }; }) || null, notCharted: arr(op.notCharted).length };
+          overall: op.overall && arr(op.overall.markets).map(function (m) { return { market: str(m.market), risk: codeLabel(m.risk), drivers: arr(m.drivers).slice(0, 10).map(line) }; }) || null, notCharted: arr(op.notCharted).length };
         t.pnList = pns.slice(0, 400); t.ctx = per;
         return resolveList(t.pnList).then(function (r) { t.ps = r.ps; if (!t.ps.length) throw err('not_found', 'the opinion names no publication of this build'); return t; });
       });

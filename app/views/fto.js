@@ -340,6 +340,35 @@
       var name = 'fto-' + String((op.profile && op.profile.bezeichnung) || 'pre-screen').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) + '-' + String(op.finished || op.created || '').slice(0, 10) + '.' + fmt;
       U.saveFile(name, text, fmt === 'md' ? 'text/markdown;charset=utf-8' : fmt === 'html' ? 'text/html;charset=utf-8' : 'application/json');
     }
+    /* PDF: the same HTML in a hidden frame, printed through the browser ("Save as PDF"). Where printing is blocked (sandboxed
+       artifact frame) the print-ready HTML is saved instead, with a hint. The file itself contains no script. */
+    function fileBase(op) { return 'fto-' + String((op.profile && op.profile.bezeichnung) || 'pre-screen').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) + '-' + String(op.finished || op.created || '').slice(0, 10); }
+    function printOp(op) {
+      var html; try { html = F.render(op, 'html'); } catch (e) { U.toast('Export failed: ' + U.errText(e), { error: true }); return; }
+      var done = false, frame, oldTitle = document.title;
+      function fallback() {
+        if (done) return; done = true; cleanup();
+        U.saveFile(fileBase(op) + '-print.html', html, 'text/html;charset=utf-8');
+        U.toast('Printing is not available here. Open the saved file in your browser and choose Print, then Save as PDF (A4).', { ms: 15000 });
+      }
+      function cleanup() { try { document.title = oldTitle; } catch (e) { /* ignore */ } if (frame && frame.parentNode) setTimeout(function () { if (frame.parentNode) frame.parentNode.removeChild(frame); }, 1000); }
+      try {
+        frame = document.createElement('iframe'); frame.setAttribute('aria-hidden', 'true'); frame.setAttribute('tabindex', '-1');
+        frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+        frame.onload = function () {
+          if (done) return;
+          try {
+            var w = frame.contentWindow, seen = false;
+            w.addEventListener('beforeprint', function () { seen = true; });
+            document.title = fileBase(op);
+            w.focus(); w.print();
+            if (seen) { done = true; cleanup(); } else fallback();   // print() returned without the print preview: blocked
+          } catch (e) { fallback(); }
+        };
+        frame.srcdoc = html; document.body.appendChild(frame);
+        setTimeout(function () { if (!done && !frame.contentDocument) fallback(); }, 5000);
+      } catch (e) { fallback(); }
+    }
     function prose(text) { return h('div.k-prose', null, String(text || '').split(/\n{2,}/).filter(function (x) { return x.trim(); }).map(function (b) {
       var lines = b.split('\n').filter(function (l) { return l.trim(); });
       if (lines.length && lines.every(function (l) { return /^\s*([-*]|\d+[.)])\s+/.test(l); })) return h('ul', null, lines.map(function (l) { return h('li', { text: l.replace(/^\s*([-*]|\d+[.)])\s+/, '').replace(/\*\*/g, '') }); }));
@@ -354,7 +383,7 @@
       var depthName = (DEPTHS.filter(function (d) { return d[0] === op.depth; })[0] || [0, op.depth])[1];
       var head = h('header.page-head', null, h('p.overline', null, h('a', { href: '#fto', text: 'Freedom to operate' }), ' / Pre-screen'), h('h1.page-title', { text: op.title || 'FTO pre-screen' }),
         h('p.lead', { text: 'Created ' + U.date(String(op.finished || op.created || '').slice(0, 10)) + ' · Depth ' + depthName + ' · Markets ' + (op.markets || []).join(', ') + ' · ' + K.plural((op.patents || []).length, 'publication analysed', 'publications analysed') + (op.run ? ' · ' + op.run.calls + ' Claude calls' : '') + ' · Legal status as of ' + U.date(op.statusSnapshot) }),
-        h('div.k-row', null, [['md', 'Markdown'], ['html', 'HTML'], ['json', 'JSON']].map(function (f) { return h('button.btn.sm', { type: 'button', 'data-fmt': f[0], onclick: function () { exportOp(op, f[0]); } }, U.icon('download'), f[1]); })));
+        h('div.k-row', null, [['md', 'Markdown'], ['html', 'HTML'], ['pdf', 'PDF'], ['json', 'JSON']].map(function (f) { return h('button.btn.sm', { type: 'button', 'data-fmt': f[0], onclick: function () { if (f[0] === 'pdf') printOp(op); else exportOp(op, f[0]); } }, U.icon('download'), f[1]); })));
 
       // overall + matrix
       var over = K.stats(((op.overall && op.overall.markets) || []).map(function (m) { return [m.market === 'EP_UPC' ? 'EP / unitary patent' : m.market === 'DE' ? 'Germany' : m.market === 'US' ? 'United States' : m.market, K.riskPill(m.risk), (m.drivers || []).length ? 'Driven by: ' + m.drivers.map(U.pnPretty).join(', ') : 'no driving patent right']; }));
