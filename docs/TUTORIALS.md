@@ -402,7 +402,7 @@ Try it in the app: `#tools`
 
 ## 15. About the data
 
-What the corpus holds, where it comes from, how it was processed, and what is missing, so that you can judge the results. The numbers are those of the builds of 2026-11-12 (corpus written 08:30 UTC); the System page shows the numbers of the build you are using.
+What the corpus holds, where it comes from, how it was processed, and what is missing, so that you can judge the results. The numbers are those of the builds of 2026-11-13 (corpus written 04:47 UTC); the System page shows the numbers of the build you are using.
 
 Try it in the app: `#system`
 
@@ -414,42 +414,42 @@ Try it in the app: `#system`
 | Discovery searches (EPO, USPTO) | 2026-11-10 |
 | EP Register (legal status) | 2026-08-23 / 08-27 |
 | EP full text | up to 2026-11-11 |
-| US full text (download still running) | up to 2026-11-12 |
+| US full text (download complete) | up to 2026-11-13 |
 
 **Step 2. Sources and access.** All sources are public and need no key. Requests run one at a time per server with a pause of at least 1.1 s; every answer is cached before it is parsed.
 
 - SureChEMBL (EMBL-EBI, CC BY 4.0): publication list, compounds and where in each patent they were found.
 - EPO Linked Open EP Data (SPARQL) and EPO Publication Server: EP applications, kind codes, dates, families, and the full-text XML. 21,401 of 21,401 wanted EP documents downloaded, no failures.
 - EP Register bulk snapshot: procedural status, oppositions, appeals, lapses, renewal fees, unitary effect for 38,578 of 38,614 EP applications.
-- USPTO Patent Public Search: US search hits and full text (claims, abstract, description, related applications, term adjustment). The server often answered HTTP 429 (too many requests), so the download is slow and still running; 19 US documents could not be fetched (not found or empty).
+- USPTO Patent Public Search: US search hits and full text (claims, abstract, description, related applications, term adjustment). The server often answered HTTP 429 (too many requests), so the download was slow; it is complete: 28,646 of 28,674 wanted documents were downloaded, the other 28 are not found at the USPTO (HTTP 404 or an empty document).
 - EP claim formula images (Publication Server ZIP files): the download was stopped by HTTP 429 after 2,008 documents.
 - Not used: EPO OPS, USPTO Open Data Portal, Lens, WIPO full text. Google Patents only to check the 62 key families.
 
-**Step 3. Coverage per office.** Before any size cut. Full text means the document was downloaded and parsed. EP: only the latest granted version of each application is read, or the application itself when there is no grant, it was filed in 2017 or later and has its own text. US: every grant, and a pre-grant publication only from 2018 on when its application has no grant. WO publications are never downloaded (title, dates, family and compounds only); their status (*) is only the note "PCT publication, no rights". US full text: 20,310 of 28,674 wanted (71 %). The download runs by priority: key families, lipid-specific and core classes were nearly complete (16,756 of 16,772), the lowest band (no core class) had 3,554 of 11,902, so older US patents of the outer field are the most likely to lack claims.
+**Step 3. Coverage per office.** Before any size cut. Full text means the document was downloaded and parsed. EP: only the latest granted version of each application is read, or the application itself when there is no grant, it was filed in 2017 or later and has its own text. US: every grant, and a pre-grant publication only from 2018 on when its application has no grant. WO publications are never downloaded (title, dates, family and compounds only); their status (*) is only the note "PCT publication, no rights". US full text: 28,646 of 28,674 wanted (99.9 %); the 28 others are "not found" at the USPTO. US publications without full text are the ones the rules do not ask for, mainly older pre-grant publications.
 
 |  | EP | US | WO | All |
 |---|---|---|---|---|
 | Publications | 62,091 | 49,706 | 13,307 | 125,104 |
 | Families | 35,716 | 22,520 | 11,878 | 52,620 |
 | Full text wanted | 21,401 | 28,674 | 0 | 50,075 |
-| Full text in corpus | 21,401 | 20,310 | 0 | 41,711 |
-| With claims | 21,387 | 20,291 | 0 | 41,678 |
-| Claims (EN and DE) | 613,169 | 505,658 | 0 | 1,118,827 |
-| With definition paragraphs | 19,537 | 19,936 | 0 | 39,473 |
-| With legal status | 62,069 | 20,339 | 13,307 * | 95,715 |
+| Full text in corpus | 21,401 | 28,646 | 0 | 50,047 |
+| With claims | 21,387 | 28,619 | 0 | 50,006 |
+| Claims (EN and DE) | 613,169 | 680,467 | 0 | 1,293,636 |
+| With definition paragraphs | 19,537 | 28,171 | 0 | 47,708 |
+| With legal status | 62,069 | 28,646 | 13,307 * | 104,022 |
 | Linked to compounds | 8,603 | 16,277 | 8,378 | 33,258 |
-| Formula image in an independent claim | 4,024 | 5,046 | - | 9,070 |
+| Formula image in an independent claim | 4,024 | 9,991 | - | 14,015 |
 | Formula images downloaded | 2,007 | 0 | - | 2,007 |
 
-**Step 4. Artifact build versus website build.** The claude.ai Artifact has a size limit (215 MB budget, 240 MB host limit, data stored as text). When the full text does not fit, the builder keeps key families first, then claims by priority (tier, newest first), then definition paragraphs. In current builds about 13,000 to 14,000 publications lose their claims, mostly EP and some US; all of them are tier 5 (found only by the class searches) and the oldest of that tier, published from 1976 to about late 2019. The exact cut shifts by a few hundred publications with every build; the System view shows the exact figures of the build you are using. Such a publication stays in the table and can still be found by title, abstract and assignee; it is marked "text cut". The website build has no cut.
+**Step 4. Artifact build versus website build.** The claude.ai Artifact has a size limit (215 MB budget, 240 MB host limit, data stored as text). When the full text does not fit, the builder keeps key families first, then claims by priority (tier, newest first), then definition paragraphs. In current builds about 22,000 to 23,000 publications lose their claims, EP and US; all of them are tier 5 (found only by the class searches) and the oldest of that tier, published from 1975 to about late 2021. The exact cut shifts by a few hundred publications with every build; the System view shows the exact figures of the build you are using. Such a publication stays in the table and can still be found by title, abstract and assignee; it is marked "text cut". The website build has no cut.
 
 |  | Artifact | Website |
 |---|---|---|
-| Built size | about 213 MB | about 440 MB |
-| Publications with claims | about 28,000 (exact: System view) | 41,678 |
-| ... EP / US | about 10,000 / 18,000 | 21,387 / 20,291 |
-| Claims in the search index | about 720,000 | 1,118,827 |
-| With definition paragraphs | 5,216 | 39,473 |
+| Built size | about 213 MB | about 475 MB |
+| Publications with claims | about 27,000 (exact: System view) | 50,006 |
+| ... EP / US | about 8,000 / 19,000 | 21,387 / 28,619 |
+| Claims in the search index | about 700,000 | 1,293,636 |
+| With definition paragraphs | about 5,000 | 47,708 |
 | Formula images | 4,943 (181 publications) | 42,813 (2,007 publications) |
 | Compounds | 84,691 | 84,691 |
 | Claude features | yes | no |
@@ -462,8 +462,8 @@ Try it in the app: `#system`
 - Search: BM25 ranking over titles, abstracts, assignee names and every claim; words are lower-cased runs of letters a-z and digits, accents removed, no stemming; stop words keep their position so phrases work. Definitions and descriptions are not searched.
 - Legal status: EP from the EP Register snapshot, expiry estimated as filing date + 20 years. US: no status source; expiry calculated from the earliest non-provisional filing date + 20 years + term adjustment, for downloaded documents only.
 - Compounds: taken from SureChEMBL, which found them in the text, in images or in attached MOL files with its own automated methods. Only lipid candidates are kept (molecular weight 350 to 1,500, a long carbon chain); OpenChemLib parsed all 84,913 and merged them into 84,691 unique structures, linked to 33,258 publications. 8,799 were found in claims, 35,730 only in images or MOL files.
-- Numeric ranges: rule-based parser for 14 parameters (mol %, wt %, ratios, N/P, size, PDI, pKa, encapsulation, temperature, pH, chain length, PEG weight, concentration): 334,677 ranges in 99,964 claims of 24,041 publications. Each quote is cut verbatim from the claim text at its stored position.
-- Tags: 33 rule-based tags (payload, route, lipid type, indication, process) from claims, title, abstract, CPC and linked compounds; 87,784 publications tagged. Assignee spellings merged into 16,568 names.
+- Numeric ranges: rule-based parser for 14 parameters (mol %, wt %, ratios, N/P, size, PDI, pKa, encapsulation, temperature, pH, chain length, PEG weight, concentration): 482,414 ranges in 117,514 claims of 27,974 publications. Each quote is cut verbatim from the claim text at its stored position.
+- Tags: 33 rule-based tags (payload, route, lipid type, indication, process) from claims, title, abstract, CPC and linked compounds; 89,625 publications tagged. Assignee spellings merged into 16,562 names.
 - Markush formulae: 5 hand-written records (5 claims of 5 patents) whose quotes are checked against the claim text. Any other generic formula needs a record made on demand.
 
 **Step 6. What is missing and what cannot be indexed.** These gaps are known; a search or check cannot find what is listed here.
@@ -471,7 +471,7 @@ Try it in the app: `#system`
 - Other offices: no CN, JP, KR, DE national or other national patents, no utility models, no WO full text.
 - French claims; characters outside a-z and 0-9 (Greek letters, symbols) are not searchable.
 - Descriptions, examples, tables and figures of the description (only definition paragraphs are kept).
-- US full text still downloading (8,364 wanted documents missing at the snapshot); EP applications without a grant filed before 2017 and Euro-PCT applications without their own text.
+- 28 wanted US documents that the USPTO does not have ("not found"); EP applications without a grant filed before 2017 and Euro-PCT applications without their own text.
 - Structures that exist only as images: no image recognition at build time. Images exist for 2,007 of 4,024 EP publications with formula images in an independent claim, none for US. In the Artifact, Claude can read a formula image on request (marked "machine-extracted").
 - Compounds that SureChEMBL did not extract, compounds outside the lipid-candidate filter, polymers such as full-length PEG chains.
 - Markush scope beyond the 5 curated records; sequence listings; citations; inventors; prosecution files.
@@ -494,7 +494,7 @@ Try it in the app: `#system`
 
 **Limits**
 
-- All numbers describe the builds of 2026-11-12; the US download and the image download continue, so a newer build has more full text. The System page shows the counts of the build you are using.
+- All numbers describe the builds of 2026-11-13; the US full-text download is complete, the EP formula image download stopped early (see above). The System page shows the counts of the build you are using.
 - Coverage means "in this corpus": a patent outside the scope above is not searched, whatever the query.
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.

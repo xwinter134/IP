@@ -4,10 +4,10 @@ What the LNP Patent Desk holds, where it comes from, how it was processed, and w
 below was read from the pipeline code, its summary files or the build manifests of the last complete builds. Where
 something could not be determined it says so. The results of the tool are a pre-screening, not legal advice.
 
-**Snapshot.** Both builds described here were made from the same corpus file, written 2026-11-12 08:30 UTC:
-the claude.ai Artifact build (`dist/`, built 2026-11-12 08:58 UTC) and the website build (`dist-pages/`,
-built 2026-11-12 08:58 UTC). The US full-text download (`pipeline/fetch_us.py`) continues after these builds, so
-the US numbers grow with the next build. All counts are for that snapshot.
+**Snapshot.** Both builds described here were made from the same corpus file, written 2026-11-13 04:47 UTC:
+the claude.ai Artifact build (`dist/`, built 2026-11-13 05:05 UTC) and the website build (`dist-pages/`,
+built 2026-11-13 05:07 UTC). The US full-text download (`pipeline/fetch_us.py`) was complete when the corpus was
+written (see 3.1), so these builds hold every US document the USPTO delivers. All counts are for that snapshot.
 
 | Source snapshot | Date |
 |---|---|
@@ -15,8 +15,8 @@ the US numbers grow with the next build. All counts are for that snapshot.
 | Field discovery (EPO and USPTO searches) | 2026-11-10 |
 | EP Register legal-status snapshot | 2026-08-23 (53,602 records) and 2026-08-27 (8,431 records) |
 | EP full text (EPO Publication Server) | last download 2026-11-11 |
-| US full text (USPTO Patent Public Search) | last download in the build 2026-11-12, still running |
-| Corpus (normalised records) | 2026-11-12 08:30 UTC |
+| US full text (USPTO Patent Public Search) | last download 2026-11-13 (last file written 04:41 UTC), complete: 28,646 of 28,674 wanted documents |
+| Corpus (normalised records) | 2026-11-13 04:47 UTC |
 
 Abbreviations: EP = European patent (EPO), US = United States patent (USPTO), WO = international (PCT) application
 published by WIPO. CPC / IPC = patent classification codes. A1/A2 = published application, B1/B2 = granted patent.
@@ -86,7 +86,7 @@ Result: **125,104 publications** (EP 62,091, US 49,706, WO 13,307) in **52,620 f
 | EPO Linked Open EP Data | SPARQL endpoint `data.epo.org/linked-data` | EP applications by CPC, publications and kind codes, filing and grant dates, DOCDB family, English title, applicants, CPC | all responses cached; 12 EP numbers could not be tied to an application |
 | EPO Publication Server | REST `data.epo.org/publication-server` | search by IPC and number (kind codes, file sizes); full-text `document.xml` of B and A publications; `document.zip` for claim formula images | full text: 21,401 of 21,401 wanted documents downloaded, 0 failures (the server reports a weekly quota; it was never close to its limit). Images: the run stopped on HTTP 429 (throttled) on 2026-11-12 01:11 after 2,008 documents (2,007 OK, 1 failed with 429) |
 | EP Register | public ST.36 snapshot (EPO bulk data product 16, about 14.8 GB ZIP), read chunk by chunk with range requests | procedural status, opposition, appeal, lapses, renewal fees, unitary effect, designated states | 38,578 of 38,614 EP applications found; 36 publications fall back to the Publication Server XML |
-| USPTO Patent Public Search (ppubs) | the JSON API behind ppubs.uspto.gov | search hits (biblio, CPC, family id); full text: claims, abstract, description, assignee, related-application chain, patent term adjustment (PTA) | many HTTP 429 answers (7,376 retry lines in the fetch log, each retried after a pause); of 20,666 documents tried by 2026-11-12 08:46 UTC, 71 lines report HTTP 404 "not found" and 9 an empty document (19 documents never succeeded) |
+| USPTO Patent Public Search (ppubs) | the JSON API behind ppubs.uspto.gov | search hits (biblio, CPC, family id); full text: claims, abstract, description, assignee, related-application chain, patent term adjustment (PTA) | many HTTP 429 answers (7,794 retry lines in the fetch log, each retried after a pause); 28,646 of the 28,674 wanted documents are in the cache. The other 28 are USPTO "not found" documents (HTTP 404, or an empty document): the fetch log (`data/work/fetch_us.jsonl`, which ends 2026-11-12 19:30 UTC) records 19 as HTTP 404 and 2 as empty, and 7 have no line in the retained log |
 | Google Patents | single pages, not bulk | only to check the 62 seed families (status notes dated 2026-11-10) | not used for the corpus |
 
 Not used: EPO OPS (needs a key; no OPS data is in this build), USPTO Open Data Portal, Lens, WIPO PATENTSCOPE full
@@ -102,16 +102,16 @@ text. All requests are sequential with a pause of at least 1.1 s per host and a 
 | Publications | 62,091 | 49,706 | 13,307 | 125,104 |
 | Families (distinct ids, offices overlap) | 35,716 | 22,520 | 11,878 | 52,620 |
 | Full text wanted by the fetch rules | 21,401 | 28,674 | 0 | 50,075 |
-| Full text downloaded and parsed | 21,401 (34.5 %) | 20,310 (40.9 %) | 0 | 41,711 (33.3 %) |
-| ... of what was wanted | 100 % | 70.8 % | - | 83.3 % |
-| With claims | 21,387 (34.4 %) | 20,291 (40.8 %) | 0 | 41,678 (33.3 %) |
-| Claims (EN + DE counted separately) | 613,169 | 505,658 | 0 | 1,118,827 |
-| With English claims / German claims | 21,341 / 18,904 | 20,291 / 0 | 0 | |
-| With definition paragraphs | 19,537 (31.5 %) | 19,936 (40.1 %) | 0 | 39,473 (31.6 %) |
-| With an abstract | 2,542 | 20,310 | 0 | 22,852 |
-| With a legal-status record | 62,069 (99.96 %) | 20,339 (40.9 %) | 13,307 (placeholder only) | 95,715 (76.5 %) |
+| Full text downloaded and parsed | 21,401 (34.5 %) | 28,646 (57.6 %) | 0 | 50,047 (40.0 %) |
+| ... of what was wanted | 100 % | 99.9 % | - | 99.9 % |
+| With claims | 21,387 (34.4 %) | 28,619 (57.6 %) | 0 | 50,006 (40.0 %) |
+| Claims (EN + DE counted separately) | 613,169 | 680,467 | 0 | 1,293,636 |
+| With English claims / German claims | 21,341 / 18,904 | 28,619 / 0 | 0 | |
+| With definition paragraphs | 19,537 (31.5 %) | 28,171 (56.7 %) | 0 | 47,708 (38.1 %) |
+| With an abstract | 2,542 | 28,642 | 0 | 31,184 |
+| With a legal-status record | 62,069 (99.96 %) | 28,646 (57.6 %) | 13,307 (placeholder only) | 104,022 (83.1 %) |
 | Linked to extracted compounds | 8,603 (13.9 %) | 16,277 (32.7 %) | 8,378 (63.0 %) | 33,258 (26.6 %) |
-| Formula image placeholder in an independent claim | 4,024 | 5,046 | - | 9,070 |
+| Formula image placeholder in an independent claim | 4,024 | 9,991 | - | 14,015 |
 | With formula images downloaded | 2,007 | 0 | - | 2,007 |
 
 Percentages are of all publications of that office unless stated. "Full text wanted": EP = the latest B
@@ -125,24 +125,27 @@ kinds of the same application stay biblio-only; in all, 40,690 EP rows have no f
 before 2017; 6,956 applications have only a Euro-PCT A publication without its own text (the text is the WO
 pamphlet); 1 has no A publication.
 
-The US full text is incomplete because the download runs in priority order: seed families first, then lipid-specific
-classes, then other core classes, newest first within each band. At the snapshot the bands with seed, lipid-specific
-or core-class publications were nearly complete (16,756 of 16,772); the lowest band (publications without a core CPC code)
-had 3,554 of 11,902. By year of publication, US full text covers 13,419 of 18,412 publications of 2020-2026 but only
-4,299 of 19,729 of 2010-2019. The download continues: at 2026-11-12 08:46 UTC the cache held 20,647 US documents;
-the next build picks up the new ones.
+The US full-text download is complete. It ran in priority order: seed families first, then lipid-specific classes,
+then other core classes, newest first within each band. 28,646 of the 28,674 wanted documents are in the cache
+(99.9 %); the 28 others are documents the USPTO reports as "not found" (HTTP 404 or an empty document; source:
+`data/work/fetch_us.jsonl` and the cache compared with the 28,674 targets in `data/work/targets.parquet`). Of the 28,
+16 are in the bands with seed, lipid-specific or core-class publications (16,756 of 16,772 there) and 12 in the
+lowest band (publications without a core CPC code: 11,890 of 11,902). The remaining US rows have no full text because
+the fetch rules do not ask for them, not because of gaps in the download. By year of publication, US full text covers
+14,854 of 18,412 publications of 2020-2026 but only 8,621 of 19,729 of 2010-2019 (pre-grant publications before 2018,
+and pre-grant publications whose application has a grant in the corpus, are not fetched).
 
 ### 3.2 Artifact build versus website build
 
 | | Artifact build (`dist/`) | Website build (`dist-pages/`) |
 |---|---|---|
 | Size budget | 215 MB (host limit 240 MB, 500 files, 15 MB per file); data as base64 text, which is about a third larger | 900 MB budget; raw binary files |
-| Built size / files | 214.67 MB / 460 files | 438.63 MB / 623 files |
+| Built size / files | 212.52 MB / 459 files | 475.29 MB / 635 files |
 | Publications in the table and searchable by title, abstract, assignee | 125,104 | 125,104 |
-| Publications with claims in the build | 28,523 of 41,678 (68.4 %): EP 10,311 (48.2 %), US 18,212 (89.8 %) | 41,678 (100 %) |
-| Claims in the search index | 730,863 | 1,118,827 |
-| Publications with definition paragraphs | 5,218 of 39,473 (13.2 %): EP 971, US 4,247 | 39,473 (100 %) |
-| Search index | 1,025,300 searchable units, 313,840 terms | 1,413,264 units, 426,591 terms |
+| Publications with claims in the build | 27,457 of 50,006 (54.9 %): EP 8,395 (39.3 %), US 19,062 (66.6 %) | 50,006 (100 %) |
+| Claims in the search index | 707,203 | 1,293,636 |
+| Publications with definition paragraphs | 5,122 of 47,708 (10.7 %): EP 952, US 4,170 | 47,708 (100 %) |
+| Search index | 1,009,972 searchable units, 302,839 terms | 1,596,405 units, 455,731 terms |
 | Formula images | 4,943 images of 181 publications (25 MB image budget; 37,870 images left out) | 42,813 images of 2,007 publications |
 | Compounds | 84,691 | 84,691 |
 | Range quotes | not shipped as a file; cut from the claim text when it is in the build | separate quote file (`ranges-q.gz.bin`) |
@@ -150,10 +153,10 @@ the next build picks up the new ones.
 
 The text cut of the Artifact build (`pipeline/build_dist.py`): seed-family publications always keep claims and
 definitions; then claims are kept by priority (seed tier, then tier 0 to 5, newest first); then definition
-paragraphs in the same order, with 10 MB reserved for them. In this build all 13,155 publications that lost their
-claims (EP 11,076, US 2,079; 387,964 claims, 117.0 million characters) were tier 5, the oldest of that tier:
-published from 1976-01-13 to 2019-10-16 (first cut: EP2948477B1, last kept: EP2921171B1, both of 2019-10-16). 34,255
-publications lost their definition paragraphs (22,551 of them kept their claims). The cut shifts by a few hundred publications
+paragraphs in the same order, with 10 MB reserved for them. In this build all 22,549 publications that lost their
+claims (EP 12,992, US 9,557; 586,433 claims, 200.4 million characters) were tier 5, the oldest of that tier:
+published from 1975-05-20 to 2021-11-16 (first cut: US11174250B2, last kept: US11174235B2, both of 2021-11-16). 42,586
+publications lost their definition paragraphs (21,689 of them kept their claims). The cut shifts by a few hundred publications
 between builds; the System view shows the exact figures of the build in use. A
 publication that lost its claims stays in the table with its biblio data, status and compounds, can be found by
 title, abstract or assignee, and is flagged "text cut" in the app. The full list is written to
@@ -187,9 +190,9 @@ not checked)" unless the same application's grant is in the corpus. WO: "PCT pub
 
 | Status code | EP | US |
 |---|---|---|
-| granted | 21,002 | 8,402 |
-| pending | 8,356 | 10,073 |
-| expired | 17,837 | 1,861 |
+| granted | 21,002 | 12,621 |
+| pending | 8,356 | 11,612 |
+| expired | 17,837 | 4,410 |
 | withdrawn | 12,572 | 1 |
 | revoked | 1,074 | 0 |
 | refused | 906 | 0 |
@@ -224,18 +227,18 @@ re-checked against a registry).
 `data/seed/range_params.json`). Rule-based, no model: numbers, units, "about", comparators and "between ... and"
 are read from English claims (German claims only for a publication without English claims). 14
 parameters: mol %, wt %, molar ratio, weight ratio, N/P ratio, particle size (nm), PDI, pKa, encapsulation %,
-temperature, pH, carbon chain length, PEG molecular weight, concentration. 830,138 claims read, 334,677 range rows
-in 99,964 claims of 24,041 publications; 5,157 repeated claim numbers were skipped. Each row keeps the offset of the
+temperature, pH, carbon chain length, PEG molecular weight, concentration. 1,004,947 claims read, 482,414 range rows
+in 117,514 claims of 27,974 publications; 5,157 repeated claim numbers were skipped. Each row keeps the offset of the
 match in the claim, so the quote shown is cut verbatim from the claim text; a quote stored in the file is checked
 against the claim text when the claim is in the build.
 
 **Tags** (`pipeline/tags_build.py`, rules `data/seed/tag_rules.json`). 33 rule-based tags (payload such as mRNA,
 siRNA, CRISPR; route such as IV, IM, inhalation; lipid type; indication; process) from regexes on English/German
-claims, title and abstract, CPC prefixes and the descriptors of linked compounds; 87,784 publications have at least
+claims, title and abstract, CPC prefixes and the descriptors of linked compounds; 89,625 publications have at least
 one tag. Legal bits (opposition, revoked, maintained, appeal, unitary, lapsed) come from the status records.
 
 **Assignee normalisation** (`pipeline/lib/asg_norm.py`, aliases `data/seed/assignee_aliases.json`): spelling variants
-are reduced to one canonical name (16,568 canonical names; 122,421 publications have an assignee).
+are reduced to one canonical name (16,562 canonical names; 122,421 publications have an assignee).
 
 **Markush records** (`pipeline/markush_seed.py`): 5 hand-written ("curated") records for 5 claims of 5 publications
 (EP2350043B9, EP3221293B1, EP3350157B1, EP3368507B1, EP3766916B1), 39 variables. The script checks every
@@ -250,9 +253,9 @@ the Artifact, Claude) translates it into a record first.
   (Greek letters, ≤, °, superscripts) are not searchable as such.
 - **Descriptions**: the description is not searchable; only selected definition paragraphs (at most 8,000
   characters) are kept. Examples, tables and figures of the description are not in the corpus.
-- **Full text not (yet) downloaded**: US 8,364 wanted documents were missing at the snapshot (the download continues);
-  19 US documents could not be fetched (404 or empty); EP applications without a B filed before 2017 and Euro-PCT
-  stubs have no text (see 3.1).
+- **Full text not downloaded**: 28 wanted US documents are not available from the USPTO ("not found": HTTP 404 or
+  an empty document; see 3.1); all other wanted US and EP documents were downloaded. EP applications without a B
+  filed before 2017 and Euro-PCT stubs have no text (see 3.1).
 - **Structures in images**: claim formula images are not read at build time (no OCR / structure recognition). Images
   were downloaded for 2,007 of 4,024 EP publications with formula images in an independent claim (stopped by
   HTTP 429); US formula images are not downloaded. In the Artifact, Claude can read a formula image on request
@@ -266,7 +269,7 @@ the Artifact, Claude) translates it into a record first.
 - **Legal status**: EP Register as of 2026-08-23 / 2026-08-27 only; national lapses reach the register only when
   notified; no SPC (supplementary protection certificates) or PTE (US term extension); no US maintenance fees,
   terminal disclaimers, assignments, re-examination, IPR/PTAB or litigation; US status only for downloaded
-  documents (20,339 of 49,706); UPC opt-outs are not recorded.
+  documents (28,646 of 49,706); UPC opt-outs are not recorded.
 - **Ownership**: assignees are as published (EP proprietor at grant, US assignee at issue); later transfers are not
   tracked.
 - **Citations, inventors, prosecution files**: not in the corpus.
@@ -285,7 +288,7 @@ the Artifact, Claude) translates it into a record first.
 | Tags | regex rules can over- or under-tag | rule tests on synthetic records (`tests/tags_test.py`); random spot-check sample printed by `tags_build.py` |
 | Families | simple families only; synthetic families for 6,355 records | - |
 | Status age | EP Register snapshot about 2.5 months older than the build; US status is a calculation | status date shown with every status |
-| Artifact text cut | 13,155 publications without claims in the Artifact | "text cut" flag; website build has them |
+| Artifact text cut | 22,549 publications without claims in the Artifact | "text cut" flag; website build has them |
 
 What code decides and what Claude does: quotes in an FTO analysis must be substrings of the claim text (checked in
 `web/engine/fto.js`); numeric ranges are extracted and compared in code; structure and Markush matches are computed
