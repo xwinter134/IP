@@ -211,57 +211,57 @@
       il.pka_apparent = num(ion.src.pka); il.pka_methode = ion.src.pkaMethod || null; il.quelle = c.ok && c.source === 'reference lipid name' ? 'berechnet' : 'nutzer';
       if (c.ok && d) {
         il.descriptors = schemaDescriptors(c);
-        var tails = arr(d.tails).map(function (t) { return (t.acyl ? 'Acyl ' : '') + 'C' + t.nC + (t.branched ? (de ? ' verzweigt an Position ' : ' branched at position ') + t.branchPosition + (arr(t.arms).length ? ' (' + t.arms.join('+') + ')' : '') : ' linear') + (t.nDoubleBonds ? ', ' + t.nDoubleBonds + ' C=C' : ''); });
+        var tails = arr(d.tails).map(function (t) { return (t.acyl ? 'Acyl ' : '') + 'C' + t.nC + (t.branched ? (' branched at position ') + t.branchPosition + (arr(t.arms).length ? ' (' + t.arms.join('+') + ')' : '') : ' linear') + (t.nDoubleBonds ? ', ' + t.nDoubleBonds + ' C=C' : ''); });
         var lk = arr(d.linkers).map(function (l) { return l.count + ' x ' + l.type; });
-        il.strukturbeschreibung = (de ? 'Von der App berechnet: Kopfgruppe ' : 'Computed by the app: head group ') + str(d.head) + (d.headgroup && d.headgroup.smiles ? ' (' + d.headgroup.smiles + ')' : '') +
-          (de ? '; Amin: ' : '; amine: ') + str(d.amine && d.amine.class) + (de ? '; Linker: ' : '; linkers: ') + (lk.join(', ') || '-') + (de ? '; Ketten: ' : '; chains: ') + (tails.join(' | ') || '-') + '.';
-        feat('lipid_struktur', (de ? 'Ionisierbares Lipid: ' : 'Ionizable lipid: ') + str(c.name || c.ref_name || '') + ' SMILES ' + il.smiles, il.smiles, null, il.quelle);
-        feat('lipid_struktur', (de ? 'Summenformel / Molmasse' : 'Formula / molecular weight') + ': ' + str(il.descriptors.formula) + ' / ' + str(il.descriptors.mw), il.descriptors.formula, null, 'berechnet');
-        feat('lipid_struktur', (de ? 'Kopfgruppe und Amin' : 'Head group and amine') + ': ' + str(d.head) + ', ' + str(d.amine && d.amine.class) + ' (' + str(d.amine && d.amine.count) + ')', str(d.head), null, 'berechnet');
-        feat('lipid_struktur', (de ? 'Linker' : 'Linkers') + ': ' + (lk.join(', ') || '-'), lk.join(', ') || null, null, 'berechnet');
-        tails.forEach(function (t, k) { feat('lipid_struktur', (de ? 'Kette ' : 'Chain ') + (k + 1) + ': ' + t + (de ? ' (Acyl: Carbonyl-C mitgez\u00e4hlt)' : ' (acyl: carbonyl carbon counted)'), arr(d.tails)[k].nC, 'C', 'berechnet'); });
-        feat('lipid_struktur', (de ? 'C-Atome gesamt' : 'Total carbon atoms') + ': ' + str(il.descriptors.c_atoms_total), il.descriptors.c_atoms_total, 'C', 'berechnet');
+        il.strukturbeschreibung = ('Computed by the app: head group ') + str(d.head) + (d.headgroup && d.headgroup.smiles ? ' (' + d.headgroup.smiles + ')' : '') +
+          ('; amine: ') + str(d.amine && d.amine.class) + ('; linkers: ') + (lk.join(', ') || '-') + ('; chains: ') + (tails.join(' | ') || '-') + '.';
+        feat('lipid_struktur', ('Ionizable lipid: ') + str(c.name || c.ref_name || '') + ' SMILES ' + il.smiles, il.smiles, null, il.quelle);
+        feat('lipid_struktur', ('Formula / molecular weight') + ': ' + str(il.descriptors.formula) + ' / ' + str(il.descriptors.mw), il.descriptors.formula, null, 'berechnet');
+        feat('lipid_struktur', ('Head group and amine') + ': ' + str(d.head) + ', ' + str(d.amine && d.amine.class) + ' (' + str(d.amine && d.amine.count) + ')', str(d.head), null, 'berechnet');
+        feat('lipid_struktur', ('Linkers') + ': ' + (lk.join(', ') || '-'), lk.join(', ') || null, null, 'berechnet');
+        tails.forEach(function (t, k) { feat('lipid_struktur', ('Chain ') + (k + 1) + ': ' + t + (' (acyl: carbonyl carbon counted)'), arr(d.tails)[k].nC, 'C', 'berechnet'); });
+        feat('lipid_struktur', ('Total carbon atoms') + ': ' + str(il.descriptors.c_atoms_total), il.descriptors.c_atoms_total, 'C', 'berechnet');
       } else {
-        il.strukturbeschreibung = de ? 'Struktur konnte von der App nicht gelesen werden; Deskriptoren fehlen.' : 'The app could not read the structure; descriptors are missing.';
-        if (c.name || c.smiles_input) feat('lipid_struktur', (de ? 'Ionisierbares Lipid: ' : 'Ionizable lipid: ') + str(c.name || c.smiles_input), c.name || c.smiles_input, null, 'nutzer', 'mittel');
+        il.strukturbeschreibung = 'The app could not read the structure; descriptors are missing.';
+        if (c.name || c.smiles_input) feat('lipid_struktur', ('Ionizable lipid: ') + str(c.name || c.smiles_input), c.name || c.smiles_input, null, 'nutzer', 'mittel');
       }
       if (il.pka_apparent !== null) feat('lipid_struktur', 'pKa (apparent)' + (il.pka_methode ? ', ' + il.pka_methode : ''), il.pka_apparent, null, 'nutzer');
     }
     var wl = others.map(function (o) {
       var c = o.c, role = c.role === 'ionizable' ? 'permanent_kationisch' : ROLE_SCHEMA[c.role];
-      feat('komponente', (de ? role : (ROLE_TXT[role] || role)) + ': ' + str(c.name || c.ref_name || c.smiles_input || ''), c.name || c.ref_name || null, null, 'nutzer');
+      feat('komponente', ((ROLE_TXT[role] || role)) + ': ' + str(c.name || c.ref_name || c.smiles_input || ''), c.name || c.ref_name || null, null, 'nutzer');
       return { rolle: role, name_user: c.name || null, name_normalised: (c.ref && c.ref.name) || null, smiles: c.ok ? c.smiles : (c.smiles_input || null), peg_mw: num(o.src.pegMw), anker_kettenlaenge_c: null, anker_typ: null, quelle: 'nutzer' };
     });
-    for (i in mol) if (mol[i] !== null) feat('verhaeltnis', 'mol-% ' + (de ? i : ({ ionizable_lipid: 'ionizable lipid', peg_lipid: 'PEG-lipid', sonstige: 'other' }[i] || i)), mol[i], 'mol-%', 'nutzer');
+    for (i in mol) if (mol[i] !== null) feat('verhaeltnis', 'mol-% ' + (({ ionizable_lipid: 'ionizable lipid', peg_lipid: 'PEG-lipid', sonstige: 'other' }[i] || i)), mol[i], 'mol-%', 'nutzer');
     var np = num(input.np != null ? input.np : input.npRatio);
     if (np !== null) feat('verhaeltnis', 'N/P', np, null, 'nutzer');
     var pay = input.payload || {}, part = input.particle || {}, proc = input.process || {}, form = input.formulation || {}, use = input.use || {};
     if (typeof pay === 'string') pay = { type: pay };
     var payTyp = mapFirst(PAYLOAD_MAP, pay.type, ['mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR_mRNA_gRNA', 'leer', 'sonstiges']);
     if (payTyp) feat('payload', 'Payload: ' + str(pay.type) + (pay.modification ? ', ' + pay.modification : ''), payTyp, null, 'nutzer');
-    [['sizeNm', de ? 'Partikelgr\u00f6\u00dfe' : 'Particle size', 'nm'], ['pdi', 'PDI', null], ['encapsulationPct', de ? 'Verkapselung' : 'Encapsulation', '%'], ['zetaMv', 'Zeta', 'mV']].forEach(function (x) {
+    [['sizeNm', 'Particle size', 'nm'], ['pdi', 'PDI', null], ['encapsulationPct', 'Encapsulation', '%'], ['zetaMv', 'Zeta', 'mV']].forEach(function (x) {
       var v = num(part[x[0]]); if (v !== null) feat('partikel', x[1] + (x[0] === 'sizeNm' && part.sizeMethod ? ' (' + part.sizeMethod + ')' : ''), v, x[2], 'nutzer');
     });
     var mix = mapFirst(MIX_MAP, proc.mixing, ['t_stueck', 'impinging_jet', 'mikrofluidik_herringbone', 'mikrofluidik_bifurkierend_toroidal', 'ethanol_injektion', 'extrusion', 'sonstiges']);
-    if (mix) feat('verfahren', (de ? 'Mischprinzip: ' : 'Mixing principle: ') + str(proc.mixing), mix, null, 'nutzer');
-    [['frr', de ? 'Flussratenverh\u00e4ltnis w\u00e4ssrig:organisch' : 'Flow rate ratio aqueous:organic', null], ['tfr', de ? 'Gesamtflussrate' : 'Total flow rate', 'mL/min'], ['ethanolPct', de ? 'Ethanol bei Mischung' : 'Ethanol at mixing', '%'], ['ph', de ? 'pH bei Mischung' : 'pH at mixing', null], ['tempC', de ? 'Temperatur' : 'Temperature', '\u00b0C']].forEach(function (x) {
+    if (mix) feat('verfahren', ('Mixing principle: ') + str(proc.mixing), mix, null, 'nutzer');
+    [['frr', 'Flow rate ratio aqueous:organic', null], ['tfr', 'Total flow rate', 'mL/min'], ['ethanolPct', 'Ethanol at mixing', '%'], ['ph', 'pH at mixing', null], ['tempC', 'Temperature', '\u00b0C']].forEach(function (x) {
       var v = num(proc[x[0]]); if (v !== null) feat('verfahren', x[1], v, x[2], 'nutzer');
     });
-    if (proc.buffer) feat('verfahren', (de ? 'W\u00e4ssriger Puffer: ' : 'Aqueous buffer: ') + proc.buffer, proc.buffer, null, 'nutzer');
-    if (proc.site) feat('verfahren', (de ? 'Ort der Herstellung: ' : 'Manufacturing site: ') + proc.site, proc.site, null, 'nutzer');
-    if (form.buffer || form.cryo || form.lyo != null || form.storage) feat('formulierung', (de ? 'Formulierung/Lagerung: ' : 'Formulation/storage: ') + [form.buffer, form.cryo, form.lyo ? (de ? 'lyophilisiert' : 'lyophilised') : null, form.storage].filter(Boolean).join('; '), null, null, 'nutzer');
-    if (use.route) feat('anwendung', (de ? 'Applikationsweg: ' : 'Route: ') + use.route, use.route, null, 'nutzer');
-    if (use.indication) feat('anwendung', (de ? 'Indikationsklasse: ' : 'Indication class: ') + use.indication, use.indication, null, 'nutzer');
+    if (proc.buffer) feat('verfahren', ('Aqueous buffer: ') + proc.buffer, proc.buffer, null, 'nutzer');
+    if (proc.site) feat('verfahren', ('Manufacturing site: ') + proc.site, proc.site, null, 'nutzer');
+    if (form.buffer || form.cryo || form.lyo != null || form.storage) feat('formulierung', ('Formulation/storage: ') + [form.buffer, form.cryo, form.lyo ? ('lyophilised') : null, form.storage].filter(Boolean).join('; '), null, null, 'nutzer');
+    if (use.route) feat('anwendung', ('Route: ') + use.route, use.route, null, 'nutzer');
+    if (use.indication) feat('anwendung', ('Indication class: ') + use.indication, use.indication, null, 'nutzer');
     var markets = marketsOf(input.markets || input.countries), launch = input.launchDate || input.launch || null;
     if (!markets.length) markets = ['DE', 'EP', 'US'];
     var akte = arr(input.acts).filter(function (a) { return a && a.akt; }).map(function (a) { return { land: str(a.land || ''), akt: a.akt, zeitpunkt: a.zeitpunkt === 'derzeit' ? 'derzeit' : 'geplant', geplant_ab: a.geplant_ab || null, zweck: a.zweck || null }; });
     if (!akte.length && launch) markets.forEach(function (m) { if (m !== 'UPC') akte.push({ land: m, akt: 'inverkehrbringen', zeitpunkt: 'geplant', geplant_ab: str(launch), zweck: null }); });
-    if (launch) feat('handlung', (de ? 'Geplanter Markteintritt: ' : 'Planned launch: ') + launch + ' (' + markets.join(', ') + ')', str(launch), null, 'nutzer');
+    if (launch) feat('handlung', ('Planned launch: ') + launch + ' (' + markets.join(', ') + ')', str(launch), null, 'nutzer');
     var names = [];
     lipids.forEach(function (c) { [c.name, c.ref_name, c.ref && c.ref.name].forEach(function (n) { if (n && names.indexOf(n) < 0) names.push(n); }); });
     arr(input.lipids).forEach(function (l) { if (l && l.cas && names.indexOf(l.cas) < 0) names.push(l.cas); });
     return {
-      schema_version: 'pf-1', output_language: de ? 'de' : 'en', bezeichnung: str(input.name || input.bezeichnung || (de ? 'LNP-Produkt' : 'LNP product')),
+      schema_version: 'pf-1', output_language: 'en', bezeichnung: str(input.name || input.bezeichnung || ('LNP product')),
       ionizable_lipid: il, weitere_lipide: wl,
       zusammensetzung: { molprozent: mol, basis: /gemessen|measured/i.test(str(input.ratioBasis)) ? 'gesamtlipid_gemessen_partikel' : (/nominal|einsatz|input/i.test(str(input.ratioBasis)) ? 'gesamtlipid_nominal_einsatz' : 'unbekannt'), np_verhaeltnis: np,
         lipid_zu_nukleinsaeure_gewicht: num(input.lipidToNaWeight), chargenvariabilitaet: input.batchVariability || null },
@@ -290,7 +290,7 @@
     o = o || {}; input = input || {};
     var lang = (o.lang || input.lang) === 'de' ? 'de' : 'en', ai = eng('ai'), P = eng('prompts'), warnings = [];
     return Promise.all(arr(input.lipids).map(function (l) { return computeLipid(l || {}); })).then(function (lipids) {
-      lipids.forEach(function (c) { if (!c.ok) warnings.push((lang === 'de' ? 'Struktur nicht gelesen: ' : 'Structure not read: ') + str(c.name || c.smiles_input) + ' (' + str(c.error) + ')'); });
+      lipids.forEach(function (c) { if (!c.ok) warnings.push('Structure not read: ') + str(c.name || c.smiles_input) + ' (' + str(c.error) + ')'); });
       var base = baseProfile(input, lipids, lang);
       function finish(p, model, note) {
         if (note) warnings.push(note);
@@ -298,14 +298,14 @@
         return p;
       }
       return Promise.resolve(ai ? ai.init() : false).then(function (ok) {
-        if (!ok || !P) return finish(base, false, lang === 'de' ? 'Ohne Claude erstellt: Profil nur aus den Formularfeldern, Freitext nicht ausgewertet.' : 'Built without Claude: profile from the form fields only, free text not evaluated.');
+        if (!ok || !P) return finish(base, false, 'Built without Claude: profile from the form fields only, free text not evaluated.');
         var computed = lipids.map(function (c) { return { rolle: c.role, name: c.name, ok: c.ok, smiles: c.ok ? c.smiles : null, referenzname: (c.ref && c.ref.name) || null, inchikey: (c.ref && c.ref.inchikey) || null, descriptors: c.ok && c.desc ? schemaDescriptors(c) : null, fehler: c.error || null }; });
         var req = P.buildA({ lang: lang, input: input, computed: computed });
         return ai.json(req.parts, { schema: req.schema, tier: 'A', signal: o.signal, label: 'A', onText: o.onEvent ? function (u) { o.onEvent({ type: 'text', section: 'A', text: u.text }); } : undefined }).then(function (m) {
           return finish(mergeProfile(base, m, lang, warnings), true);
         }, function (e) {
           if (e && e.code === 'cancelled') throw e;
-          return finish(base, false, (lang === 'de' ? 'Schritt A (Claude) fehlgeschlagen, Profil nur aus den Formularfeldern: ' : 'Step A (Claude) failed, profile from the form fields only: ') + (ai.message ? ai.message(e, lang) : str(e && e.code)));
+          return finish(base, false, 'Step A (Claude) failed, profile from the form fields only: ') + (ai.message ? ai.message(e, lang) : str(e && e.code)));
         });
       });
     });
@@ -315,7 +315,7 @@
     var out = clone(m), de = lang === 'de', k;
     out.schema_version = 'pf-1'; out.output_language = base.output_language;
     var bi = base.ionizable_lipid, mi = out.ionizable_lipid || {};
-    if (str(mi.smiles) !== str(bi.smiles) && mi.smiles) warnings.push(de ? 'SMILES aus der Modellantwort verworfen (weicht von der Eingabe ab).' : 'SMILES from the model reply discarded (differs from the input).');
+    if (str(mi.smiles) !== str(bi.smiles) && mi.smiles) warnings.push('SMILES from the model reply discarded (differs from the input).');
     mi.smiles = bi.smiles; mi.inchikey = bi.inchikey; mi.descriptors = bi.descriptors; mi.name_user = bi.name_user; mi.cas = bi.cas;
     mi.pka_apparent = bi.pka_apparent; mi.pka_methode = bi.pka_methode || mi.pka_methode || null;
     if (!mi.strukturbeschreibung) mi.strukturbeschreibung = bi.strukturbeschreibung; else if (bi.strukturbeschreibung) mi.strukturbeschreibung = mi.strukturbeschreibung + ' [' + bi.strukturbeschreibung + ']';
@@ -617,14 +617,14 @@
     en: { granted: 'granted', pending: 'pending', lapsed: 'lapsed', revoked: 'revoked', withdrawn: 'withdrawn', refused: 'refused', expired: 'expired', unknown: 'unknown', lapsed_de: 'lapsed in DE' }
   };
   function statusLabel(r, lang) {
-    var L = STATUS_LABEL[lang === 'de' ? 'de' : 'en'], de = lang === 'de', s = L[r.dead ? r.deadReason : r.code] || str(r.code);
-    if (r.appealOpen) s = de ? 'Widerruf nicht rechtskr\u00e4ftig (Beschwerde verzeichnet)' : 'revocation not final (appeal on record)';
-    if (!r.granted && !r.dead && r.code !== 'pending') s = (de ? 'Anmeldung, ' : 'application, ') + s;
-    if (r.src === 'us-calc' && r.granted && !r.dead) s += de ? ', Aufrechterhaltungsgeb\u00fchren nicht gepr\u00fcft' : ', maintenance fees not checked';
-    if (r.jurisdiction === 'EP' && r.granted && !r.dead) s += r.inForceDe === true ? (de ? ', in DE in Kraft' : ', in force in DE') : r.inForceDe === false ? (de ? ', in DE nicht in Kraft' : ', not in force in DE') : (de ? ', DE-Teil unbekannt' : ', DE part unknown');
-    if (r.modifiers.indexOf('einspruch_ipr_anhaengig') >= 0 && !r.appealOpen) s += de ? ', Einspruch/Beschwerde anh\u00e4ngig' : ', opposition/appeal pending';
-    if (!r.dead && r.unverified) s += de ? ' (ungepr\u00fcft' + (r.asof ? ', Datenstand ' + r.asof : ', kein Datensatz') + '; wird als in Kraft behandelt)' : ' (unverified' + (r.asof ? ', snapshot ' + r.asof : ', no record') + '; treated as in force)';
-    else if (r.asof) s += de ? ' (Datenstand ' + r.asof + ')' : ' (snapshot ' + r.asof + ')';
+    var L = STATUS_LABEL['en'], de = lang === 'de', s = L[r.dead ? r.deadReason : r.code] || str(r.code);
+    if (r.appealOpen) s = 'revocation not final (appeal on record)';
+    if (!r.granted && !r.dead && r.code !== 'pending') s = ('application, ') + s;
+    if (r.src === 'us-calc' && r.granted && !r.dead) s += ', maintenance fees not checked';
+    if (r.jurisdiction === 'EP' && r.granted && !r.dead) s += r.inForceDe === true ? (', in force in DE') : r.inForceDe === false ? (', not in force in DE') : (', DE part unknown');
+    if (r.modifiers.indexOf('einspruch_ipr_anhaengig') >= 0 && !r.appealOpen) s += ', opposition/appeal pending';
+    if (!r.dead && r.unverified) s += ' (unverified' + (r.asof ? ', snapshot ' + r.asof : ', no record') + '; treated as in force)';
+    else if (r.asof) s += ' (snapshot ' + r.asof + ')';
     return s;
   }
 
@@ -1092,7 +1092,7 @@
     e.flags = e.flags || [];
     return Promise.all([claimSet(e.p, e), Promise.resolve(eng('search').defs ? eng('search').defs(e.p) : []).then(null, function () { return []; }), ai.limits(), e.app && e.app.evidence ? e.app.evidence : evidenceFor(ctx, e)]).then(function (r) {
       var cs = r[0], defs = arr(r[1]), lim = r[2];
-      if (!cs || !cs.indep.length) { e.failed = { step: 'B', code: 'no_claims', message: ctx.lang === 'de' ? 'kein Text eines unabh\u00e4ngigen Anspruchs im Korpus' : 'no independent claim text in the corpus' }; return failFloor(e, cs); }
+      if (!cs || !cs.indep.length) { e.failed = { step: 'B', code: 'no_claims', message: 'no independent claim text in the corpus' }; return failFloor(e, cs); }
       e.claimsLang = cs.lang;
       return imagesFor(e.p, e, cs).then(function (imgs) {
         // B: one call, or several when the independent claims are very long
@@ -1267,7 +1267,7 @@
     var entries = [], notCharted = [], triageCounts = { A: 0, B: 0, C: 0 }, aiOk = false, snap = (data.manifest && data.manifest.snapshots) || {};
     function skip(e, reason, text) {
       var mc = mkCovOf(e), n = { p: e.p, pn: e.pn, auth: e.auth, kind: e.kind, title: e.title, assignee: e.assignee, reason: reason, text: text, rel: e.rel, relWhy: e.relWhy, status: e.statusText, expiry: e.right.expiry.date, expiryBasis: e.right.expiry.basis, score: e.score, routes: e.routes };
-      if (mc.length) { n.text = str(text) + (de ? ' | Code-Ergebnis (Markush): ' : ' | Code result (Markush): ') + mkCovText(mc); n.markushCovered = mc.map(function (r) { return { claim: r.claim, lipid: r.lipid, reviewed: r.reviewed }; }); }
+      if (mc.length) { n.text = str(text) + (' | Code result (Markush): ') + mkCovText(mc); n.markushCovered = mc.map(function (r) { return { claim: r.claim, lipid: r.lipid, reviewed: r.reviewed }; }); }
       if (e.app && e.app.evidence) n.evidence = e.app.evidence;
       notCharted.push(n);
     }
@@ -1302,14 +1302,14 @@
       // jurisdiction and status gate
       var live = [];
       entries.forEach(function (e) {
-        if (e.auth === 'WO') return skip(e, 'wo', de ? 'WO-Ver\u00f6ffentlichung: nicht durchsetzbar; ma\u00dfgeblich sind die EP-/US-Familienmitglieder' : 'WO publication: not enforceable; the EP/US family members count');
-        if (!e.right.markets.length) return skip(e, 'market', de ? 'kein Zielmarkt f\u00fcr dieses Schutzrecht gew\u00e4hlt' : 'no target market selected for this right');
-        if (e.right.dead && !ctx.depthCfg.dead) return skip(e, 'dead', (de ? 'Rechtsstand: ' : 'Legal status: ') + e.statusText + (e.right.expiry.date ? (de ? '; Ablauf (Sch\u00e4tzung) ' : '; expiry (estimate) ') + e.right.expiry.date : '') + (de ? '; ohne Merkmalsanalyse (nur in der Tiefe \u201edeep\u201c)' : '; no claim chart (only at depth "deep")'));
-        if (!e.hasText && !mkc(e)) return skip(e, e.textCut ? 'text_cut' : 'no_text', e.textCut ? (de ? 'Anspruchstext wegen des Gr\u00f6\u00dfenbudgets nicht im Datenpaket' : 'claim text not in the data package (size budget)') : (de ? 'kein Anspruchstext im Korpus (nur Bibliografie); ggf. Familienmitglied pr\u00fcfen' : 'no claim text in the corpus (biblio only); check a family member'));
+        if (e.auth === 'WO') return skip(e, 'wo', 'WO publication: not enforceable; the EP/US family members count');
+        if (!e.right.markets.length) return skip(e, 'market', 'no target market selected for this right');
+        if (e.right.dead && !ctx.depthCfg.dead) return skip(e, 'dead', ('Legal status: ') + e.statusText + (e.right.expiry.date ? ('; expiry (estimate) ') + e.right.expiry.date : '') + ('; no claim chart (only at depth "deep")'));
+        if (!e.hasText && !mkc(e)) return skip(e, e.textCut ? 'text_cut' : 'no_text', e.textCut ? ('claim text not in the data package (size budget)') : ('no claim text in the corpus (biblio only); check a family member'));
         live.push(e);
       });
       if (!aiOk) {
-        live.forEach(function (e) { skip(e, 'no_ai', de ? 'KI-Funktion nicht verf\u00fcgbar: keine Triage, keine Merkmalsanalyse' : 'AI not available: no triage, no claim chart'); });
+        live.forEach(function (e) { skip(e, 'no_ai', 'AI not available: no triage, no claim chart'); });
         ctx.warn(userMsg({ code: (ai && ai.state && ai.state().off) || 'unavailable' }, lang));
         return [];
       }
@@ -1330,7 +1330,7 @@
             b.forEach(function (e) {
               var r = by[e.pn];
               if (r) { e.rel = r.relevanz; e.relWhy = str(r.grund); e.triage = r; }
-              else { e.rel = 'B'; e.relWhy = res.failed ? (de ? 'Triage fehlgeschlagen (' : 'triage failed (') + res.failed.code + (de ? '); vorsorglich B' : '); class B as a precaution') : (de ? 'kein Triage-Ergebnis; vorsorglich B' : 'no triage result; class B as a precaution'); e.flags.push('triage_ohne_ergebnis'); }
+              else { e.rel = 'B'; e.relWhy = res.failed ? ('triage failed (') + res.failed.code + ('); class B as a precaution') : ('no triage result; class B as a precaution'); e.flags.push('triage_ohne_ergebnis'); }
               triageCounts[e.rel] = (triageCounts[e.rel] || 0) + 1;
               emit({ type: 'triage', p: e.p, pn: e.pn, rel: e.rel, why: e.relWhy });
             });
@@ -1344,14 +1344,14 @@
           if (!mkc(e) || e.rel !== 'C') return;
           triageCounts.C--; triageCounts.B = (triageCounts.B || 0) + 1;
           e.relModel = 'C'; e.rel = 'B';
-          e.relWhy = (de ? 'Triage C durch Code-Ergebnis \u00fcberstimmt (' : 'Triage C overridden by the code result (') + mkCovText(e.mkCov) + (de ? '); Begr\u00fcndung des Modells: ' : '); model reason: ') + str(e.relWhy);
+          e.relWhy = ('Triage C overridden by the code result (') + mkCovText(e.mkCov) + ('); model reason: ') + str(e.relWhy);
           if (e.flags.indexOf('triage_c_ueberstimmt') < 0) e.flags.push('triage_c_ueberstimmt');
         });
         // order of analysis: rights in force before dead ones, code-verified Markush hits first, A before B, granted rights before applications, then score
         var order = live.filter(function (e) { return e.rel !== 'C'; }).sort(function (a, b) { return ((a.right.dead ? 1 : 0) - (b.right.dead ? 1 : 0)) || ((mkc(a) ? 0 : 1) - (mkc(b) ? 0 : 1)) || ((a.rel === 'A' ? 0 : 1) - (b.rel === 'A' ? 0 : 1)) || ((a.right.granted ? 0 : 1) - (b.right.granted ? 0 : 1)) || (b.score - a.score) || (a.p - b.p); });
-        live.filter(function (e) { return e.rel === 'C'; }).forEach(function (e) { skip(e, 'triage_c', (de ? 'Triage C: ' : 'Triage C: ') + e.relWhy); });
+        live.filter(function (e) { return e.rel === 'C'; }).forEach(function (e) { skip(e, 'triage_c', ('Triage C: ') + e.relWhy); });
         var cut = order.filter(function (e, k) { return k >= ctx.depthCfg.n && !mkc(e); });
-        cut.forEach(function (e) { skip(e, 'depth_limit', (de ? 'Triage ' + e.rel + ', aber au\u00dferhalb der gew\u00e4hlten Tiefe (' + ctx.depth + ': ' + ctx.depthCfg.n + ' Schutzrechte) \u2013 NICHT analysiert' : 'Triage ' + e.rel + ' but outside the selected depth (' + ctx.depth + ': ' + ctx.depthCfg.n + ' rights) - NOT analysed') + (e.relWhy ? ': ' + e.relWhy : '')); });
+        cut.forEach(function (e) { skip(e, 'depth_limit', ('Triage ' + e.rel + ' but outside the selected depth (' + ctx.depth + ': ' + ctx.depthCfg.n + ' rights) - NOT analysed') + (e.relWhy ? ': ' + e.relWhy : '')); });
         // code-verified Markush hits are analysed even beyond the depth limit
         return order.filter(function (e, k) { return k < ctx.depthCfg.n || mkc(e); });
       });
@@ -1381,12 +1381,12 @@
         var ids = {}; digests.forEach(function (d) { ids[d.patent_id] = 1; });
         var req = P.buildD({ lang: lang, product: productForModel(ctx.profile, true), searchReport: searchReport, digests: digests });
         return step(ctx, 'D', req, { check: function (v) { var bad = []; arr(v.einzelbewertungen).forEach(function (x) { if (!ids[x.patent_id]) bad.push({ path: '$.einzelbewertungen', message: 'patent_id ' + x.patent_id + ' is not in <digests>; use only patents from the digests' }); }); return bad; } }).then(function (res) {
-          if (res.failed) { ctx.warn((de ? 'Synthese fehlgeschlagen: ' : 'Synthesis failed: ') + res.failed.message); return { failed: res.failed }; }
+          if (res.failed) { ctx.warn(('Synthesis failed: ') + res.failed.message); return { failed: res.failed }; }
           var s = res.out, flags = [];
           s.einzelbewertungen = arr(s.einzelbewertungen).filter(function (x) { return ids[x.patent_id]; });
           s.zeitachse = arr(s.zeitachse).filter(function (x) { if (ids[x.patent_id]) return true; flags.push('unbekannte_nummer_in_zeitachse'); return false; });
           var w = wordingIssues(s);
-          if (w.length) { flags.push('formulierung_pruefen'); ctx.warn((de ? 'Synthesetext enth\u00e4lt eine unzul\u00e4ssig pauschale Formulierung (\u201e' : 'Synthesis text contains an impermissibly sweeping phrase ("') + w[0].phrase + (de ? '\u201c): vor Verwendung pr\u00fcfen' : '"): check before use')); }
+          if (w.length) { flags.push('formulierung_pruefen'); ctx.warn(('Synthesis text contains an impermissibly sweeping phrase ("') + w[0].phrase + ('"): check before use')); }
           var by = {}; overall.markets.forEach(function (m) { by[m.market] = m; });
           arr(s.gesamtrisiko).forEach(function (gr) { var m = by[gr.markt]; if (m && m.risk && gr.risiko !== m.risk) { gr.app_risiko = m.risk; gr.app_hinweis = 'computed by the app: ' + m.risk; flags.push('gesamtrisiko_abweichend'); } });
           arr(s.einzelbewertungen).forEach(function (x) { var d = digests.filter(function (y) { return y.patent_id === x.patent_id; })[0]; if (d && x.risiko !== d.risiko_final) { x.app_risiko = d.risiko_final; } });
@@ -1401,7 +1401,7 @@
         done.forEach(function (e) { if (e.right.asof) dates[e.right.asof] = 1; });
         var op = {
           v: 1, id: ctx.id, kind: 'fto-opinion', created: (ctx.head && ctx.head.created) || nowDate().toISOString(), finished: nowDate().toISOString(), lang: lang, depth: ctx.depth, markets: ctx.markets, aiUsed: aiOk,
-          title: (de ? 'FTO-Vorpr\u00fcfung (kein Rechtsgutachten): ' : 'FTO pre-screen (not a legal opinion): ') + str(ctx.profile.bezeichnung),
+          title: ('FTO pre-screen (not a legal opinion): ') + str(ctx.profile.bezeichnung),
           snapshot: snap, statusSnapshot: statusDate || Object.keys(dates).sort()[0] || null, limits: P.limits(lang, statusDate || Object.keys(dates).sort()[0] || null),
           profile: ctx.profile, search: { record: record, candidates: cands.length, triage: triageCounts, charted: done.length, report: searchReport },
           patents: done.map(function (e) {

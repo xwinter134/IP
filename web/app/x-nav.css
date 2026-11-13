@@ -1,0 +1,36 @@
+/* LNP Patent Desk: navigation bar (back / forward + breadcrumbs). Tokens come from index.html (:root, light and dark).
+   The bar takes its own grid row between the top band and the work area, so the scrolling area sits under it. */
+.app { grid-template-rows: auto auto minmax(0, 1fr); }
+.rail { grid-row: 2 / 4; }
+.view { grid-row: 3; }
+.xnav { grid-row: 2; grid-column: 2; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 40px; padding-block: 5px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+  background: var(--bg); border-bottom: 1px solid var(--line); }
+.app[data-state="boot"] .xnav { display: none; }
+.xnav-btns { display: flex; gap: 4px; flex: none; }
+.xnav-btn { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: 7px; border: 1px solid var(--line-strong);
+  background: var(--bg); color: var(--dim); cursor: pointer; transition: background .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease); }
+.xnav-btn:hover:not(:disabled) { background: var(--muted); color: var(--text); border-color: var(--ring); }
+.xnav-btn:disabled { opacity: .38; cursor: default; }
+.xnav-btn .ico { width: 16px; height: 16px; }
+.xnav-nav { flex: 1 1 auto; min-width: 0; }
+.xnav-list { display: flex; align-items: center; flex-wrap: nowrap; min-width: 0; overflow: hidden;
+  font-family: var(--mono); font-size: 11px; line-height: 1.4; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.xnav-list li { display: flex; align-items: center; min-width: 0; flex: 0 1 auto; }
+.xnav-list li + li::before { content: "/"; flex: none; margin: 0 9px; color: var(--line-strong); }
+.xnav-c { display: block; min-width: 0; max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); text-decoration: none; }
+a.xnav-c:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.xnav-list li:last-child { flex: 0 1 auto; min-width: 0; }
+.xnav-c[aria-current="page"] { max-width: 46ch; color: var(--text); font-weight: 500; }
+.xnav-c[aria-current="page"]::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 8px; border-radius: 50%; background: var(--signal); vertical-align: 1px; }
+@media (max-width: 760px) {
+  .app { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .rail { grid-row: 4; }
+  .xnav { grid-column: 1; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (max-width: 560px) {
+  .xnav-list li:not(:nth-last-child(-n+2)) { display: none; }
+  .xnav-list li:nth-last-child(2):first-child::before, .xnav-list li:nth-last-child(2)::before { content: none; }
+  .xnav-c { max-width: 18ch; }
+  .xnav-c[aria-current="page"] { max-width: 26ch; }
+}
