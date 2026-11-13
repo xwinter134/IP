@@ -36,9 +36,9 @@ Terminology used in the UI (German, fixed):
 ## 0. Ground rules (apply to every step)
 
 1. **Pre-screen, not opinion.** The output prioritises documents and issues for a patent attorney. It
-   never says "frei" / "no infringement" without qualification; the strongest negative statement
-   allowed is "im geprüften Korpus kein Anspruch identifiziert, dessen Merkmale nach den getroffenen
-   Annahmen sämtlich erfüllt sind".
+   never says "free to operate" / "no infringement" without qualification; the strongest negative
+   statement allowed is "within the screened corpus no claim was identified whose features are all
+   met under the stated assumptions".
 2. **All-elements rule.** A claim is literally infringed only if *every* feature is realised. One
    clearly missing feature defeats literal infringement of that claim — but only then is the
    equivalence question asked for that feature, and the claim is never dismissed on an "unclear".
@@ -371,7 +371,7 @@ step of the variant = Formstein-type check). Report as "Rechtsprechung im Fluss"
 to the patent (quoted), DE answers to questions 1–3 (ja / nein / offen, each with reasons),
 Formstein indication, US FWR + each limit (applies / does not apply / file history not in corpus),
 overall `aequivalenz_risiko` (hoch / mittel / gering / nicht beurteilbar). Without the file wrapper
-the estoppel points are always "nicht beurteilbar – Erteilungsakte nicht im Korpus".
+the estoppel points are always "cannot be assessed – the file wrapper is not in the corpus".
 
 Typical LNP equivalence questions: ester vs. carbonate vs. amide linker; chain length ±1–2 C;
 branching position; cholesterol vs. phytosterol; DSPC vs. DOPE; PEG2000-DMG vs. PEG-ceramide vs.
@@ -521,6 +521,55 @@ einschlägig`, `Rechtsstand ungeprüft`, `Anmeldung – Ansprüche veränderlich
 `Familie mit anhängigen Teilanmeldungen/Continuations`, `Einspruch/IPR anhängig`.
 Confidence (hoch/mittel/niedrig) is reported separately from risk.
 
+### 14.1 App-computed evidence (ranges, Markush)
+
+Two kinds of evidence are computed by code, not by the model, and attached to every charted patent as
+`app.evidence` (`web/engine/fto.js`, only when the engines `LnpRanges` / `LnpMarkush` are loaded; without them
+the chain behaves exactly as before):
+
+- **Markush**: every profile lipid with a structure is checked by `LnpMarkush.batch` against the stored and
+  curated `mk-1` records of the patent (per variable: verdict, group found, verbatim definition quote and its
+  quote state). In the candidate search (Step 3) a `covered` result adds the patent with route `markush` and the
+  reason "Markush check: covered by claim N (code-verified, translation reviewed / not reviewed)"; an `unclear`
+  result adds only the reason (no weight). The search record lists records, checks and hits.
+- **Ranges**: the profile values (mol-% per lipid role, N/P, size, PDI, pKa, PEG mass, ...) are compared with the
+  numeric ranges found in the claims (`LnpRanges.checkProfile`, restricted to the patent): per claim
+  `inside` / `outside` / `no range`, with the deciding range, whether it is inherited from a parent claim, and the
+  verbatim quote.
+
+Rules, applied in code after the claim chart (B) and before the red team (E):
+
+1. A Markush `covered` result with a **reviewed** translation (curated record, the user's own record, or a Claude
+   translation marked reviewed) on an **independent** claim of a right **in force** raises the risk floor to the
+   level of a literally met independent claim: 5 for a granted right, 3 for a pending application (section 14).
+2. A `covered` result with an **unreviewed** Claude translation raises the floor to at least 3 ("possible").
+3. A floor never lowers a risk: a higher level, including "cannot be assessed" against floor 3, stays. The red-team
+   result cannot go below the floor (final = the more adverse of B and E, as always).
+4. `unclear` and `not covered` Markush results change nothing; covered on a dependent claim or on a right that is
+   no longer in force adds a flag only. When the chart finds a literal miss on the claim the code finds covered,
+   the flag `markush_contradicts_chart` and a question for counsel are added.
+5. A product value **outside** a range of an independent claim adds the flag `range_outside` and a question for
+   counsel; it does **not** lower the risk and never turns a feature from `unklar` into `nicht_erfuellt` ("about",
+   the basis and measurement method of the value, and equivalence are open). Values inside every range that an
+   independent claim states for them add the flag `ranges_all_inside` (other features decide; no risk change).
+6. The opinion id includes the evidence inputs (Markush record ids with their `updated` time, the build of the range
+   dataset), so a changed record or a rebuilt dataset starts a new opinion instead of reusing the old one.
+7. The model cannot drop a code-verified hit. The Markush check runs before the triage for every candidate with a
+   record. A right in force with a `covered` result is never removed by triage C (its class is raised to B, the
+   flag `triage_c_ueberstimmt` is set, and the model's reason is kept), is never cut by the depth limit (it is
+   analysed first, beyond the limit if needed), and is not dropped for missing claim text.
+8. When the claim chart fails or no independent-claim text is available, the risk is "cannot be assessed" and rules
+   1 to 4 still apply without a chart. When claim independence cannot be checked (no claim text), the floor is
+   applied as a precaution, and the rule text says so.
+9. Without Claude (no triage, no chart), every right that is not analysed but has a `covered` result lists that
+   code result in its "not analysed" reason and carries the evidence.
+10. In the digest for the synthesis, the code-verified questions come first among the open questions (at most 10).
+
+Every rendering shows the block "Evidence computed by the app" per patent with the rules applied, the Markush
+table and per-variable verdicts with quotes, the range table with quotes, and the limits of the evidence verbatim
+(pattern rules see only ranges in the claim text; only patents with a stored or curated record are tested by the
+Markush route; pre-screening, not legal advice).
+
 ## 15. Structure of the generated pre-opinion (Step 14)
 
 1. Titel, Datum, Korpusstand (snapshot dates of text and legal status), **Hinweisblock** (below).
@@ -552,39 +601,21 @@ Confidence (hoch/mittel/niedrig) is reported separately from risk.
 - Where appropriate: licence enquiry, opposition (if within 9 months), third-party observations
   (Art. 115 EPC), design-around programme.
 
-## 16. Mandatory limits statement (verbatim block, German UI)
+## 16. Mandatory limits statement (verbatim block)
 
-> **Wichtiger Hinweis – Grenzen dieser FTO-Vorprüfung**
-> 1. Diese Auswertung ist eine automatisiert (KI-gestützt) erstellte Vorprüfung und **keine
->    Rechtsberatung** und kein Freedom-to-Operate-Gutachten. Sie ersetzt nicht die Prüfung durch
->    eine Patentanwältin oder einen Patentanwalt.
-> 2. Der durchsuchte Korpus ist **fachlich eingegrenzt** (LNP-/Lipid-Feld, EP/US/WO, definierte
->    CPC-Klassen, Schlagworte und Anmelder). Schutzrechte außerhalb dieser Eingrenzung – auch
->    Gebrauchsmuster, nationale Schutzrechte anderer Länder und ergänzende Schutzzertifikate – sind
->    nicht erfasst.
-> 3. **Markush-/generische Ansprüche** können Strukturen erfassen, die im Korpus nicht einzeln
->    indexiert sind. Eine Markush-Recherche (z. B. CAS STN MARPAT) wurde nicht durchgeführt. Die
->    Formelprüfung erfolgt nur für Ansprüche, deren Text im Korpus vorliegt; als Bild eingebettete
->    Formeln können fehlen.
-> 4. Der **Rechtsstand** (Erteilung, Einspruch, Beschränkung, Erlöschen, Laufzeit, PTA/PTE, ESZ,
->    UPC-Opt-out) stammt aus einem Datenstand vom {status_snapshot_date} und kann **veraltet oder
->    unvollständig** sein. Laufzeitangaben sind Schätzungen.
-> 5. Anspruchstexte können **maschinelle Übersetzungen** oder OCR-Texte sein; maßgeblich ist allein
->    die Fassung in der Verfahrenssprache bzw. die geltende erteilte/aufrechterhaltene Fassung.
-> 6. **Anhängige Anmeldungen**: Ansprüche können sich bis zur Erteilung ändern (enger oder – im
->    Rahmen der ursprünglichen Offenbarung – anders gefasst werden); Teilanmeldungen und
->    Continuations können hinzukommen. Noch nicht veröffentlichte Anmeldungen (bis 18 Monate nach
->    Prioritätstag) sind nicht erfasst.
-> 7. Die Bewertung beruht auf den **Angaben und Annahmen** zum Produkt/Verfahren in Abschnitt
->    „Geprüfter Gegenstand". Ändern sich diese, ändert sich das Ergebnis.
-> 8. Auslegung, Äquivalenz und Ausnahmen (Versuchsprivileg, Zulassungsprivileg/Bolar, Safe Harbor)
->    hängen vom Einzelfall und von der aktuellen Rechtsprechung ab; die Erteilungsakten wurden nicht
->    ausgewertet.
-> 9. KI-Modelle können Fehler machen (falsche Zuordnung von Substituenten, falsche Zählung von
->    Kettenlängen, übersehene Maßgaben). Zitate und Merkmalszuordnungen sind vor jeder Entscheidung
->    am Originaldokument zu prüfen.
+The app inserts this block verbatim at the top and the bottom of every rendered opinion (all UI copy and every
+report is English; block `LIMITS_EN` in `prompts.md`, which is the source the app is generated from):
 
-English version for `output_language = en` is in `prompts.md` (block `LIMITS_EN`).
+> Important notice – limits of this FTO pre-screen
+> 1. This is an automated (AI-assisted) pre-screen. It is not legal advice and not a freedom-to-operate opinion, and it does not replace review by a patent attorney.
+> 2. The screened corpus is restricted to the LNP/lipid field (EP/US/WO; defined CPC classes, keywords and applicants). Rights outside this restriction – including utility models, national rights of other countries and supplementary protection certificates – are not covered.
+> 3. Markush/generic claims may cover structures that are not individually indexed in the corpus. No Markush search (e.g. CAS STN MARPAT) was performed. The formula test is only applied to claims whose text is in the corpus; formulae embedded as images may be missing.
+> 4. Legal status (grant, opposition, limitation, lapse, term, PTA/PTE, SPC, UPC opt-out) reflects a data snapshot of {status_snapshot_date} and may be stale or incomplete. Expiry dates are estimates.
+> 5. Claim texts may be machine translations or OCR text; only the text in the language of proceedings, as granted or maintained, is authoritative.
+> 6. Pending applications: claims may change before grant; divisionals and continuations may be filed. Applications not yet published (up to 18 months from priority) are not covered.
+> 7. The assessment rests on the product/process data and assumptions listed under "Subject of the screen". If they change, the result changes.
+> 8. Claim construction, equivalence and exemptions (experimental use, Bolar, safe harbor) depend on the individual case and current case law; prosecution files were not reviewed.
+> 9. AI models make mistakes (wrong substituent mapping, wrong chain-length counts, overlooked provisos). Verify quotes and feature mappings against the original document before any decision.
 
 ## 17. Verification status of this document
 

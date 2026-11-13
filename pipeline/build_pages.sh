@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")/.."
 LNP_HOST_MAX_MB=950 python3 -I pipeline/build_dist.py --enc bin --out dist-pages \
-  --build-dir data/work/dist_build_pages --budget-mb 900 --max-files 3000 --img-budget-mb 300
+  --build-dir data/work/dist_build_pages --budget-mb 900 --max-files 3000 --img-budget-mb 300 --target pages
 python3 -I - <<'PY'
 import io
 p = "dist-pages/index.html"

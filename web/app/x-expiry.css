@@ -1,0 +1,102 @@
+/* LNP Patent Desk: expiry timeline (#expiry) and similar patents (#similar).
+   Tokens come from index.html (:root, light and dark), components from app.css / views.css. */
+
+/* ------------------------------------------------------------------ shared */
+.ex-page, .sm-page { min-width: 0; }
+.ex-body, .sm-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ex-pick, .sm-pick { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; min-width: 0; max-width: 900px; }
+.ex-ctl, .sm-q { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ex-ctl select, .ex-ctl textarea, .sm-q textarea { width: 100%; max-width: 640px; }
+.ex-opts { gap: 8px 18px; }
+.ex-jur { gap: 4px 14px; }
+.ex-limits, .sm-limits { border: 1px solid var(--line-strong); border-left: 2px solid var(--signal); border-radius: 0 10px 10px 0; background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--dim); max-width: 110ch; overflow-wrap: anywhere; }
+.ex-limits ul, .sm-limits ul { list-style: disc; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.ex-src { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ex-note { max-width: 100ch; }
+.ex-nw { white-space: nowrap; }
+
+/* ------------------------------------------------------------------ timeline */
+.ex-tlbox { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ex-tl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); max-width: 100%; }
+.ex-tl-in { min-width: 640px; display: flex; flex-direction: column; }
+.ex-tl-row { display: grid; grid-template-columns: 172px minmax(0, 1fr); align-items: stretch; min-height: 24px; }
+.ex-tl-row.ex-first { border-top: 1px solid var(--line); }
+.ex-tl-axis { min-height: 24px; background: var(--surface); border-radius: 10px 10px 0 0; border-top: 0 !important; }
+.ex-tl-lab { position: sticky; left: 0; z-index: 3; background: var(--bg); border-right: 1px solid var(--line); padding: 0 8px; display: flex; align-items: center; font-size: 11.5px; color: var(--text); text-decoration: none; min-width: 0; }
+.ex-tl-axis .ex-tl-lab { background: var(--surface); border-radius: 10px 0 0 0; color: var(--faint); font-family: var(--mono); }
+a.ex-tl-lab:hover { text-decoration: underline; text-decoration-color: var(--signal); }
+.ex-tl-pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-tl-track { position: relative; min-height: 24px; }
+.ex-tl-y { position: absolute; top: 5px; transform: translateX(-50%); font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.ex-tl-axis .ex-tl-y:first-child { transform: none; }
+.ex-tl-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); opacity: .7; }
+.ex-tl-now { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px solid var(--signal); z-index: 2; }
+.ex-bar { position: absolute; top: 50%; height: 10px; margin-top: -5px; box-sizing: border-box; z-index: 1; }
+.ex-bar.live { background: var(--dim); border-radius: 5px 0 0 5px; }
+.ex-bar.pending { border: 1.5px dashed var(--dim); background: transparent; border-radius: 5px 0 0 5px; }
+.ex-bar.dead { background: var(--line-strong); border-radius: 5px 0 0 5px; opacity: .9; }
+.ex-bar.pta { background: repeating-linear-gradient(135deg, var(--warn) 0 3px, transparent 3px 6px); border: 1.5px solid var(--warn); border-radius: 0 5px 5px 0; }
+.ex-bar.pta.pending { border-style: dashed; background: transparent; }
+.ex-bar.pta.dead { background: repeating-linear-gradient(135deg, var(--line-strong) 0 3px, transparent 3px 6px); border-color: var(--line-strong); }
+.ex-bar.live:last-of-type { border-radius: 5px; }
+.ex-end { position: absolute; top: 50%; transform: translate(6px, -50%); font-family: var(--mono); font-size: 10.5px; color: var(--dim); white-space: nowrap; z-index: 1; }
+.ex-end.left { transform: translate(calc(-100% - 6px), -50%); }
+.ex-none { position: absolute; top: 50%; transform: translate(6px, -50%); font-size: 11px; color: var(--faint); white-space: nowrap; }
+.ex-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--dim); }
+.ex-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ex-key { display: inline-block; width: 18px; height: 8px; box-sizing: border-box; flex: none; }
+.ex-key.live { background: var(--dim); border-radius: 4px; }
+.ex-key.pta { background: repeating-linear-gradient(135deg, var(--warn) 0 3px, transparent 3px 6px); border: 1.5px solid var(--warn); border-radius: 4px; }
+.ex-key.pending { border: 1.5px dashed var(--dim); border-radius: 4px; }
+.ex-key.dead { background: var(--line-strong); border-radius: 4px; }
+.ex-key.now { width: 0; height: 12px; border-left: 2px solid var(--signal); }
+
+/* ------------------------------------------------------------------ cliff and table */
+.ex-cliff { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ex-chart { min-width: 0; }
+.ex-jurs { display: flex; flex-direction: column; gap: 8px; }
+.ex-jur-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.ex-jur-item { background: var(--bg); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ex-jur-item b { font-size: 18px; font-weight: 500; }
+.ex-jur-item p { font-size: 12.5px; color: var(--dim); overflow-wrap: anywhere; }
+.ex-caveats { list-style: disc; padding-left: 18px; font-size: 12.5px; color: var(--dim); display: flex; flex-direction: column; gap: 3px; max-width: 100ch; }
+.ex-tbl { min-width: 0; }
+.ex-table td { vertical-align: top; }
+.ex-table tr.ex-sup td { opacity: .6; }
+
+/* ------------------------------------------------------------------ similar */
+.sm-src { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sm-src-h { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; min-width: 0; }
+.sm-src-t { font-weight: 500; overflow-wrap: anywhere; }
+.sm-terms-wrap { display: flex; flex-direction: column; gap: 6px; }
+.sm-term { font-family: var(--mono); font-size: 11.5px; cursor: default; }
+.sm-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.sm-hit { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sm-hit-h { display: grid; grid-template-columns: 28px minmax(0, 1fr) 190px; gap: 10px; align-items: start; }
+.sm-rank { color: var(--faint); font-size: 12px; padding-top: 2px; }
+.sm-hit-t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sm-title { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.sm-score { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.sm-n { font-size: 18px; font-weight: 500; text-align: right; }
+.sm-bar { display: flex; height: 8px; border-radius: 4px; background: var(--muted); overflow: hidden; gap: 2px; }
+.sm-bar span { display: block; height: 100%; min-width: 2px; }
+.sm-line, .sm-comp, .sm-cpc { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 12.5px; color: var(--dim); min-width: 0; }
+.sm-lab { font-size: 12px; color: var(--faint); min-width: 54px; }
+.sm-acts { margin-top: 2px; }
+
+@media (max-width: 640px) {
+  .sm-hit-h { grid-template-columns: 24px minmax(0, 1fr); }
+  .sm-score { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+  .sm-score .sm-bar { flex: 1; }
+  .sm-n { text-align: left; }
+  .ex-tl-row { grid-template-columns: 124px minmax(0, 1fr); }
+  .ex-tl-in { min-width: 560px; }
+}
+
+/* phones: the publication label sits on its own line above its lane; the year ticks are thinned in expiry.js */
+@media (max-width: 560px) {
+  .ex-tl-in { min-width: 0; }
+  .ex-tl-row { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .ex-tl-lab { position: static; border-right: 0; padding: 4px 8px 0; min-height: 18px; }
+  .ex-tl-axis .ex-tl-lab { display: none; }
+}

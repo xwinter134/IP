@@ -3,9 +3,11 @@
 
   python3 pipeline/build_dist.py [--out dist] [--budget-mb 215] [--enc bin|b64] [--max-files 500]
                                  [--limit N] [--img-budget-mb 25] [--defs-reserve-mb 10] [--no-chem] [--no-web] [--force]
+                                 [--xdata-dir data/work/xdata] [--target artifact|pages]
 
 Input  : data/work/corpus.jsonl.gz (pipeline/normalize.py), optional data/work/status.jsonl.gz,
-         data/work/chem/ (files named in chem.json "publish"), optional data/work/img/, data/seed/, web/
+         data/work/chem/ (files named in chem.json "publish"), optional data/work/img/, data/seed/, web/,
+         optional extra datasets data/work/xdata/<name>/xdata.json + files (docs/ARCHITECTURE.md, "Extra data (xdata)")
 Output : dist/  = page + engines + data files, dist/data/manifest.json, dist/publish_batches.json
          data/work/dist_build/  = work files (corpus snapshot link, text index, keep list, cut list, size model)
 
@@ -51,6 +53,8 @@ PAT_CHUNK = 4000
 ST_CODES = ["", "granted", "pending", "lapsed", "revoked", "withdrawn", "refused", "expired", "unknown"]
 AUTHS = ["EP", "US", "WO"]
 NAME_OK = re.compile(r"^[a-z0-9._/-]+$")
+# data/seed files that engines read at run time from data/seed/<name> (the rest of data/seed is folded into seed.json)
+SHIP_SEED = ("design_space.json",)
 T0 = time.time()
 
 
@@ -142,6 +146,53 @@ class Dist:
             if root != self.out and not os.listdir(root):
                 os.rmdir(root)
         return gone
+
+
+XDATA_PAGES_ONLY = []   # (dataset, file) left out of an artifact build; recorded in manifest.cut.websiteOnly
+
+
+def scan_xdata(xdir, target):
+    """Extra datasets data/work/xdata/<name>/xdata.json -> [{name, meta, files: [(logical name, path)]}].
+    target "artifact": datasets with target "both"; "pages": also target "pages" and the files listed in "files_pages".
+    A broken or incomplete dataset stops the build (a silent gap would ship a feature without its data)."""
+    out = []
+    if not os.path.isdir(xdir):
+        return out
+    for name in sorted(os.listdir(xdir)):
+        mp = os.path.join(xdir, name, "xdata.json")
+        if not os.path.isfile(mp):
+            continue
+        try:
+            with open(mp, encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError) as e:
+            raise SystemExit("xdata %s: xdata.json not readable (%s)" % (name, e))
+        if meta.get("name", name) != name or not NAME_OK.match(name) or "/" in name:
+            raise SystemExit("xdata %s: bad dataset name %r" % (name, meta.get("name")))
+        tg = meta.get("target") or "both"
+        if tg not in ("both", "pages"):
+            raise SystemExit("xdata %s: target must be 'both' or 'pages', not %r" % (name, tg))
+        if tg == "pages" and target != "pages":
+            log("xdata %s: target pages only, skipped in the artifact build" % name)
+            XDATA_PAGES_ONLY.extend((name, fn) for fn in (meta.get("files") or []) + (meta.get("files_pages") or []))
+            continue
+        if target != "pages":
+            XDATA_PAGES_ONLY.extend((name, fn) for fn in (meta.get("files_pages") or []))
+        names = list(meta.get("files") or []) + (list(meta.get("files_pages") or []) if target == "pages" else [])
+        if not names:
+            raise SystemExit("xdata %s: no files listed" % name)
+        if len(names) > 3:
+            raise SystemExit("xdata %s: %d files, at most 3 per dataset" % (name, len(names)))
+        files = []
+        for fn in names:
+            if "/" in fn or not NAME_OK.match(fn) or not (fn.endswith(".json") or fn.endswith(".bin")):
+                raise SystemExit("xdata %s: file name not allowed: %r (only [a-z0-9._-], .json or .bin)" % (name, fn))
+            path = os.path.join(xdir, name, fn)
+            if not os.path.isfile(path):
+                raise SystemExit("xdata %s: listed file is missing: %s" % (name, path))
+            files.append((fn, path))
+        out.append({"name": name, "meta": meta, "files": files})
+    return out
 
 
 def snapshot_corpus(src, build_dir):
@@ -533,6 +584,9 @@ def main():
     ap.add_argument("--no-chem", action="store_true")
     ap.add_argument("--no-web", action="store_true")
     ap.add_argument("--force", action="store_true", help="rebuild the text index even when nothing changed")
+    ap.add_argument("--xdata-dir", default=None, help="extra datasets (default <work>/xdata)")
+    ap.add_argument("--target", choices=["artifact", "pages"], default="artifact",
+                    help="pages: also include xdata datasets (and files) meant for the plain website only")
     a = ap.parse_args()
     if a.budget_mb > HOST_MAX_TOTAL_MB:
         raise SystemExit("--budget-mb must not exceed the host limit of %d MB" % HOST_MAX_TOTAL_MB)
@@ -621,19 +675,25 @@ def main():
     # seed.json
     seed_obj = {"v": 1, "families": seed_fam, "players": [{"name": n} for n in players], "assignees": seed_asg, "cpc": seed_cpc, "lipids": seed_lip}
     seed_bytes = jdump(seed_obj)
+    seed_ship = [(n, os.path.join(C.SEED, n)) for n in SHIP_SEED if os.path.isfile(os.path.join(C.SEED, n))]
+    seed_ship_bytes = sum(os.path.getsize(p) for _, p in seed_ship)
+    # extra datasets (xdata): counted with the fixed parts so that the text cut absorbs them
+    xsets = scan_xdata(a.xdata_dir or os.path.join(a.work, "xdata"), a.target)
+    xdata_bytes = sum(fac(os.path.getsize(p)) if fn.endswith(".bin") else os.path.getsize(p) for x in xsets for fn, p in x["files"])
+    n_xfiles = sum(len(x["files"]) for x in xsets)
     # patent files with provisional flags (sizes do not depend on the flags in any relevant way)
     pfiles, pat_names, _, _ = build_patent_files(rows, bytearray([2]) * P, has_comp, players)
     pat_bytes = sum(fac(len(v)) for v in pfiles.values())
     st_bytes = sum(fac(len(v)) for v in st_chunks)
     reserve = 400 * 1000                       # manifest.json, publish_batches.json, rounding
-    fixed = web_bytes + chem_bytes + img_bytes + len(seed_bytes) + pat_bytes + st_bytes + reserve
-    n_other = len(web_files) + len(chem_files) + len(img_files) + (1 if img_index else 0) + 1 + len(pfiles) + len(st_chunks) + 2
+    fixed = web_bytes + chem_bytes + img_bytes + len(seed_bytes) + seed_ship_bytes + pat_bytes + st_bytes + xdata_bytes + reserve
+    n_other = len(web_files) + len(chem_files) + len(img_files) + (1 if img_index else 0) + 1 + len(pfiles) + len(st_chunks) + n_xfiles + len(seed_ship) + 2
     idx_max_files = min(400, a.max_files - n_other - a.reserve_files)
     if idx_max_files < 12:
         raise SystemExit("file limit: %d files are needed outside the text index, --max-files is %d" % (n_other, a.max_files))
     text_budget = budget - fixed
-    log("fixed parts: web %.2f MB, chem %.2f, images %.2f, patent table %.2f, status %.2f, seed %.2f -> %.2f MB of %.1f MB; %.2f MB left for the text index; %d files, %d left for the index"
-        % (web_bytes / 1e6, chem_bytes / 1e6, img_bytes / 1e6, pat_bytes / 1e6, st_bytes / 1e6, len(seed_bytes) / 1e6, fixed / 1e6, a.budget_mb, text_budget / 1e6, n_other, idx_max_files))
+    log("fixed parts: web %.2f MB, chem %.2f, images %.2f, patent table %.2f, status %.2f, seed %.2f, xdata %.2f (%d datasets) -> %.2f MB of %.1f MB; %.2f MB left for the text index; %d files, %d left for the index"
+        % (web_bytes / 1e6, chem_bytes / 1e6, img_bytes / 1e6, pat_bytes / 1e6, st_bytes / 1e6, len(seed_bytes) / 1e6, xdata_bytes / 1e6, len(xsets), fixed / 1e6, a.budget_mb, text_budget / 1e6, n_other, idx_max_files))
     if text_budget <= 0:
         raise SystemExit("the fixed parts alone exceed the budget")
 
@@ -755,6 +815,15 @@ def main():
     for n, p in chem_files:
         dist.put("data/chem/" + n, p, "chemistry")
     dist.put("data/seed.json", seed_bytes, "seed")
+    for n, p in seed_ship:
+        dist.put("data/seed/" + n, p, "seed")
+    xman = {}
+    for x in xsets:
+        sizes_x = {}
+        for fn, p in x["files"]:
+            sizes_x[fn] = dist.put("data/x/%s/%s" % (x["name"], fn), p, "xdata")
+        m = x["meta"]
+        xman[x["name"]] = {"v": m.get("v"), "built": m.get("built"), "files": sizes_x, "counts": m.get("counts") or {}}
 
     # ------------------------------------------------------------------ manifest
     seed_expected = sorted({m for fam in seed_fam if isinstance(fam, dict) for k in ("representative_us", "representative_ep") for m in (fam.get(k) or [])})
@@ -781,10 +850,16 @@ def main():
         "chem": ({"dir": "chem/", "files": [n for n, _ in chem_files], "n": chem_meta.get("n"), "nPat": chem_meta.get("nPat"), "snapshot": chem_meta.get("snapshot")} if chem_meta else None),
         "seed": "seed.json",
         "cut": cut,
+        "x": xman or None,
         "flagBits": {"text": 1, "defs": 2, "chemImg": 4, "compounds": 8, "status": 16, "textCut": 32, "defsCut": 64},
         "limit": a.limit or None,
     }
+    if XDATA_PAGES_ONLY:
+        cut["websiteOnly"] = {"xdata": ["%s/%s" % nf for nf in XDATA_PAGES_ONLY],
+                              "note": "extra data files built for the plain website only (size budget of the Artifact)"}
     sizes = dict(sorted(dist.comp.items(), key=lambda kv: -kv[1]))
+    if not xman:
+        del manifest["x"]                      # absent key when there are no extra datasets
     manifest["sizes"] = sizes
     manifest["bytesPerClaim"] = info["stats"]["bytesPerClaim"]
     manifest["files"] = {rel: [v[0], v[1]] for rel, v in sorted(dist.files.items())}
@@ -803,6 +878,8 @@ def main():
             return 4
         if rel.startswith("data/chem/"):
             return 5
+        if rel.startswith("data/x/"):
+            return 3
         if rel.startswith("data/df-") or rel.startswith("data/img"):
             return 6
         return 2

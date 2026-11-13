@@ -1,0 +1,199 @@
+{
+ "v": "mk-1",
+ "pn": "EP3221293B1",
+ "claim": 1,
+ "lang": "en",
+ "created": "2026-11-11T00:00:00Z",
+ "updated": "2026-11-11T00:00:00Z",
+ "origin": "curated",
+ "reviewed": true,
+ "source": {
+  "images": [
+   "imgb0114"
+  ],
+  "textHash": null,
+  "claimText": "A compound of formula III: [chem] wherein R1 consists of a branched alkyl with 12 to 20 carbons, R2 consists of a branched alkyl with 12 to 20 carbons, L1 and L2 each consist of a bond or a linear alkyl having 1 to 3 carbon atoms, X consists of S or O, L3 consists of a bond, R3 is selected from ethylene, n-propylene or isopropylene, and R4 and R5 are the same or different, each consisting of a linear or branched alkyl consisting of 1 to 6 carbons; or a pharmaceutically acceptable salt thereof."
+ },
+ "core": {
+  "smiles": "[*:1]OC(=O)[*:2]N([*:3]C(=O)O[*:4])C(=O)[*:5][*:6]N([*:7])[*:8]",
+  "note": "Formula III: R1-OC(=O)-L1-N(-L2-C(=O)O-R2)-C(=O)-L3-X-R3-N(R4)(R5); L3 is a bond (claim 1), so C(=O) binds X directly."
+ },
+ "vars": [
+  {
+   "name": "R1",
+   "attach": [
+    1
+   ],
+   "kind": "substituent",
+   "quote": "R1 consists of a branched alkyl with 12 to 20 carbons",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 12,
+     "cMax": 20,
+     "branched": true,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "L1",
+   "attach": [
+    2
+   ],
+   "kind": "divalent",
+   "quote": "L1 and L2 each consist of a bond or a linear alkyl having 1 to 3 carbon atoms",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "**",
+     "note": "a bond"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 3,
+     "branched": false,
+     "substituted": false,
+     "note": "linear alkylene C1-C3"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "L2",
+   "attach": [
+    3
+   ],
+   "kind": "divalent",
+   "quote": "L1 and L2 each consist of a bond or a linear alkyl having 1 to 3 carbon atoms",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "**",
+     "note": "a bond"
+    },
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 3,
+     "branched": false,
+     "substituted": false,
+     "note": "linear alkylene C1-C3"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R2",
+   "attach": [
+    4
+   ],
+   "kind": "substituent",
+   "quote": "R2 consists of a branched alkyl with 12 to 20 carbons",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 12,
+     "cMax": 20,
+     "branched": true,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "X",
+   "attach": [
+    5
+   ],
+   "kind": "divalent",
+   "quote": "X consists of S or O",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*S*"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*O*"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R3",
+   "attach": [
+    6
+   ],
+   "kind": "divalent",
+   "quote": "R3 is selected from ethylene, n-propylene or isopropylene",
+   "alts": [
+    {
+     "type": "smiles",
+     "smiles": "*CC*",
+     "note": "ethylene"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*CCC*",
+     "note": "n-propylene"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*C(C)C*",
+     "note": "isopropylene"
+    },
+    {
+     "type": "smiles",
+     "smiles": "*CC(C)*",
+     "note": "isopropylene, other orientation"
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R4",
+   "attach": [
+    7
+   ],
+   "kind": "substituent",
+   "quote": "R4 and R5 are the same or different, each consisting of a linear or branched alkyl consisting of 1 to 6 carbons",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 6,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R5",
+   "attach": [
+    8
+   ],
+   "kind": "substituent",
+   "quote": "R4 and R5 are the same or different, each consisting of a linear or branched alkyl consisting of 1 to 6 carbons",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 1,
+     "cMax": 6,
+     "substituted": false
+    }
+   ],
+   "quoteStatus": "ok"
+  }
+ ],
+ "provisos": [],
+ "unsupported": [],
+ "ref": {
+  "name": "ATX-100",
+  "smiles": "CCCCCCCC(CCCCCCC)OC(=O)CCCN(CCCC(=O)OC(CCCCCCC)CCCCCCC)C(=O)SCCCN(C)C",
+  "note": "L1 = L2 = n-propylene (C3), R1 = R2 = pentadecan-8-yl (C15 branched), X = S, R3 = n-propylene, R4 = R5 = methyl"
+ },
+ "curator": "hand-read from the claim image and claim text (LNP Patent Desk seed)"
+}

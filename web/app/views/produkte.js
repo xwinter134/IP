@@ -27,21 +27,23 @@
     };
   })();
 
-  // option lists: [stored value, label]; the stored values stay as they are because the FTO engine reads them
+  // option lists: [stored value, label]. The stored values are English (the FTO engine maps them to its internal codes);
+  // profiles saved by an older version carry German values, which LnpFto.englishForm maps to the English ones on load.
   function opts(vals, labels) { return vals.map(function (v, i) { return [v, labels[i]]; }); }
+  function same(vals) { return opts(vals, vals.map(function (v) { return v || 'not specified'; })); }
   var ROLES = [['ionizable', 'Ionizable lipid'], ['helper', 'Helper lipid'], ['sterol', 'Sterol'], ['peg', 'PEG lipid'], ['other', 'Other']];
-  var STAGES = opts(['', 'Forschung', 'Präklinik', 'Klinik Phase 1/2', 'Klinik Phase 3', 'Zulassung beantragt', 'Kommerziell'], ['not specified', 'Research', 'Preclinical', 'Clinical phase 1/2', 'Clinical phase 3', 'Approval applied for', 'Commercial']);
-  var PAYLOADS = opts(['', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'leer (ohne Wirkstoff)'], ['not specified', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'empty (no payload)']);
-  var MIXING = opts(['', 'T-Stück', 'Impinging-Jet-Mischer', 'Mikrofluidik Herringbone', 'Mikrofluidik toroidal', 'Ethanol-Injektion', 'Extrusion', 'sonstiges'], ['not specified', 'T-junction', 'Impinging jet mixer', 'Microfluidic herringbone', 'Microfluidic toroidal', 'Ethanol injection', 'Extrusion', 'Other']);
-  var ROUTES = opts(['', 'intravenös', 'intramuskulär', 'subkutan', 'inhalativ', 'intratumoral', 'intrathekal', 'topisch', 'andere'], ['not specified', 'Intravenous', 'Intramuscular', 'Subcutaneous', 'Inhaled', 'Intratumoral', 'Intrathecal', 'Topical', 'Other']);
-  var BASIS = [['nominal', 'nominal (input)'], ['gemessen', 'measured in the particle'], ['', 'unknown']];
+  var STAGES = same(['', 'Research', 'Preclinical', 'Clinical phase 1/2', 'Clinical phase 3', 'Approval applied for', 'Commercial']);
+  var PAYLOADS = opts(['', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'empty (no payload)'], ['not specified', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'empty (no payload)']);
+  var MIXING = same(['', 'T-junction', 'Impinging jet mixer', 'Microfluidic herringbone', 'Microfluidic toroidal', 'Ethanol injection', 'Extrusion', 'Other']);
+  var ROUTES = same(['', 'Intravenous', 'Intramuscular', 'Subcutaneous', 'Inhaled', 'Intratumoral', 'Intrathecal', 'Topical', 'Other']);
+  var BASIS = [['nominal', 'nominal (input)'], ['measured', 'measured in the particle'], ['', 'unknown']];
   var MARKETS = [['DE', 'Germany'], ['EP', 'EP states'], ['UPC', 'Unitary patent'], ['US', 'USA']];
 
   function example() {
-    return { id: 'beispiel', example: true, name: 'Example: generic MC3 siRNA formulation', stage: 'Präklinik',
+    return { id: 'beispiel', example: true, name: 'Example: generic MC3 siRNA formulation', stage: 'Preclinical',
       lipids: [{ role: 'ionizable', name: 'DLin-MC3-DMA', smiles: '', molPct: 50, pka: 6.44 }, { role: 'helper', name: 'DSPC', smiles: '', molPct: 10 }, { role: 'sterol', name: 'cholesterol', smiles: '', molPct: 38.5 }, { role: 'peg', name: 'DMG-PEG 2000', smiles: '', molPct: 1.5, pegMw: 2000 }],
       ratioBasis: 'nominal', np: 3, payload: { type: 'siRNA', modification: '2\'-O-methyl, partial', lengthNt: 21 }, particle: { sizeNm: 80, sizeMethod: 'DLS (Z-Average)', pdi: 0.1, encapsulationPct: 95 },
-      process: { mixing: 'T-Stück', frr: 3, tfr: 12, buffer: 'Citrate 25 mM', ph: 4, solvent: 'Ethanol' }, use: { route: 'intravenös', indication: 'Liver disease (hepatocyte target gene)' },
+      process: { mixing: 'T-junction', frr: 3, tfr: 12, buffer: 'Citrate 25 mM', ph: 4, solvent: 'Ethanol' }, use: { route: 'Intravenous', indication: 'Liver disease (hepatocyte target gene)' },
       markets: ['DE', 'EP', 'US'], launchDate: '', freeText: 'Textbook-style composition of 50 / 10 / 38.5 / 1.5 mol % for demonstration. No information on a real product.' };
   }
   function blank() { return { id: '', name: 'New profile', stage: '', lipids: [{ role: 'ionizable', name: '', smiles: '', molPct: null }, { role: 'helper', name: '', smiles: '', molPct: null }, { role: 'sterol', name: 'cholesterol', smiles: '', molPct: null }, { role: 'peg', name: '', smiles: '', molPct: null }], ratioBasis: 'nominal', np: null, payload: {}, particle: {}, process: {}, use: {}, markets: ['DE', 'EP', 'US'], launchDate: '', freeText: '' }; }
@@ -51,6 +53,7 @@
     function num(v) { if (v == null || v === '') return null; var x = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : null; }
     function obj(o, keys) { var out = {}; o = (o && typeof o === 'object') ? o : {}; keys.forEach(function (k) { if (o[k] != null && o[k] !== '') out[k] = typeof o[k] === 'number' ? o[k] : s(o[k]); }); return out; }
     src = (src && typeof src === 'object') ? src : {};
+    if (g.LnpFto && typeof g.LnpFto.englishForm === 'function') src = g.LnpFto.englishForm(src); // older profiles: German option values -> English
     return { id: s(src.id, 80), example: !!src.example, name: s(src.name, 160) || 'Profile', stage: STAGES.some(function (x) { return x[0] === src.stage; }) ? src.stage : '',
       lipids: (Array.isArray(src.lipids) ? src.lipids : []).slice(0, 12).map(function (l) { l = l || {}; return { role: ROLES.some(function (r) { return r[0] === l.role; }) ? l.role : 'other', name: s(l.name, 120), smiles: s(l.smiles, 2000), molPct: num(l.molPct), pka: num(l.pka), pegMw: num(l.pegMw) }; }),
       ratioBasis: s(src.ratioBasis, 20), np: num(src.np), payload: obj(src.payload, ['type', 'modification', 'lengthNt', 'encodes']), particle: obj(src.particle, ['sizeNm', 'sizeMethod', 'pdi', 'encapsulationPct', 'zetaMv']),
@@ -185,11 +188,14 @@
         St.remove('profiles', id).then(function () { profiles = profiles.filter(function (x) { return x.id !== id; }); U.toast('Profile deleted'); R.go('#produkte'); }, function (e) { U.toast('Deleting failed: ' + U.errText(e), { error: true }); });
       } }, 'Delete');
       function fto() { var go = function () { R.go({ view: 'fto', params: { p: cur.id } }); }; if (draft) { touch(); saveSoon.cancel(); save().then(go); } else { saveSoon.cancel(); save().then(go); } }
+      // links to the range check and the expiry timeline of this profile, only when those views are part of the build
+      function toolLink(view, label, params) { return !draft && App.views && App.views[view] ? h('button.btn.sm', { type: 'button', onclick: function () { saveSoon.cancel(); save().then(function () { if (App.views[view]) R.go({ view: view, params: params }); }); } }, label) : null; }
       U.set(edBox,
         h('div.k-ped-head', null, h('div.k-ped-title', null, inp(function () { return p.name; }, function (v) { p.name = v; }, { id: 'pf-name', aria: 'Profile name', max: 160 }), headState),
           h('div.k-row', null, saveState, h('button.btn.primary', { type: 'button', onclick: fto }, U.icon('fto'), 'Check FTO'),
             h('button.btn.sm', { type: 'button', onclick: function () { U.saveFile('lnp-profile-' + (p.name || 'profile').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) + '.json', JSON.stringify({ kind: 'lnp-profile', v: 1, profile: clean(p) }, null, 1), 'application/json'); } }, U.icon('download'), 'Export'),
             h('button.btn.sm', { type: 'button', onclick: function () { var c = clean(p); c.name = c.name.replace(/^Example: /, '') + ' (copy)'; c.example = false; open(c, true); touch(); } }, U.icon('copy'), 'Duplicate'),
+            toolLink('ranges', 'Range check', { p: p.id }), toolLink('expiry', 'Expiry timeline', { s: 'profile', p: p.id }),
             draft ? null : del)),
         K.sec('Formulation', 'Lipids and proportions', h('button.btn.sm', { type: 'button', onclick: function () { if (p.lipids.length < 12) { p.lipids.push({ role: 'other', name: '', smiles: '', molPct: null }); touch(); drawLipids(); } } }, 'Add lipid'),
           lipBox, h('div.k-row.k-between', null, sumBox, h('div.k-inline', null,

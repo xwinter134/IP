@@ -1,0 +1,128 @@
+{
+  "v": 1,
+  "note": "Vocabulary of pipeline/lib/ranges_extract.py: parameter names, unit spellings, keyword patterns, lipid-role words and the phrase lists for ranges. All patterns are Python regular expressions (case-insensitive unless (?-i:...) is used). Add a parameter or a component here, not in code.",
+  "lang": {
+    "en": {
+      "approx": "about|approximately|approx\\.?|around|circa|ca\\.|roughly|nominally|substantially|~",
+      "between": "between",
+      "sep": "to|through|until|up\\s+to|-",
+      "sep_between": "and|to|-",
+      "list_gap": ",|,?\\s*(?:or|and/or|and)",
+      "hi_ex": "less\\s+than|lower\\s+than|fewer\\s+than|smaller\\s+than|below|under|<",
+      "hi_in": "no\\s+more\\s+than|not\\s+more\\s+than|no\\s+greater\\s+than|not\\s+greater\\s+than|not\\s+exceeding|not\\s+to\\s+exceed|at\\s+most|a\\s+maximum\\s+of|maximum\\s+of|up\\s+to|<=|\\u2264|equal\\s+to\\s+or\\s+(?:less|lower|smaller)\\s+than|less\\s+than\\s+or\\s+equal\\s+to|less\\s+than\\s+or",
+      "lo_ex": "greater\\s+than|more\\s+than|higher\\s+than|larger\\s+than|above|over|exceeding|exceeds|>",
+      "lo_in": "at\\s+least|no\\s+less\\s+than|not\\s+less\\s+than|no\\s+lower\\s+than|not\\s+lower\\s+than|a\\s+minimum\\s+of|minimum\\s+of|>=|\\u2265|equal\\s+to\\s+or\\s+(?:greater|more|higher|larger)\\s+than|(?:greater|more|higher)\\s+than\\s+or\\s+equal\\s+to|(?:greater|more|higher)\\s+than\\s+or",
+      "suffix_hi": "or\\s+(?:less|lower|fewer|smaller|below)\\b",
+      "suffix_lo": "or\\s+(?:more|greater|higher|above|larger)\\b",
+      "decimal": ".",
+      "mask": [
+        "(?:claims?|clm\\.?)\\s+\\d+(?:\\s*(?:-|to|or|and|,|through)\\s*\\d+)*",
+        "(?:SEQ\\s*ID\\s*NOs?\\.?:?|FIGS?\\.?|Figures?|Examples?|Tables?|Formulae|Formula|Schemes?|Embodiments?|Aspects?|Items?|Steps?|Sections?|paragraphs?)\\s*\\(?\\d+[a-z]?(?:\\s*(?:-|to|or|and|,|through)\\s*\\d+)*"
+      ]
+    },
+    "de": {
+      "approx": "etwa|ca\\.|circa|ungef\\u00e4hr|rund|about|~",
+      "between": "zwischen",
+      "sep": "bis|-",
+      "sep_between": "und|bis|-",
+      "list_gap": ",|,?\\s*(?:oder|und/oder|und)",
+      "hi_ex": "weniger\\s+als|kleiner\\s+als|unter|<",
+      "hi_in": "h\\u00f6chstens|maximal|bis\\s+zu|nicht\\s+mehr\\s+als|nicht\\s+\\u00fcber|<=|\\u2264",
+      "lo_ex": "mehr\\s+als|gr\\u00f6\\u00dfer\\s+als|gr\\u00f6sser\\s+als|\\u00fcber|>",
+      "lo_in": "mindestens|wenigstens|nicht\\s+weniger\\s+als|nicht\\s+unter|>=|\\u2265",
+      "suffix_hi": "oder\\s+weniger\\b|oder\\s+darunter\\b",
+      "suffix_lo": "oder\\s+mehr\\b|oder\\s+darüber\\b",
+      "decimal": ",",
+      "mask": [
+        "(?:Anspr(?:uch|\\u00fcche|\\u00fcchen|uchs)|Anspr\\.)\\s+\\d+(?:\\s*(?:-|bis|oder|und|,)\\s*\\d+)*",
+        "(?:SEQ\\s*ID\\s*NOs?\\.?:?|Fig(?:uren?)?\\.?|Abbildung(?:en)?|Beispiele?|Tabelle|Formel)\\s*\\(?\\d+[a-z]?(?:\\s*(?:-|bis|oder|und|,)\\s*\\d+)*"
+      ]
+    }
+  },
+  "clause_break": ";|\\.(?=\\s|$)|\\n",
+  "windows": {"plain_dist": 48, "kw_before": 120, "kw_after": 32, "comp_before": 90, "comp_after": 40, "quote_lead": 40, "quote_max": 140},
+  "generic_unit": {"en": "%|per\\s*cent|percent", "de": "%|Prozent|per\\s*cent"},
+  "bare_percent": {"param": "mol_pct", "unit": "%", "needs_comp": ["ionizable_cationic", "peg", "sterol", "phospholipid_helper"], "note": "A percent sign without mol / weight next to a lipid role word is read as mol %."},
+  "params": [
+    {"id": "mol_pct", "q_drop": 10, "label": "Molar fraction (mol %)", "unit": "mol%", "min": 0, "max": 100, "comp": "nearest",
+     "units": {
+       "en": [{"re": "mol(?:e|ar)?\\s*\\.?\\s*-?\\s*%|%\\s*\\(?\\s*mol(?:e|ar)?(?:/mol)?\\b\\)?|(?:percent|per\\s*cent|percentage)\\s*(?:by\\s*)?mol(?:e|ar)?\\b|mol(?:e|ar)?\\s*(?:percent|per\\s*cent|percentage)|%\\s*by\\s*mol(?:e|es|ar)?\\b|mol/mol\\s*%", "norm": "mol%", "scale": 1}],
+       "de": [{"re": "mol(?:ar)?\\s*\\.?\\s*-?\\s*%|mol(?:ar)?\\s*-?\\s*prozent|%\\s*mol\\b|Stoffmengen\\s*-?\\s*%", "norm": "mol%", "scale": 1}]}},
+    {"id": "wt_pct", "q_drop": 5, "label": "Weight fraction (wt %)", "unit": "wt%", "min": 0, "max": 100, "comp": "nearest",
+     "units": {
+       "en": [{"re": "(?:wt|w\\s*/\\s*w|weight|mass)\\s*\\.?\\s*-?\\s*%|%\\s*\\(?\\s*(?:w\\s*/\\s*w|wt\\.?(?:/wt\\.?)?|by\\s+(?:weight|mass)|weight)\\b\\)?|(?:weight|wt\\.?|mass)\\s*(?:percent|per\\s*cent|percentage)|(?:percent|per\\s*cent)\\s*by\\s*(?:weight|mass)", "norm": "wt%", "scale": 1}],
+       "de": [{"re": "(?:gew|gewichts?|masse|m)\\s*\\.?\\s*-?\\s*%|gewichtsprozent|massenprozent|massen\\s*-?\\s*prozent|%\\s*\\(?\\s*(?:w\\s*/\\s*w|m\\s*/\\s*m|gew\\.?)\\b\\)?", "norm": "wt%", "scale": 1}]}},
+    {"id": "molar_ratio", "q_drop": 9, "label": "Molar ratio", "unit": "", "min": 0, "max": 10000, "comp": "first", "ratio": true, "plain": true, "after": true,
+     "kw": {"en": ["(?:molar|mole|mol)\\s*ratios?", "ratio\\s*(?:by|in)\\s*mol(?:e|ar)\\b", "molar\\s*proportions?", "\\(\\s*mol(?:e|ar)?\\s*/\\s*mol\\s*\\)"], "de": ["Molverh\\w+", "molare[sn]?\\s*Verh\\w+", "Stoffmengenverh\\w+"]}},
+    {"id": "weight_ratio", "q_drop": 8, "label": "Weight ratio", "unit": "", "min": 0, "max": 10000, "comp": "first", "ratio": true, "plain": true, "after": true,
+     "kw": {"en": ["(?:weight|mass)(?:\\s*-?\\s*to\\s*-?\\s*(?:weight|mass))?\\s*ratios?", "w\\s*/\\s*w\\s*ratios?", "ratio\\s*by\\s*(?:weight|mass)", "\\(\\s*w\\s*/\\s*w\\s*\\)"], "de": ["Gewichtsverh\\w+", "Massenverh\\w+", "Masseverh\\w+"]}},
+    {"id": "np_ratio", "label": "N/P ratio", "unit": "", "min": 0, "max": 1000, "comp": "none", "ratio": true, "plain": true, "after": true,
+     "kw": {"en": ["(?-i:N)\\s*[/:]\\s*(?-i:P)\\b", "(?-i:N)\\s*-?\\s*to\\s*-?\\s*(?-i:P)\\b", "(?:nitrogen|amine|amino)\\s*-?\\s*to\\s*-?\\s*phosph\\w+"], "de": ["(?-i:N)\\s*[/:]\\s*(?-i:P)\\b", "Stickstoff\\s*-?\\s*(?:zu|/)\\s*-?\\s*Phosph\\w+", "Ladungsverh\\w+"]}},
+    {"id": "size_nm", "q_drop": 7, "label": "Particle size (nm)", "unit": "nm", "min": 0, "max": 100000, "comp": "none", "needs_kw": true, "after": true,
+     "kw": {"en": ["(?:size|diameter|radius)\\b", "particles?\\b", "nanoparticles?\\b", "\\bLNPs?\\b", "vesicles?\\b", "liposomes?\\b", "z-average"], "de": ["Partikel\\w*", "Teilchen\\w*", "Durchmesser", "Gr\\u00f6\\u00dfe", "Gr\\u00f6sse", "Nanopartikel\\w*", "Liposom\\w*"]},
+     "units": {
+       "en": [{"re": "nm\\b|nano\\s*met(?:er|re)s?\\b", "norm": "nm", "scale": 1}, {"re": "(?-i:[\\u00b5\\u03bcu]m)\\b|microns?\\b|micro\\s*met(?:er|re)s?\\b", "norm": "nm", "scale": 1000}],
+       "de": [{"re": "nm\\b|nano\\s*meter\\w*", "norm": "nm", "scale": 1}, {"re": "(?-i:[\\u00b5\\u03bcu]m)\\b|mikrometer\\w*", "norm": "nm", "scale": 1000}]}},
+    {"id": "pdi", "label": "Polydispersity index", "unit": "", "min": 0, "max": 10, "comp": "none", "plain": true,
+     "kw": {"en": ["\\bPDI\\b", "polydispersity(?:\\s*index)?"], "de": ["\\bPDI\\b", "Polydispersit\\w*(?:\\s*index)?"]}},
+    {"id": "pka", "label": "pKa", "unit": "", "min": -5, "max": 20, "comp": "nearest", "plain": true,
+     "kw": {"en": ["\\bpK\\s*a\\b", "\\bpKa\\b"], "de": ["\\bpK\\s*a\\b", "\\bpKa\\b", "pKS\\b"]}},
+    {"id": "encaps_pct", "label": "Encapsulation efficiency (%)", "unit": "%", "min": 0, "max": 100, "comp": "none", "plain": true, "after": true, "generic_pct": true,
+     "kw": {"en": ["encapsulat\\w*(?:\\s*(?:efficiency|rate))?", "entrap\\w*(?:\\s*efficiency)?", "(?:loading|incorporation)\\s*efficiency"], "de": ["(?:Ver|Ein)kapsel\\w*", "Einschluss\\w*"]}},
+    {"id": "temp_c", "q_drop": 3, "label": "Temperature (°C)", "unit": "C", "min": -273, "max": 1000, "comp": "none", "needs_unit": true,
+     "units": {
+       "en": [{"re": "[\\u00b0\\u00ba\\u02da]\\s*C\\b|\\u2103|degrees?\\s*(?:Celsius|centigrade|C\\b)|deg\\.?\\s*C\\b", "norm": "C", "scale": 1}],
+       "de": [{"re": "[\\u00b0\\u00ba\\u02da]\\s*C\\b|\\u2103|Grad\\s*(?:Celsius|C\\b)", "norm": "C", "scale": 1}]}},
+    {"id": "ph", "q_drop": 4, "label": "pH", "unit": "", "min": 0, "max": 14, "comp": "none", "plain": true,
+     "kw": {"en": ["(?-i:pH)\\b"], "de": ["(?-i:pH)(?:-Wert)?\\b"]}},
+    {"id": "chain_c", "q_drop": 1, "label": "Chain length (carbon atoms)", "unit": "C", "min": 1, "max": 100, "comp": "nearest",
+     "units": {
+       "en": [{"re": "carbon\\s*atoms?\\b|carbons\\b|C-atoms?\\b|(?-i:C)\\s*atoms?\\b", "norm": "C", "scale": 1}],
+       "de": [{"re": "Kohlenstoff\\s*atomen?\\b|C-Atomen?\\b|Kohlenstoffe\\b", "norm": "C", "scale": 1}]},
+     "inline": [
+       {"re": "(?<![A-Za-z0-9])C(?P<lo>\\d{1,2})\\s*(?:-|to|bis)\\s*C(?P<hi>\\d{1,2})(?![\\d])", "needs_after": null},
+       {"re": "(?<![A-Za-z0-9])C(?P<lo>\\d{1,2})\\s*(?:-|to|bis)\\s*(?P<hi>\\d{1,2})(?![\\d.:])", "needs_after": "\\s*(?:linear\\s+|branched\\s+|straight\\s*-?\\s*chain\\s+|saturated\\s+|unsaturated\\s+)?(?:alkyl|alkenyl|alkynyl|alkylene|alkoxy|acyl|alkanoyl|aliphatic|hydrocarbon|hydrocarbyl|fatty|chains?|carbon|lipid\\s+tails?|tails?|Alkyl|Alkenyl|Kohlenwasserstoff|Fetts|Kette)"}
+     ]},
+    {"id": "peg_mw", "q_drop": 6, "label": "PEG molecular weight (Da)", "unit": "Da", "min": 100, "max": 1000000, "comp": "fixed:peg", "plain": true, "requires_comp": "peg",
+     "kw": {"en": ["(?:(?:average|number[- ]average|weight[- ]average)\\s+)?molecular\\s+weights?", "\\bM(?:W|n|w)\\b"], "de": ["(?:mittler\\w*\\s+)?Molek\\u00fclmasse", "Molekulargewicht", "\\bM(?:W|n|w)\\b"]},
+     "units": {
+       "en": [{"re": "kDa\\b|kD\\b|kilo\\s*daltons?\\b", "norm": "Da", "scale": 1000}, {"re": "Da\\b|daltons?\\b|g\\s*/\\s*mol\\b|g\\s*mol-1\\b|amu\\b", "norm": "Da", "scale": 1}],
+       "de": [{"re": "kDa\\b|kD\\b|Kilodalton\\b", "norm": "Da", "scale": 1000}, {"re": "Da\\b|Dalton\\b|g\\s*/\\s*mol\\b", "norm": "Da", "scale": 1}]},
+     "inline": [
+       {"re": "(?<![A-Za-z])m?PEG\\s*-?\\s*(?P<lo>\\d{3,5})(?:\\s*(?:-|to|bis)\\s*(?P<hi>\\d{3,5}))?(?![\\d])", "needs_after": null, "scale": 1},
+       {"re": "(?<![A-Za-z])m?PEG\\s*-?\\s*(?P<lo>\\d{1,2})\\s*[kK](?:Da)?\\b", "needs_after": null, "scale": 1000}
+     ]},
+    {"id": "conc", "q_drop": 2, "label": "Concentration", "unit": "mg/mL", "min": 0, "max": 100000, "comp": "nearest",
+     "units": {
+       "en": [{"re": "mg\\s*/\\s*m[lL]\\b|mg\\s*m[lL]\\s*-1\\b|g\\s*/\\s*[lL]\\b|mg\\s*per\\s*m[lL]\\b", "norm": "mg/mL", "scale": 1},
+              {"re": "[\\u00b5\\u03bcu]g\\s*/\\s*m[lL]\\b|ng\\s*/\\s*[\\u00b5\\u03bcu][lL]\\b", "norm": "mg/mL", "scale": 0.001},
+              {"re": "(?-i:mM)\\b|mmol\\s*/\\s*[lL]\\b|millimolar\\b", "norm": "mM", "scale": 1},
+              {"re": "(?-i:[\\u00b5\\u03bcu]M)\\b|micromolar\\b", "norm": "mM", "scale": 0.001}],
+       "de": [{"re": "mg\\s*/\\s*m[lL]\\b|g\\s*/\\s*[lL]\\b", "norm": "mg/mL", "scale": 1},
+              {"re": "[\\u00b5\\u03bcu]g\\s*/\\s*m[lL]\\b", "norm": "mg/mL", "scale": 0.001},
+              {"re": "(?-i:mM)\\b|mmol\\s*/\\s*[lL]\\b", "norm": "mM", "scale": 1}]}}
+  ],
+  "components": [
+    {"id": "ionizable_cationic", "aliases": ["ionizable", "cationic", "ionisable"], "label": "ionizable / cationic lipid",
+     "en": "ionizable|ionisable|(?<!non-)(?<!non )cationic|amino\\s*-?\\s*lipids?|titratable|protonatable",
+     "de": "ionisierbar\\w*|kationisch\\w*|Aminolipid\\w*"},
+    {"id": "peg", "aliases": ["peg", "pegylated"], "label": "PEG lipid",
+     "en": "m?PEG\\w*|poly\\s*\\(?\\s*ethylene\\s*(?:glycol|oxide)\\)?|PEGylated|pegylated",
+     "de": "m?PEG\\w*|Polyethylenglykol\\w*|PEGyliert\\w*"},
+    {"id": "sterol", "aliases": ["sterol", "cholesterol"], "label": "sterol",
+     "en": "cholesterol|sterols?|sitosterol|stigmasterol|campesterol|ergosterol|lanosterol|cholesteryl|oxysterol",
+     "de": "Cholesterin\\w*|Sterin\\w*|Sterol\\w*|Sitosterin\\w*"},
+    {"id": "phospholipid_helper", "aliases": ["helper", "phospholipid", "neutral"], "label": "phospholipid / helper lipid",
+     "en": "phospholipids?|helper\\s*-?\\s*lipids?|neutral\\s*lipids?|non-?\\s*cationic\\s*lipids?|co-?lipids?|DSPC|DOPE|DOPC|DPPC|POPC|DMPC|phosphatidyl\\w*|phosphocholines?|sphingomyelin|lecithin",
+     "de": "Phospholipid\\w*|Helferlipid\\w*|Hilfslipid\\w*|neutrale[sn]?\\s*Lipid\\w*|Phosphatidyl\\w*|DSPC|DOPE"},
+    {"id": "payload", "aliases": ["payload", "nucleic acid", "mrna"], "label": "payload / nucleic acid",
+     "en": "nucleic\\s*acids?|mRNAs?|saRNAs?|siRNAs?|RNAs?|DNAs?|plasmids?|polynucleotides?|oligonucleotides?|antisense|therapeutic\\s*agents?|active\\s*(?:agents?|ingredients?|pharmaceutical)|payloads?|cargo|drugs?|antigens?",
+     "de": "Nukleins\\u00e4ure\\w*|mRNA\\w*|siRNA\\w*|RNA\\w*|DNA\\w*|Plasmid\\w*|Oligonukleotid\\w*|Wirkstoff\\w*"},
+    {"id": "total", "aliases": [], "label": "total", "fallback": true,
+     "en": "total\\s*(?:lipids?|lipid\\s*content|weight|amount|mass|composition|formulation)|lipid\\s*(?:composition|mixture|component)",
+     "de": "Gesamt\\s*(?:lipid\\w*|gewicht\\w*|menge\\w*|masse\\w*)|Lipidzusammensetzung|Lipidgemisch"},
+    {"id": "structural_lipid", "aliases": [], "label": "structural lipid (sterol or phospholipid)", "ambiguous": true,
+     "note": "In many claims 'structural lipid' is the sterol, in others the phospholipid: a range next to it is kept without a component, never given to helper or sterol.",
+     "en": "structural\\s*lipids?", "de": "Strukturlipid\\w*"}
+  ]
+}

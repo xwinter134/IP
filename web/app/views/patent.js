@@ -11,7 +11,7 @@
     var D = g.LnpData, S = g.LnpSearch;
     var page = h('div.page'), destroyed = false, urls = [], offs = [], ctl = [], io = null;
     var st = { pn: route.arg, claim: +(route.params.c || 0) || 0, lang: route.params.l === 'de' ? 'de' : route.params.l === 'en' ? 'en' : '', q: typeof route.params.q === 'string' ? route.params.q : '' };
-    var P = null, claimsAll = null, images = {}, claimsBox = null, claimsHead = null;
+    var P = null, claimsAll = null, images = {}, claimsBox = null, claimsHead = null, panelOff = [];
     host.appendChild(page);
     page.appendChild(h('div.empty', null, h('p.overline', { text: 'Patent' }), h('h3', { text: U.pnPretty(st.pn) || 'Patent' }), h('p', null, h('span.spin'), ' Loading data')));
 
@@ -39,6 +39,26 @@
       var el = h('section.sec', null, head, body);
       return { el: el, head: head, body: body };
     }
+    // extension hooks (LnpApp.ext, see app.js): nodes of the registered function hooks are appended after the built-in ones
+    function extAdd(box, kind) {
+      if (!box || !App.ext) return;
+      var args = Array.prototype.slice.call(arguments, 2); args.push({ App: App, route: App.route || route, lang: st.lang });
+      App.ext.nodes.apply(App.ext, [kind].concat(args)).forEach(function (n) { box.appendChild(n); });
+    }
+    function extPanels(into) {
+      if (!App.ext) return;
+      var ctx = { App: App, route: App.route || route, lang: st.lang };
+      App.ext.list('patentPanel').forEach(function (spec) {
+        var s2 = null;
+        try {
+          if (typeof spec.render !== 'function' || (typeof spec.when === 'function' && !spec.when(P))) return;
+          s2 = sec(spec.over || '', spec.title || spec.id); s2.el.dataset.extPanel = spec.id;
+          into.appendChild(s2.el);
+          var d = spec.render(P, s2.body, ctx);
+          if (typeof d === 'function') panelOff.push(d);
+        } catch (e) { App.logError('ext patentPanel ' + spec.id, e); if (s2 && s2.el.parentNode) s2.el.parentNode.removeChild(s2.el); }
+      });
+    }
     function kv(rows) {
       var dl = h('dl.kv');
       rows.forEach(function (r) { if (r && r[1] != null && r[1] !== '') { dl.appendChild(h('dt', { text: r[0] })); dl.appendChild(h('dd', null, r[1])); } });
@@ -60,6 +80,7 @@
           h('a.btn', { href: R.build({ view: 'familie', arg: pn }) }, U.icon('family'), 'Compare family'),
           h('button.btn', { type: 'button', onclick: function () { App.handToFto([pn], { from: 'patent' }); } }, U.icon('fto'), 'Check FTO'),
           h('button.btn.quiet', { type: 'button', onclick: function () { U.copy(pn, 'Number copied'); } }, U.icon('copy'), 'Number')));
+      extAdd(head.querySelector('.pt-actions'), 'patentAction', P);
       var stats = h('dl.stats');
       function stat(k, v, small) { stats.appendChild(h('div.stat', null, h('dt', { text: k }), h('dd', null, v, small ? h('small', { text: small }) : null))); }
       var expEl = h('dd', null, P.exp ? U.date(P.exp) : '–', h('small', { text: P.exp ? 'Estimate; basis loading' : (P.auth === 'WO' ? 'PCT publication, not a right in itself' : 'not stated in the dataset') }));
@@ -131,6 +152,8 @@
         if (st.q) S.highlight(t, st.q).then(function (ps) { if (!destroyed && ps) U.pieces(U.clear(p), ps); }, function () { });
       }, function () { });
 
+      extPanels(main);
+
       /* side: status */
       var ss = sec('Legal status', 'Status and events'); side.appendChild(ss.el);
       ss.body.appendChild(h('p.faint', null, h('span.spin'), ' loading'));
@@ -191,6 +214,7 @@
       [['espacenet', 'Espacenet'], ['register', 'EP Register'], ['google', 'Google Patents'], ['uspto', 'USPTO']].forEach(function (x) {
         if (L[x[0]]) lk.appendChild(h('a.btn.sm', { href: L[x[0]], target: '_blank', rel: 'noopener noreferrer' }, x[1], U.icon('ext')));
       });
+      if (App.ext) App.ext.linkItems(P).forEach(function (l) { lk.appendChild(h('a.btn.sm', { href: l.href, title: l.title || null, target: '_blank', rel: 'noopener noreferrer' }, l.label, U.icon('ext'))); });
       ls.body.appendChild(lk);
 
       /* side: notes */
@@ -339,6 +363,7 @@
           var btn = h('button.btn.quiet', { type: 'button', onclick: function () { explain(c, list, out, btn); } }, U.icon('spark'), 'Explain with Claude');
           meta.appendChild(btn); body.appendChild(out);
         }
+        extAdd(meta, 'claimAction', P, c);
         var el = h('article.claim' + (depth ? '.dep' : '.indep'), { id: 'claim-' + c.n, data: { n: c.n } }, body);
         nodes[c.n] = { el: el, text: text, c: c, parent: null };
         var ks = kids[c.n];
@@ -445,6 +470,7 @@
       destroy: function () {
         destroyed = true;
         offs.forEach(function (f) { try { f(); } catch (e) { /* ignore */ } });
+        panelOff.forEach(function (f) { try { f(); } catch (e) { App.logError('ext patentPanel destroy', e); } });
         ctl.forEach(function (a) { try { a.abort(); } catch (e) { /* ignore */ } });
         urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ } });
         if (io) io.disconnect();

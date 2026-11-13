@@ -1,0 +1,53 @@
+/* LNP Patent Desk: range check view and patent panel. Tokens come from index.html (:root), components from app.css / views.css. */
+.rg-page .rg-grid { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.rg-page .rg-profrow { display: flex; align-items: flex-end; gap: 10px 14px; flex-wrap: wrap; max-width: 560px; }
+.rg-page .rg-profrow .k-field { flex: 1 1 280px; }
+.rg-page .rg-row { display: grid; grid-template-columns: minmax(170px, 1.3fr) minmax(170px, 1.2fr) minmax(130px, .8fr) auto; gap: 8px 12px; align-items: end; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.rg-page .rg-valbox { display: flex; align-items: center; gap: 8px; }
+.rg-page .rg-valbox .input { height: 34px; min-width: 0; }
+.rg-page .rg-unit { color: var(--faint); min-width: 3.2em; font-size: 12px; white-space: nowrap; }
+.rg-page .rg-del { align-self: end; padding-bottom: 3px; }
+.rg-page .rg-tools { margin: 14px 0 6px; }
+.rg-page .rg-empty { margin-top: 18px; }
+
+.rg-cards { display: flex; flex-direction: column; gap: 10px; }
+.rg-claim { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); overflow: hidden; }
+.rg-claim-head { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.rg-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rg-vals { display: flex; flex-direction: column; }
+.rg-val-item { padding: 9px 12px; border-top: 1px solid var(--line); min-width: 0; }
+.rg-val-item:first-child { border-top: 0; }
+.rg-val-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 13.5px; }
+.rg-val-name { color: var(--text); font-weight: 500; }
+.rg-val-num { color: var(--dim); }
+.rg-val-range { margin-top: 3px; font-size: 13px; color: var(--dim); display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; overflow-wrap: anywhere; }
+.rg-q { margin: 6px 0 0; padding: 6px 10px; border-left: 2px solid var(--line-strong); background: var(--surface); border-radius: 0 6px 6px 0; font-size: 12.5px; line-height: 1.5; color: var(--dim); overflow-wrap: anywhere; word-break: break-word; }
+.rg-q mark.hit { font-weight: 500; }
+.rg-q-ok, .rg-q-bad, .rg-q-none { display: block; margin-top: 3px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .02em; color: var(--faint); }
+.rg-q-bad { color: var(--warn); }
+.rg-meta { font-size: 12.5px; color: var(--faint); line-height: 1.5; max-width: 86ch; }
+.rg-limits { margin-top: 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 0 12px; }
+.rg-limits summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0; font-size: 13.5px; color: var(--dim); }
+.rg-limits ul { padding: 0 0 6px 18px; list-style: disc; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); max-width: 90ch; }
+.rg-limits .rg-meta { padding-bottom: 10px; }
+
+/* patent panel */
+.rg-panel { display: flex; flex-direction: column; gap: 10px; }
+.rg-check { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--dim); cursor: pointer; }
+.rg-pc { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.rg-pc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.rg-pc-item { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 6px 12px; border-top: 1px solid var(--line); min-width: 0; }
+.rg-pc-item:first-child { border-top: 0; }
+.rg-pc-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; flex: 1 1 260px; min-width: 0; font-size: 13px; }
+.rg-pc-p { color: var(--text); }
+.rg-pc-c { color: var(--faint); }
+.rg-pc-q { flex: 1 1 100%; }
+
+@media (max-width: 720px) {
+  .rg-page .rg-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .rg-page .rg-row > .k-field:first-child { grid-column: 1 / -1; }
+  .rg-page .rg-row > .k-field:nth-child(2) { grid-column: 1 / -1; }
+  .rg-page .rg-del { justify-self: end; }
+  .rg-claim-head { padding: 8px 10px; }
+  .rg-val-item { padding: 8px 10px; }
+}

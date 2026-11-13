@@ -5,6 +5,20 @@ nanoparticles (LNP) and ionizable lipids. It is a static page: full-text search 
 structure search over the lipids named in patents, legal status, a patent landscape, a watchlist, and a guided FTO
 pre-screening of a product profile against selected patents.
 
+Tools (hub `#tools`, each works without Claude):
+
+- Markush check: a molecule against a claimed general formula, rules checked by code (curated records, Claude
+  translation and formula reading with verified quotes, or manual rules); batch over the formula claims of a patent.
+- Library screen: a list or CSV of compounds against the corpus (exact, similar, Markush records), with CSV export.
+- Range check: formulation values (mol %, ratios, size, pH, ...) against the numeric ranges found in claims.
+- Design-around ideas: code-verified variants outside one claimed formula, re-checked across all routes (idea
+  generator, not advice).
+- Earliest disclosure timeline for a compound and a chemistry white-space map.
+- Expiry timeline / patent cliff (ICS and CSV export) and similar patents by text, compounds and CPC.
+- Legal event timeline, tags and normalised assignees as search facets, deep links to other patent databases.
+- For AI tools: `window.LnpAPI`, context packs to paste, and a local MCP server (`mcp/`, `docs/INTEGRATION.md`).
+- Step-by-step tutorials with screenshots: `docs/TUTORIALS.md` (also in the app under "How to").
+
 It is a research aid, not legal advice. Every FTO result is a pre-screening that has to be checked by a patent
 attorney; legal status and expiry dates are estimates from public snapshots.
 
@@ -31,7 +45,7 @@ Public Search. See `docs/ARCHITECTURE.md`.
 Requirements: Python 3.13 with `duckdb`, `pyarrow`, `lxml`; Node 22; for the end-to-end test Playwright with Chromium.
 
 ```
-make dist          # = pipeline/run_all.sh: normalize -> status -> chemistry (if stale) -> dist/
+make dist          # = pipeline/run_all.sh: normalize -> status -> chemistry (if stale) -> ranges, tags, markush -> dist/
 make batches       # list the publish batches of dist/ (pipeline/run_all.sh batches -v: with file names)
 make test          # engine tests
 make e2e           # end-to-end test of dist/ behind a server that mimics the Artifact host
@@ -44,7 +58,11 @@ The single steps, all incremental and re-runnable at any time:
 python3 pipeline/normalize.py            # caches -> data/work/corpus.jsonl.gz            (about 40 s)
 python3 pipeline/status.py --no-fetch    # cached register records -> status.jsonl.gz     (about 60 s)
 node pipeline/chem_build.cjs             # compounds -> data/work/chem/                    (10 s cached, 6 min cold)
+python3 pipeline/ranges_build.py         # claim ranges -> data/work/xdata/ranges/          (about 95 s)
+python3 pipeline/tags_build.py           # tags, legal bits, assignees -> xdata/tags/
+python3 pipeline/markush_seed.py         # curated Markush records -> xdata/markush/
 python3 pipeline/build_dist.py           # -> dist/ and dist/publish_batches.json          (about 60 s, 25 s unchanged)
+pipeline/build_pages.sh                  # the plain website -> dist-pages/ (no Claude features)
 ```
 
 The downloads (`pipeline/discover.py`, `fetch_ep.py`, `fetch_us.py`, `status.py --fetch-only`, `fetch_ep_images.py`)

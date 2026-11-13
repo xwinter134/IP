@@ -361,6 +361,52 @@ copies the `publish` files unchanged (base64 variant: `x.gz.bin` -> `x.gz.b64.tx
 stay JSON) and may set patent flag bit3 from `pat.gz.bin`. Current build: 84,691 compounds, 33,258 publications,
 1,061,376 links, 18.8 MB in 9 files (largest `fp.gz.bin` 10.2 MB).
 
+## Extra data (xdata)
+
+Optional datasets that a pipeline step (outside `build_dist.py`) writes next to the chemistry build and that engines
+`web/engine/x-*.js` read. `build_dist.py` knows nothing about their content, only about the directory layout.
+
+```
+data/work/xdata/<name>/xdata.json   {name, v, built, target: "both" | "pages", files: [names], files_pages?: [names], counts: {...}, notes}
+data/work/xdata/<name>/<file>       each listed file: *.gz.bin (gzip payload) or *.json; at most 3 files per dataset, names [a-z0-9._-]
+```
+
+`python3 -I pipeline/build_dist.py [--xdata-dir data/work/xdata] [--target artifact|pages]` copies every dataset to
+`dist/data/x/<name>/<file>`: `x.gz.bin` becomes `x.gz.b64.txt` with `--enc b64` and stays `x.gz.bin` with `--enc bin`,
+`*.json` is copied as it is. With the default `--target artifact` only datasets with `target: "both"` are used and only
+their `files`; `--target pages` (passed by `pipeline/build_pages.sh`) adds datasets with `target: "pages"` and the
+`files_pages` of every dataset (for example long quotes that do not fit the Artifact budget). The bytes of all xdata
+files (after base64) are counted with the fixed parts before the text budget is computed, so the text cut absorbs them,
+and are reported as `manifest.sizes.xdata`. Files count towards `manifest.files`, the publish batches (rank after the
+patent table, before the text index), the 500-file and the 15 MB-per-file limits; a missing listed file, an unreadable
+`xdata.json`, more than 3 files or a bad name stops the build.
+
+`manifest.x` exists only when at least one dataset was included:
+
+```
+"x": {"<name>": {"v": <xdata v>, "built": "<xdata built>", "files": {"<logical file name>": <bytes on disk>}, "counts": {...}}}
+```
+
+The file names in `files` are the logical names (`tags.gz.bin`), the sizes are those of the published files (base64
+included). Engines read `LnpData.manifest.x && LnpData.manifest.x[name]`; a missing entry means "not in this build" and
+the feature says so. They fetch with `LnpLoader.create({base: LnpData.base() + 'x/' + name + '/', enc: LnpData.manifest.enc})`
+and `get('<file>.gz.bin', {as: 'bin' | 'json'})`; the loader maps `.gz.bin` to `.gz.b64.txt` itself.
+
+Datasets so far (`docs/TOOLS_PLAN.md` 2.4, 2.5): `ranges` (`pipeline/ranges_build.py`), `markush` (`pipeline/markush_seed.py`) and
+`tags` (`pipeline/tags_build.py`: tags, legal bits and canonical assignee per patent index `p`, format `tg-1`, rules in
+`data/seed/tag_rules.json` and `data/seed/assignee_aliases.json`, engine `LnpTags`). Datasets indexed by `p` record the
+corpus snapshot they were built from (`counts.snapshot`, `counts.patents`) so that the engine can warn when the dist was
+built from another corpus file. `pipeline/run_all.sh` runs the three steps (each only when its script exists) before
+`build_dist.py`.
+
+Assignee normalisation (`pipeline/lib/asg_norm.py`): a raw string may hold several `;`-separated parties (split before the
+first-owner and non-owner logic; `Surname; Given A.` stays one person); HTML entities are decoded; `X University` and
+`University of X` are one key only for the X listed in `university_prefix_merge` (Washington University and the University of
+Washington stay apart; DOCDB `UNIV X` = `University of X`); `raw_regex` aliases split a key that is too short (Merck & Co.
+vs Merck S.A.). `LnpTags` assignee facet values are `asg:<slug>` (slug of the canonical name), stable across rebuilds;
+`registerFacets` appends "(stale snapshot)" to the facet titles and sets `note` when `info().mismatch` is set. The vaccine
+tag is "Vaccine / infectious disease": any vaccine term or infectious-disease name, cancer vaccines included.
+
 ## Browser engines (all in `web/engine/`, plain scripts, ASCII only, no build step)
 
 Every engine works in three modes and picks the first that works: dedicated Worker from
@@ -566,8 +612,8 @@ and formula features are marked `formel_fehlt`. No dependencies; `LnpSearch` / `
 - Calls are queued (one `sample` call at a time). `signal` (AbortSignal) rejects `{code: "cancelled"}`, also while queued.
 - Errors are `{code, message, text?}` (codes of `sample.d.ts` plus `unavailable`, `schema_invalid`). `not_granted`,
   `sampling_disabled`, `not_declared`, `capability_disabled`, `capability_removed` switch the feature off for the view
-  (`available()` false, no further call is sent); `rate_limited` is never retried. `LnpAI.message(err, lang)` gives the
-  German / English UI copy, `LnpAI.action(err)` -> `"off" | "wait" | "login" | "retry" | "none"`, `LnpAI.isFatal(err)`.
+  (`available()` false, no further call is sent); `rate_limited` is never retried. `LnpAI.message(err)` gives the
+  English UI copy (a `lang` argument is accepted and ignored), `LnpAI.action(err)` -> `"off" | "wait" | "login" | "retry" | "none"`, `LnpAI.isFatal(err)`.
 - `LnpAI.usage()` -> `{calls, ok, failed, repairs, bytesIn, bytesOut, images, ms, byTier, last, log[]}` (in memory);
   `LnpAI.onUsage(fn)`.
 - `LnpAI.semanticSearch(query, {n = 60, batch = 30, filters, signal, onStage})` ->
@@ -575,9 +621,14 @@ and formula features are marked `formel_fehlt`. No dependencies; `LnpSearch` / `
   query expansion (1 call) -> BM25 on independent claims with the expanded boolean query (strict, plus relaxed when
   fewer than n/2 hits) -> re-ranking in batches of 30 claims (sequential) -> merged ranking with a one-line reason per
   hit. Without Claude, or when a call fails, the BM25 order is kept and `degraded` says why.
-- `LnpAI.explainClaim(pn | p, claimNo, {lang, signal, onText})` -> `{text, truncated, pn, claimNo, claimLang, cuts}`: plain-language
-  explanation of one claim with the claims it refers to and the definitions excerpt. `LnpAI.explain(...)` is both:
+- `LnpAI.explainClaim(pn | p, claimNo, {claimLang, signal, onText})` -> `{text, truncated, pn, claimNo, claimLang, cuts}`: plain-language
+  explanation (always in English, quotes verbatim) of one claim with the claims it refers to and the definitions excerpt. `LnpAI.explain(...)` is both:
   `explain(err, lang)` = `message(err, lang)`, `explain(pn, claimNo, opts)` = `explainClaim`.
+- `LnpAI.useProvider(p | null)` registers the user's own provider (`engine/x-llm.js`, `LnpLLM`; docs/INTEGRATION.md section 6):
+  `p = {id, label(), call(input, opts) -> {text, truncated, modelTierApplied}, limits()}`, the contract of `sample`; `json()` calls
+  pass `opts.json = true` to it (JSON mode). Order: mock > `sample` > provider > off. `LnpAI.state()` adds `source`
+  (`"sample" | "provider" | "mock" | null`) and `label` (e.g. `"<provider> · <model>"`). Extra error codes from providers:
+  `key_invalid` (switches off), `unreachable`, `model_unavailable` (fatal for a chain), `timeout`.
 - `LnpAI.mock(fn, {limits})` installs a test double (`fn(input, options)` -> string | `{text, truncated}` | JSON value;
   throw `{code}` to simulate failures); `LnpAI.mock(null)` removes it; `LnpAI.reset()`.
 
@@ -646,15 +697,27 @@ taken from the globals or from `LnpFto.configure({data, search, chem, store, ai,
 - `LnpFto.chartOne(profile, pn | p, {depth = "quick", lang, markets, signal, onEvent})` -> one entry of `Opinion.patents` (plus
   `limits`, `warnings`); nothing is saved.
 - `LnpFto.render(opinion, "md" | "html" | "json")` -> string. Every rendering starts and ends with the verbatim limits block
-  (`LIMITS_DE` / `LIMITS_EN` with the status snapshot date). HTML is a self-contained printable document (inline CSS, no
-  scripts, no links, fixed tag set, every string escaped); `LnpFtoRender.fragment(opinion)` is the same without the
-  document frame. Sections: summary with risk matrix, product profile as understood, search record, per patent (status,
+  (`LIMITS_EN` with the status snapshot date; an opinion saved by an older version with the German block is rendered with
+  the English block and the same date). HTML is a self-contained printable document (inline CSS, no
+  scripts, only in-page anchors, fixed tag set, every string escaped); `LnpFtoRender.fragment(opinion)` is the same without the
+  document frame. The HTML has a cover band (app tokens, system font fallbacks, no remote resources), executive summary with
+  the overall risk as a text level, contents, per-right sections and an A4 print stylesheet (running footer with the status
+  snapshot date and page numbers in the page margin boxes, repeated table headers). The "PDF" export of the pre-screen view
+  prints this same HTML from a hidden frame (browser "Save as PDF"); where printing is blocked (artifact sandbox) it saves
+  the print-ready HTML instead. Sample: `docs/samples/fto-report-sample.{html,pdf}`; test: `tests/report_test.mjs`. Sections: summary with risk matrix, product profile as understood, search record, per patent (status,
   claim chart, formula test, equivalence questions, dependent claims, red team, questions for counsel, design-around
   ideas), cross-cutting points, rights not analysed and why, next steps.
 - `LnpFto.list()` (heads only), `LnpFto.load(id)` -> saved `Opinion`, `LnpFto.remove(id)`; pure helpers `verifyQuote`,
   `literalFromVerdicts`, `maxRisk`, `rightOf`, `statusLabel`, `checkChart`, `textQueries`.
 - `Opinion` = `{v, id, created, finished, lang, depth, markets, aiUsed, title, snapshot (manifest.snapshots), statusSnapshot, limits, profile, search: {record, candidates, triage: {A, B, C}, charted, report}, patents: [{p, pn, auth, kind, title, assignee, family, filing, routes, why, jurisdiction, markets, rel, relWhy, status (text), right: {granted, pending, dead, deadReason, code, src, asof, stale, unverified, inForceDe, lapsedIn, opposition, modifiers, notes, expiry}, expiry: {date, basis, estimate: true, ptaDays}, risk: {b, e, final, chart?}, literal: {b, e, final, claim}, flags[], failed, chart (ClaimChart + `app` blocks), dependent, redteam, digest (ChartDigest)}], notCharted: [{p, pn, reason, text, rel, status, expiry}], overall: {markets: [{market: "DE"|"EP_UPC"|"US", risk, drivers[]}], pending}, synthesis (Opinion schema `op-1` of prompts.md + `app`) | null, matrix: [{pn, jurisdiction, markets, rel, risk, riskB, riskE, literal, status, expiry, expiryBasis, dead, pending, flags}], warnings[], usage, run: {calls, resumedSteps}}`.
   Risk codes: `1_sehr_gering` ... `5_sehr_hoch`, `nicht_beurteilbar` (ranks between 3 and 4).
+- Language: all UI copy, reports and model free text are English (`lang` options are accepted and ignored; `opinion.lang` is
+  always `"en"`). Schema field names and enum codes (`5_sehr_hoch`, `wortsinngemaess_erfuellt`, `offene_fragen`, ...) are internal
+  ASCII identifiers derived from German; they are kept so that stored opinions, resumable runs and the prompt schemas stay
+  valid, and they are never shown: `LnpFtoRender.label(code)` maps every code to an English label (also used by `#fto`,
+  `x-context.js`). Verbatim quotes and the generated search queries (which include German terms for German claims) stay as
+  they are. `LnpFto.englishForm(form)` maps the German option values of profiles saved by older versions to English.
+  Guard: `tests/english_test.mjs` (rendered reports and a static scan of the string literals).
 
 ## Work views (`web/app/views/`)
 
@@ -694,12 +757,52 @@ all but the last waiter now receive a copy, the last takes the buffer by transfe
 inside the worker and the caller never got an answer (seen when `LnpData.patents()` touched more chunks than the
 chunk LRU holds, e.g. in `LnpFto.candidates`).
 
+## Tools (branch `lnp-tools`, plan: `docs/TOOLS_PLAN.md`)
+
+Extension files only: the shell loads every `engine/x-*.js` listed in `manifest.files` (name order) before the views,
+every `app/views/*.js` and every `app/*.css`. The tool views register with `rail: false, parent: 'tools'`; the only new
+rail entry is the hub `#tools`. Every tool runs without Claude (manual mode or no model needed) and states its limits.
+
+| Engine (global, file) | View (route) | Data | Claude |
+|---|---|---|---|
+| `LnpMarkush` (`x-markush.js`, `docs/MARKUSH.md`) | `markush.js` (`#markush-<pn>--c<claim>--q<molecule>[--b1]`) | xdata `markush` (curated `mk-1` records), store kind `markush` | translate claim -> `mk-1`, OCSR of the formula image; code checks quotes, SMILES and the match |
+| `LnpScreen` (`x-screen.js`) | `screen.js` (`#screen[-<id>]`) | chemistry set, Markush records, store kind `screens` | none |
+| `LnpRanges` (`x-ranges.js`) | `ranges.js` (`#ranges[--p<profile id>]`) | xdata `ranges` (`rg-1`) | none |
+| `LnpDesign` (`x-designaround.js`) | `designs.js` (`#designs[-<id>]`) | `data/seed/design_space.json` (shipped as `data/seed/design_space.json`), store kind `designs` | optional explanation; variants and risk are computed |
+| `LnpDisclosure` (`x-disclosure.js`) | `disclosure.js` (`#disclosure-<query>`), `whitespace.js` (`#whitespace[--x<axis>][--y<axis>]`) | chemistry set (descriptor columns read again through `LnpLoader`) | none |
+| `LnpExpiry` (`x-expiry.js`) | `expiry.js` (`#expiry[--p<profile>][--s<source>]`) | patent table, status | none |
+| `LnpSimilar` (`x-similar.js`) | `similar.js` (`#similar-<pn>`) | text index (BM25), chemistry, CPC, families | none |
+| `LnpTags` (`x-tags.js`) | facets in `#suche` (`facets.js`, route `--f<facetId>:<value>`) | xdata `tags` (`tg-1`) | none |
+| `LnpLinks` (`x-links.js`), `LnpLegal` (`x-legal.js`) | patent page panel, `legal.js` (`#legal-<pn>`) | status records, `tags` legal bits | none |
+| `LnpAPI` (`x-zapi.js`, `docs/LNPAPI.md`), `LnpContext` (`x-context.js`) | `tools.js` (`#tools`, hub, context packs) | all of the above | never calls Claude |
+
+Shell hooks `LnpApp.ext` (`app.js`; used by the patent page, `#suche`, `#struktur`): `patentAction`, `claimAction`,
+`patentPanel`, `links`, `compoundAction`, `searchFacet`, `resultAction` (`docs/TOOLS_PLAN.md` 2.1). The FTO chain
+(`fto.js`) adds code-verified Markush and range evidence when `LnpMarkush` / `LnpRanges` are present
+(`docs/method/FTO_METHOD.md`). The MCP server `mcp/` (Node, stdio, `docs/INTEGRATION.md`) runs the same engines over the
+files of a build.
+
+Data files of the tools in a build:
+
+```
+data/x/markush/curated.json            curated mk-1 records (pipeline/markush_seed.py from data/seed/markush/*.json)
+data/x/ranges/ranges.gz.b64.txt        rg-1 ranges (pipeline/ranges_build.py; vocabulary data/seed/range_params.json)
+data/x/ranges/ranges-q.gz.bin          all range quotes, website build only (files_pages)
+data/x/tags/tags.gz.b64.txt            tg-1 tags, legal bits, canonical assignees (pipeline/tags_build.py)
+data/seed/design_space.json            design-around vocabulary (build_dist.py SHIP_SEED; the engine has an embedded copy)
+```
+
+Files built for the website only are listed in `manifest.cut.websiteOnly.xdata` of the Artifact build (now
+`ranges/ranges-q.gz.bin`); the formula images beyond `--img-budget-mb` are counted in `manifest.img.cut`.
+
 ## Build and test entry points
 
 ```
-pipeline/run_all.sh                 normalize -> status --no-fetch -> chemistry (if an input is newer) -> build_dist (b64)
+pipeline/run_all.sh                 normalize -> status --no-fetch -> chemistry (if an input is newer)
+                                    -> ranges_build, tags_build, markush_seed (xdata) -> build_dist (b64)
+pipeline/build_pages.sh             the plain website into dist-pages/ (--enc bin --target pages, larger budgets)
 pipeline/run_all.sh batches [-v]    the publish batches of dist/ (reads dist/publish_batches.json)
-pipeline/run_all.sh check           the three engine tests and the end-to-end test
+pipeline/run_all.sh check           the engine tests, the end-to-end test and the tool tests
 make dist | batches | test | e2e | serve
 ```
 Measured on the build machine (4 cores), 125,104 publications, 15,148 to 17,995 full texts, 381,533 to 453,234 claims:
@@ -712,9 +815,15 @@ host's Content-Security-Policy on every response, `*.bin` answered with 404 (unl
 per path: `404`, `corrupt`, `truncate`, `slow`.
 
 `tests/e2e.cjs` (Playwright, Chromium) drives the published form of the page: `node tests/e2e.cjs [--dist dist]
-[--only main,mobile,noclaude,nullcaps,blob,strict,bin,faults,fixture,perf] [--shots DIR] [--report FILE] [--bin DIR]`.
+[--only main,mobile,noclaude,nullcaps,tools,toolsnoclaude,toolsnull,blob,strict,bin,faults,fixture,perf] [--shots DIR] [--report FILE] [--bin DIR]`.
 `window.claude` is mocked in the page (sample with canned JSON per FTO step, db, downloads); requests leaving the
 origin are aborted and counted, Google Fonts are answered locally. `bin` (only on request) checks the raw-binary build.
+`tools` drives every tool view with the mock (the Markush translation and the OCSR reply are canned `mk-1` / SMILES
+JSON; the page verifies quotes and SMILES itself); `toolsnoclaude` / `toolsnull` open every tool view without Claude at
+390 px in dark mode. Tool tests of their own: `tests/markush_test.cjs`, `markush_view_test.cjs`, `ranges_test.cjs`
+(+ `ranges_test.py`), `tags_test.py`, `xdata_test.py`, `screen_test.cjs`, `designaround_test.cjs`, `disclosure_test.cjs`,
+`expiry_similar_test.cjs`, `api_test.cjs`, `hooks_test.cjs`, `fto_evidence_test.mjs`, `mcp_test.mjs` (the `.cjs` browser
+tests take `--dist DIR`).
 
 Measured by `tests/e2e.cjs --only perf` (headless Chromium, local server, base64 build, 125,104 publications): cold boot
 to ready 220-380 ms, first result list painted about 0.5-0.65 s after 47 requests / 7.8 MB (the first list touches 15 of

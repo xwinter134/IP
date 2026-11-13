@@ -1,0 +1,12 @@
+{
+  "name": "lnp-patent-desk-mcp",
+  "version": "0.1.0",
+  "description": "Local MCP server (stdio) for the LNP Patent Desk: search and FTO pre-screening tools over a static website build. No network, no AI model, no dependencies.",
+  "private": true,
+  "type": "module",
+  "bin": { "lnp-patent-desk-mcp": "server.mjs" },
+  "main": "server.mjs",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.mjs", "check": "node server.mjs --check" },
+  "license": "UNLICENSED"
+}

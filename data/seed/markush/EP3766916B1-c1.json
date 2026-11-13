@@ -1,0 +1,87 @@
+{
+ "v": "mk-1",
+ "pn": "EP3766916B1",
+ "claim": 1,
+ "lang": "en",
+ "created": "2026-11-11T00:00:00Z",
+ "updated": "2026-11-11T00:00:00Z",
+ "origin": "curated",
+ "reviewed": true,
+ "source": {
+  "images": [
+   "imgb0100"
+  ],
+  "textHash": null,
+  "claimText": "A compound having the following structure (II): [chem] or a pharmaceutically acceptable salt, tautomer or stereoisomer thereof, wherein: R10 and R11 are each independently a straight, saturated alkyl chain containing from 12 to 16 carbon atoms; and z has a mean value ranging from 30 to 60."
+ },
+ "core": {
+  "smiles": "CO[*:1]CC(=O)N([*:2])[*:3]",
+  "note": "Structure (II): CH3O-(CH2CH2O)z-CH2-C(=O)-N(R10)(R11)."
+ },
+ "vars": [
+  {
+   "name": "z",
+   "attach": [
+    1
+   ],
+   "kind": "repeat",
+   "unit": "*CCO*",
+   "range": {
+    "min": 30,
+    "max": 60
+   },
+   "alts": [],
+   "quote": "z has a mean value ranging from 30 to 60",
+   "note": "z is a mean value of a polydisperse PEG; a single molecule is checked against the range.",
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R10",
+   "attach": [
+    2
+   ],
+   "kind": "substituent",
+   "quote": "R10 and R11 are each independently a straight, saturated alkyl chain containing from 12 to 16 carbon atoms",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 12,
+     "cMax": 16,
+     "branched": false,
+     "substituted": false,
+     "dblMax": 0,
+     "tripleMax": 0
+    }
+   ],
+   "quoteStatus": "ok"
+  },
+  {
+   "name": "R11",
+   "attach": [
+    3
+   ],
+   "kind": "substituent",
+   "quote": "R10 and R11 are each independently a straight, saturated alkyl chain containing from 12 to 16 carbon atoms",
+   "alts": [
+    {
+     "type": "alkyl",
+     "cMin": 12,
+     "cMax": 16,
+     "branched": false,
+     "substituted": false,
+     "dblMax": 0,
+     "tripleMax": 0
+    }
+   ],
+   "quoteStatus": "ok"
+  }
+ ],
+ "provisos": [],
+ "unsupported": [],
+ "ref": {
+  "name": "ALC-0159",
+  "smiles": "COCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCC(=O)N(CCCCCCCCCCCCCC)CCCCCCCCCCCCCC",
+  "note": "z = 45 (PEG 2000), R10 = R11 = n-tetradecyl; the molecule is one member of the PEG distribution"
+ },
+ "curator": "hand-read from the claim image and claim text (LNP Patent Desk seed)"
+}
