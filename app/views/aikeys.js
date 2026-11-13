@@ -271,5 +271,5 @@
     return { update: function () { return true; }, destroy: function () { dead = true; if (ctl && ctl.abort) ctl.abort(); keyIn.value = ''; unsub.forEach(function (f) { try { f(); } catch (e) { /* ignore */ } }); } };
   }
 
-  g.LnpApp.registerView({ id: 'ai', title: 'AI provider', icon: 'spark', rail: false, parent: 'system', mount: g.LnpLazyView('ai', ['app/views/views.css', 'app/views/lib/kit.js', 'app/x-aikeys.css'], mount) });
+  g.LnpApp.registerView({ id: 'ai', title: 'AI provider', icon: 'spark', rail: true, parent: 'system', mount: g.LnpLazyView('ai', ['app/views/views.css', 'app/views/lib/kit.js', 'app/x-aikeys.css'], mount) });
 })(window);
