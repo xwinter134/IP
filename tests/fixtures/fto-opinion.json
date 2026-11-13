@@ -1,6 +1,6 @@
 {
  "v": 1,
- "id": "op17f3cf07ae2d4452",
+ "id": "op204813578ba963b1",
  "kind": "fto-opinion",
  "created": "2026-11-10T12:00:00.000Z",
  "finished": "2026-11-10T12:00:00.000Z",
@@ -12,7 +12,7 @@
   "US"
  ],
  "aiUsed": true,
- "title": "FTO pre-screen (not a legal opinion): Testprodukt LNP-1",
+ "title": "FTO pre-screen (not a legal opinion): Test product LNP-1",
  "snapshot": {
   "surechembl": "2026-11-03",
   "ep_register": "2026-08-23",
@@ -25,7 +25,7 @@
  "profile": {
   "schema_version": "pf-1",
   "output_language": "en",
-  "bezeichnung": "Testprodukt LNP-1",
+  "bezeichnung": "Test product LNP-1",
   "ionizable_lipid": {
    "name_user": "ALC-0315",
    "name_normalised": "ALC-0315",
@@ -132,7 +132,7 @@
    },
    "pka_apparent": null,
    "pka_methode": null,
-   "strukturbeschreibung": "Tertiäres Amin mit zwei Esterarmen. [Computed by the app: head group hydroxyalkyl-tert-amine (OCCCCN); amine: tertiary; linkers: 2 x ester; chains: Acyl C16 branched at position 2 (8+6) | Acyl C16 branched at position 2 (8+6).]",
+   "strukturbeschreibung": "Tertiary amine with two ester arms. [Computed by the app: head group hydroxyalkyl-tert-amine (OCCCCN); amine: tertiary; linkers: 2 x ester; chains: Acyl C16 branched at position 2 (8+6) | Acyl C16 branched at position 2 (8+6).]",
    "quelle": "nutzer"
   },
   "weitere_lipide": [
@@ -206,7 +206,7 @@
    {
     "id": "P1",
     "kategorie": "verhaeltnis",
-    "aussage": "Ionisierbares Lipid 46,3 mol-%",
+    "aussage": "Ionizable lipid 46.3 mol-%",
     "wert": 46.3,
     "einheit": "mol-%",
     "quelle": "nutzer",
@@ -269,7 +269,7 @@
   ],
   "annahmen": [],
   "offene_fragen": [
-   "Gemessen oder nominal?"
+   "Measured or nominal?"
   ],
   "suchbegriffe": {
    "namen_codes": [
@@ -292,7 +292,7 @@
    "created": "2026-11-10T12:00:00.000Z",
    "lang": "en",
    "form": {
-    "name": "Testprodukt LNP-1",
+    "name": "Test product LNP-1",
     "lipids": [
      {
       "role": "ionizable",
@@ -337,14 +337,14 @@
     "use": {
      "route": "i.m."
     },
-    "stage": "Praeklinik",
+    "stage": "Preclinical",
     "markets": [
      "DE",
      "EP",
      "US"
     ],
     "launchDate": "2029-01-01",
-    "freeText": "Impfstoffkandidat."
+    "freeText": "Vaccine candidate."
    },
    "lipids": [
     {
@@ -1071,7 +1071,7 @@
     {
      "patent_id": "EP1000007B1",
      "grund_code": "triage_c",
-     "grund": "Triage C: Grund EP1000007B1"
+     "grund": "Triage C: Reason EP1000007B1"
     }
    ],
    "gesamtrisiko_app": [
@@ -1138,7 +1138,7 @@
     "EP"
    ],
    "rel": "A",
-   "relWhy": "Grund EP1000001B1",
+   "relWhy": "Reason EP1000001B1",
    "status": "granted, in force in DE (snapshot 2026-08-23)",
    "right": {
     "jurisdiction": "EP",
@@ -1231,16 +1231,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1259,16 +1259,16 @@
         "auslegung": {
          "definition_quote": "the term \"cationic lipid\" refers to any lipid that carries a net positive charge at a selected pH",
          "definition_para": "d1",
-         "weite_auslegung": "umfasst ionisierbare Lipide",
-         "enge_auslegung": "nur permanent kationisch",
+         "weite_auslegung": "covers ionizable lipids",
+         "enge_auslegung": "permanently cationic only",
          "ergebnis_abhaengig_von_auslegung": true
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1297,16 +1297,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M3",
+        "begruendung": "Reasoning M3",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1325,16 +1325,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M4",
+        "begruendung": "Reasoning M4",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1366,30 +1366,30 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "3_mittel",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -1494,7 +1494,7 @@
      {
       "unabhaengiger_anspruch": 1,
       "engster_noch_treffender_anspruch": 2,
-      "produkt_faellt_heraus_bei": "Anspruch 3",
+      "produkt_faellt_heraus_bei": "claim 3",
       "erlaeuterung": "r"
      }
     ],
@@ -1502,7 +1502,7 @@
      {
       "begriff": "conjugated lipid",
       "unteranspruch": 3,
-      "hinweis": "weiter als PEG-Lipid"
+      "hinweis": "broader than PEG-lipid"
      }
     ],
     "revision_empfohlen": [],
@@ -1533,7 +1533,7 @@
     "weitere_angriffswege": [
      {
       "weg": "mittelbare_verletzung",
-      "beschreibung": "Lieferung",
+      "beschreibung": "Supply",
       "relevanz": "mittel"
      }
     ],
@@ -1545,7 +1545,7 @@
      "begruendung": "rt"
     },
     "zu_klaeren": [
-     "Analytik"
+     "Analytics"
     ],
     "konfidenz": "mittel",
     "app": {
@@ -1595,20 +1595,20 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?",
-     "Analytik"
+     "Measured mol-% in the particle?",
+     "Analytics"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -1641,7 +1641,7 @@
     "EP"
    ],
    "rel": "A",
-   "relWhy": "Grund EP1000008B1",
+   "relWhy": "Reason EP1000008B1",
    "status": "unknown, DE part unknown (unverified, no record; treated as in force)",
    "right": {
     "jurisdiction": "EP",
@@ -1722,16 +1722,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1750,16 +1750,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1787,30 +1787,30 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "5_sehr_hoch",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -1873,19 +1873,19 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?"
+     "Measured mol-% in the particle?"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -1918,7 +1918,7 @@
     "EP"
    ],
    "rel": "A",
-   "relWhy": "Grund EP1000009B1",
+   "relWhy": "Reason EP1000009B1",
    "status": "granted, in force in DE (snapshot 2026-08-23)",
    "right": {
     "jurisdiction": "EP",
@@ -2005,16 +2005,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2033,16 +2033,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2075,30 +2075,30 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "5_sehr_hoch",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -2147,7 +2147,7 @@
     "weitere_angriffswege": [
      {
       "weg": "mittelbare_verletzung",
-      "beschreibung": "Lieferung",
+      "beschreibung": "Supply",
       "relevanz": "mittel"
      }
     ],
@@ -2159,7 +2159,7 @@
      "begruendung": "rt"
     },
     "zu_klaeren": [
-     "Analytik"
+     "Analytics"
     ],
     "konfidenz": "mittel",
     "app": {
@@ -2209,20 +2209,20 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?",
-     "Analytik"
+     "Measured mol-% in the particle?",
+     "Analytics"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -2254,7 +2254,7 @@
     "US"
    ],
    "rel": "B",
-   "relWhy": "Grund US9000003B2",
+   "relWhy": "Reason US9000003B2",
    "status": "granted, maintenance fees not checked (snapshot 2026-11-10)",
    "right": {
     "jurisdiction": "US",
@@ -2339,16 +2339,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2367,16 +2367,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "1,6 mol-%",
+        "product_value": "1.6 mol-%",
         "verdict": "nicht_erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2418,16 +2418,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2446,16 +2446,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "nicht_erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2487,30 +2487,30 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "2_gering",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -2552,8 +2552,8 @@
          "produktfakten"
         ],
         "claim_quote": null,
-        "argument_patentinhaber": "Gemessene Zusammensetzung kann unter 1,0 mol-% liegen",
-        "gegenargument_nutzer": "Nominalwert 1,6",
+        "argument_patentinhaber": "The measured composition may be below 1.0 mol-%",
+        "gegenargument_nutzer": "Nominal value 1.6",
         "ergebnis": "wackelt",
         "verdict_revidiert": "unklar",
         "aequivalenz_risiko_revidiert": "mittel"
@@ -2577,7 +2577,7 @@
     "weitere_angriffswege": [
      {
       "weg": "mittelbare_verletzung",
-      "beschreibung": "Lieferung",
+      "beschreibung": "Supply",
       "relevanz": "mittel"
      }
     ],
@@ -2589,7 +2589,7 @@
      "begruendung": "rt"
     },
     "zu_klaeren": [
-     "Analytik"
+     "Analytics"
     ],
     "konfidenz": "mittel",
     "app": {
@@ -2626,7 +2626,7 @@
        {
         "feature_id": "M2",
         "claim_quote": "wherein the PEG-lipid is present at less than 1.0 mol %",
-        "product_value": "1,6 mol-%",
+        "product_value": "1.6 mol-%",
         "robustheit": "robust",
         "redteam": "wackelt"
        }
@@ -2646,7 +2646,7 @@
        {
         "feature_id": "M2",
         "claim_quote": "wherein the composition is lyophilized",
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "robustheit": "robust",
         "redteam": null
        }
@@ -2666,20 +2666,20 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?",
-     "Analytik"
+     "Measured mol-% in the particle?",
+     "Analytics"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -2716,7 +2716,7 @@
     "EP"
    ],
    "rel": "A",
-   "relWhy": "Grund EP1000004B1",
+   "relWhy": "Reason EP1000004B1",
    "status": "granted, in force in DE (snapshot 2026-08-23)",
    "right": {
     "jurisdiction": "EP",
@@ -2804,16 +2804,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "nicht_erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2869,16 +2869,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -2913,30 +2913,30 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "1_sehr_gering",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -3013,7 +3013,7 @@
      {
       "unabhaengiger_anspruch": 1,
       "engster_noch_treffender_anspruch": 2,
-      "produkt_faellt_heraus_bei": "Anspruch 3",
+      "produkt_faellt_heraus_bei": "claim 3",
       "erlaeuterung": "r"
      }
     ],
@@ -3021,7 +3021,7 @@
      {
       "begriff": "conjugated lipid",
       "unteranspruch": 3,
-      "hinweis": "weiter als PEG-Lipid"
+      "hinweis": "broader than PEG-lipid"
      }
     ],
     "revision_empfohlen": [],
@@ -3049,7 +3049,7 @@
     "weitere_angriffswege": [
      {
       "weg": "mittelbare_verletzung",
-      "beschreibung": "Lieferung",
+      "beschreibung": "Supply",
       "relevanz": "mittel"
      }
     ],
@@ -3061,7 +3061,7 @@
      "begruendung": "rt"
     },
     "zu_klaeren": [
-     "Analytik"
+     "Analytics"
     ],
     "konfidenz": "mittel",
     "app": {
@@ -3100,7 +3100,7 @@
        {
         "feature_id": "M1",
         "claim_quote": "A compound having the following structure of Formula (I): [chem]",
-        "klaerung": "set to unklar by the app: formel_fehlt"
+        "klaerung": "set to unclear by the app: formula not available"
        }
       ],
       "markush_ergebnis": "formel_fehlt",
@@ -3121,20 +3121,20 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?",
-     "Analytik"
+     "Measured mol-% in the particle?",
+     "Analytics"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -3167,7 +3167,7 @@
     "EP"
    ],
    "rel": "A",
-   "relWhy": "Grund EP1000002B1",
+   "relWhy": "Reason EP1000002B1",
    "status": "granted, not in force in DE, opposition/appeal pending (snapshot 2026-08-23)",
    "right": {
     "jurisdiction": "EP",
@@ -3270,16 +3270,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -3298,16 +3298,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "nicht_erfuellt",
-        "begruendung": "<img src=x onerror=alert(3)> **fett** <b>x</b>",
+        "begruendung": "<img src=x onerror=alert(3)> **bold** <b>x</b>",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -3328,18 +3328,18 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "unklar",
-        "begruendung": "Begruendung M3",
+        "begruendung": "Reasoning M3",
         "annahme": null,
-        "klaerung": "Messung",
+        "klaerung": "Measurement",
         "konfidenz": "hoch",
         "app": {
          "quote": "ok",
@@ -3356,16 +3356,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M4",
+        "begruendung": "Reasoning M4",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -3388,7 +3388,7 @@
        {
         "feature_id": "M2",
         "austauschmittel": "laminar",
-        "funktion_des_merkmals": "Mischen",
+        "funktion_des_merkmals": "Mixing",
         "funktion_quelle": "angenommen",
         "aequivalenz_risiko": "gering",
         "begruendung": "eq"
@@ -3409,30 +3409,30 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "1_sehr_gering",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -3482,7 +3482,7 @@
     "weitere_angriffswege": [
      {
       "weg": "mittelbare_verletzung",
-      "beschreibung": "Lieferung",
+      "beschreibung": "Supply",
       "relevanz": "mittel"
      }
     ],
@@ -3494,7 +3494,7 @@
      "begruendung": "rt"
     },
     "zu_klaeren": [
-     "Analytik"
+     "Analytics"
     ],
     "konfidenz": "mittel",
     "app": {
@@ -3533,12 +3533,12 @@
        {
         "feature_id": "M2",
         "claim_quote": "wherein the mixing is performed at a Reynolds number above 2000 in a turbulent regime",
-        "klaerung": "set to unklar by the app: zitat_nicht_verifiziert"
+        "klaerung": "set to unclear by the app: quote not verified"
        },
        {
         "feature_id": "M3",
         "claim_quote": "<script>alert(1)</script> <img src=x onerror=alert(2)>",
-        "klaerung": "Messung"
+        "klaerung": "Measurement"
        }
       ],
       "markush_ergebnis": "entfaellt",
@@ -3557,20 +3557,20 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?",
-     "Analytik"
+     "Measured mol-% in the particle?",
+     "Analytics"
     ],
     "zitat_pruefung_fehlgeschlagen": true
    },
@@ -3602,7 +3602,7 @@
     "US"
    ],
    "rel": "B",
-   "relWhy": "Grund US20250000006A1",
+   "relWhy": "Reason US20250000006A1",
    "status": "pending (snapshot 2026-11-10)",
    "right": {
     "jurisdiction": "US",
@@ -3687,18 +3687,18 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "unklar",
-        "begruendung": "Begruendung M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
-        "klaerung": "Messung",
+        "klaerung": "Measurement",
         "konfidenz": "hoch",
         "app": {
          "quote": "ok",
@@ -3715,16 +3715,16 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
         "product_refs": [
          "P1"
         ],
-        "product_value": "46,3 mol-%",
+        "product_value": "46.3 mol-%",
         "verdict": "erfuellt",
-        "begruendung": "Begruendung M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -3754,32 +3754,32 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "3_mittel",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [
       "anmeldung_ansprueche_veraenderlich"
      ],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
       "zulassungsprivileg_par11_nr2b": "ja",
       "us_safe_harbor_271e1": "entfaellt",
-      "kipppunkt": "ab Angebot",
-      "erlaeuterung": "Ausnahmen"
+      "kipppunkt": "from the first offer",
+      "erlaeuterung": "Exemptions"
      },
      "umgehungsloesungen": [
       {
        "feature_id": "M2",
-       "aenderung": "mol-% unter 40",
+       "aenderung": "mol-% below 40",
        "robustheit": "knapp",
-       "vorbehalt": "fachlich zu validieren"
+       "vorbehalt": "to be validated technically"
       }
      ],
      "offene_fragen": [
-      "Gemessene mol-% im Partikel?"
+      "Measured mol-% in the particle?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -3822,7 +3822,7 @@
     "weitere_angriffswege": [
      {
       "weg": "mittelbare_verletzung",
-      "beschreibung": "Lieferung",
+      "beschreibung": "Supply",
       "relevanz": "mittel"
      }
     ],
@@ -3834,7 +3834,7 @@
      "begruendung": "rt"
     },
     "zu_klaeren": [
-     "Analytik"
+     "Analytics"
     ],
     "konfidenz": "mittel",
     "app": {
@@ -3872,7 +3872,7 @@
        {
         "feature_id": "M1",
         "claim_quote": "A lipid nanoparticle comprising an ionizable lipid having a pKa of 6.0 to 6.8",
-        "klaerung": "Messung"
+        "klaerung": "Measurement"
        }
       ],
       "markush_ergebnis": "entfaellt",
@@ -3891,20 +3891,20 @@
      "versuchsprivileg_par11_nr2": "offen",
      "zulassungsprivileg_par11_nr2b": "ja",
      "us_safe_harbor_271e1": "entfaellt",
-     "kipppunkt": "ab Angebot",
-     "erlaeuterung": "Ausnahmen"
+     "kipppunkt": "from the first offer",
+     "erlaeuterung": "Exemptions"
     },
     "umgehungsloesungen": [
      {
       "feature_id": "M2",
-      "aenderung": "mol-% unter 40",
+      "aenderung": "mol-% below 40",
       "robustheit": "knapp",
-      "vorbehalt": "fachlich zu validieren"
+      "vorbehalt": "to be validated technically"
      }
     ],
     "offene_fragen": [
-     "Gemessene mol-% im Partikel?",
-     "Analytik"
+     "Measured mol-% in the particle?",
+     "Analytics"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -3978,9 +3978,9 @@
    "title": "TITLE EP1000007B1",
    "assignee": "Assignee 6",
    "reason": "triage_c",
-   "text": "Triage C: Grund EP1000007B1",
+   "text": "Triage C: Reason EP1000007B1",
    "rel": "C",
-   "relWhy": "Grund EP1000007B1",
+   "relWhy": "Reason EP1000007B1",
    "status": "granted, in force in DE (snapshot 2026-08-23)",
    "expiry": "2035-06-01",
    "expiryBasis": "filing date 2015-06-01 + 20 years (Art. 63 EPC); SPC, surrender and renewal fees after the snapshot date not taken into account",
@@ -4028,7 +4028,7 @@
  "synthesis": {
   "schema_version": "op-1",
   "output_language": "en",
-  "titel": "FTO-Vorpruefung",
+  "titel": "FTO pre-screen",
   "gesamtrisiko": [
    {
     "markt": "DE",
@@ -4047,117 +4047,117 @@
     "begruendung": "g"
    }
   ],
-  "zusammenfassung": "Im geprüften Korpus bestehen mehrere Risiken.\n\n- Punkt eins\n- Punkt zwei <script>alert(9)</script>",
-  "gegenstand": "Gegenstand.",
-  "recherche": "Recherche.",
+  "zusammenfassung": "Within the screened corpus several risks remain.\n\n- Point one\n- Point two <script>alert(9)</script>",
+  "gegenstand": "Subject.",
+  "recherche": "Search.",
   "einzelbewertungen": [
    {
     "patent_id": "EP1000001B1",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit EP1000001B1",
+    "kurzfazit": "Short verdict EP1000001B1",
     "text": "Text EP1000001B1",
     "app_risiko": "5_sehr_hoch"
    },
    {
     "patent_id": "EP1000008B1",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit EP1000008B1",
+    "kurzfazit": "Short verdict EP1000008B1",
     "text": "Text EP1000008B1",
     "app_risiko": "5_sehr_hoch"
    },
    {
     "patent_id": "EP1000009B1",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit EP1000009B1",
+    "kurzfazit": "Short verdict EP1000009B1",
     "text": "Text EP1000009B1",
     "app_risiko": "5_sehr_hoch"
    },
    {
     "patent_id": "US9000003B2",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit US9000003B2",
+    "kurzfazit": "Short verdict US9000003B2",
     "text": "Text US9000003B2",
     "app_risiko": "4_hoch"
    },
    {
     "patent_id": "EP1000004B1",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit EP1000004B1",
+    "kurzfazit": "Short verdict EP1000004B1",
     "text": "Text EP1000004B1",
     "app_risiko": "nicht_beurteilbar"
    },
    {
     "patent_id": "EP1000002B1",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit EP1000002B1",
+    "kurzfazit": "Short verdict EP1000002B1",
     "text": "Text EP1000002B1"
    },
    {
     "patent_id": "US20250000006A1",
     "risiko": "3_mittel",
-    "kurzfazit": "Kurzfazit US20250000006A1",
+    "kurzfazit": "Short verdict US20250000006A1",
     "text": "Text US20250000006A1"
    }
   ],
-  "anhaengige_anmeldungen": "Anhängig.",
-  "querschnitt": "Querschnitt.",
+  "anhaengige_anmeldungen": "Pending.",
+  "querschnitt": "Cross-patent patterns.",
   "zeitachse": [
    {
     "patent_id": "EP1000001B1",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    },
    {
     "patent_id": "EP1000008B1",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    },
    {
     "patent_id": "EP1000009B1",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    },
    {
     "patent_id": "US9000003B2",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    },
    {
     "patent_id": "EP1000004B1",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    },
    {
     "patent_id": "EP1000002B1",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    },
    {
     "patent_id": "US20250000006A1",
     "ablauf_geschaetzt": "2035-06-01",
-    "bemerkung": "Schätzung"
+    "bemerkung": "Estimate"
    }
   ],
-  "ausnahmen": "Ausnahmen.",
+  "ausnahmen": "Exemptions.",
   "umgehungsloesungen": [
    {
-    "aenderung": "mol-% ändern",
+    "aenderung": "change mol-%",
     "betrifft_schutzrechte": [
      "EP1000001B1"
     ],
     "kollision_mit_anderen": [],
-    "bewertung": "technische Hypothese"
+    "bewertung": "technical hypothesis"
    }
   ],
-  "gegenpruefung": "Gegenprüfung.",
+  "gegenpruefung": "Red team.",
   "offene_fragen": [
-   "Frage 1"
+   "Question 1"
   ],
   "naechste_schritte": [
    {
     "prioritaet": 1,
-    "schritt": "Markush-Recherche",
-    "warum": "Lücke"
+    "schritt": "Markush search",
+    "warum": "Gap"
    }
   ],
   "app": {
@@ -4320,13 +4320,13 @@
   }
  ],
  "warnings": [
-  "Step B.EP1000009B1: input shortened (description excerpt d2 -101 bytes, description excerpt d1 -170 bytes, claim 1 -265448 bytes)",
-  "Step E.EP1000009B1: input shortened (description excerpt d2 -101 bytes, description excerpt d1 -170 bytes, claim 1 -256483 bytes)"
+  "Step B.EP1000009B1: input shortened (description excerpt d2 -101 bytes, description excerpt d1 -170 bytes, claim 1 -266287 bytes)",
+  "Step E.EP1000009B1: input shortened (description excerpt d2 -101 bytes, description excerpt d1 -170 bytes, claim 1 -257204 bytes)"
  ],
  "usage": {
   "calls": 18,
-  "bytesIn": 878450,
-  "bytesOut": 26500,
+  "bytesIn": 890747,
+  "bytesOut": 26629,
   "failed": 0,
   "repairs": 1
  },

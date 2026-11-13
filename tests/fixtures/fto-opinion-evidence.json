@@ -878,7 +878,7 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
@@ -887,7 +887,7 @@
         ],
         "product_value": "v",
         "verdict": "erfuellt",
-        "begruendung": "B M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -906,7 +906,7 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
@@ -915,7 +915,7 @@
         ],
         "product_value": "v",
         "verdict": "nicht_erfuellt",
-        "begruendung": "B M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -947,12 +947,12 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "2_gering",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
@@ -963,7 +963,7 @@
      },
      "umgehungsloesungen": [],
      "offene_fragen": [
-      "Frage?"
+      "Question?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -1045,7 +1045,7 @@
     "umgehungsloesungen": [],
     "offene_fragen": [
      "Claim 1: the claim chart finds a literal miss, but the code-verified Markush check finds ALC-0315 covered by the formula - check the chart against the formula.",
-     "Frage?"
+     "Question?"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -1372,7 +1372,7 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
@@ -1381,7 +1381,7 @@
         ],
         "product_value": "v",
         "verdict": "erfuellt",
-        "begruendung": "B M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1400,7 +1400,7 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
@@ -1409,7 +1409,7 @@
         ],
         "product_value": "v",
         "verdict": "erfuellt",
-        "begruendung": "B M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1437,12 +1437,12 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "5_sehr_hoch",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
@@ -1453,7 +1453,7 @@
      },
      "umgehungsloesungen": [],
      "offene_fragen": [
-      "Frage?"
+      "Question?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -1519,7 +1519,7 @@
     },
     "umgehungsloesungen": [],
     "offene_fragen": [
-     "Frage?"
+     "Question?"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -1866,7 +1866,7 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
@@ -1875,7 +1875,7 @@
         ],
         "product_value": "v",
         "verdict": "erfuellt",
-        "begruendung": "B M1",
+        "begruendung": "Reasoning M1",
         "annahme": null,
         "klaerung": null,
         "konfidenz": "hoch",
@@ -1894,7 +1894,7 @@
         "auslegung": {
          "definition_quote": null,
          "definition_para": null,
-         "weite_auslegung": "weit",
+         "weite_auslegung": "broad",
          "enge_auslegung": null,
          "ergebnis_abhaengig_von_auslegung": false
         },
@@ -1903,9 +1903,9 @@
         ],
         "product_value": "v",
         "verdict": "unklar",
-        "begruendung": "B M2",
+        "begruendung": "Reasoning M2",
         "annahme": null,
-        "klaerung": "Messung",
+        "klaerung": "Measurement",
         "konfidenz": "hoch",
         "app": {
          "quote": "ok",
@@ -1931,12 +1931,12 @@
      "literal_ergebnis_schlechtester_fall": "wortsinngemaess_moeglich",
      "kritischster_anspruch": 1,
      "risiko": "4_hoch",
-     "risiko_begruendung": "weil",
+     "risiko_begruendung": "because",
      "modifikatoren": [],
      "rolle_des_nutzers": {
       "unmittelbar": "ja",
       "mittelbar_par10_patg_oder_271bc": "offen",
-      "erlaeuterung": "Rolle"
+      "erlaeuterung": "Role"
      },
      "ausnahmen": {
       "versuchsprivileg_par11_nr2": "offen",
@@ -1947,7 +1947,7 @@
      },
      "umgehungsloesungen": [],
      "offene_fragen": [
-      "Frage?"
+      "Question?"
      ],
      "fuer_unteransprueche": [],
      "konfidenz": "mittel",
@@ -1997,7 +1997,7 @@
        {
         "feature_id": "M2",
         "claim_quote": "from 30 mol % to 40 mol % of the total lipid",
-        "klaerung": "Messung"
+        "klaerung": "Measurement"
        }
       ],
       "markush_ergebnis": "entfaellt",
@@ -2020,7 +2020,7 @@
     "umgehungsloesungen": [],
     "offene_fragen": [
      "Claim 1: product value 46.3 mol% (mol pct, ionizable / cationic lipid) is outside the claimed range 30 to 40 mol% (\"an ionizable lipid at from 30 mol % to 40 mol % <script>alert(1)</script>\"). Not used to lower the risk: \"about\", the basis and method of the value and equivalence are open.",
-     "Frage?"
+     "Question?"
     ],
     "zitat_pruefung_fehlgeschlagen": false
    },
@@ -2521,8 +2521,8 @@
  "warnings": [],
  "usage": {
   "calls": 5,
-  "bytesIn": 117553,
-  "bytesOut": 6154,
+  "bytesIn": 121405,
+  "bytesOut": 6227,
   "failed": 0,
   "repairs": 0
  },

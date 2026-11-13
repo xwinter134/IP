@@ -213,11 +213,11 @@
         il.descriptors = schemaDescriptors(c);
         var tails = arr(d.tails).map(function (t) { return (t.acyl ? 'Acyl ' : '') + 'C' + t.nC + (t.branched ? ' branched at position ' + t.branchPosition + (arr(t.arms).length ? ' (' + t.arms.join('+') + ')' : '') : ' linear') + (t.nDoubleBonds ? ', ' + t.nDoubleBonds + ' C=C' : ''); });
         var lk = arr(d.linkers).map(function (l) { return l.count + ' x ' + l.type; });
-        il.strukturbeschreibung = 'Computed by the app: head group ' + str(d.head) + (d.headgroup && d.headgroup.smiles ? ' ' + d.headgroup.smiles + '' : '') +
+        il.strukturbeschreibung = 'Computed by the app: head group ' + str(d.head) + (d.headgroup && d.headgroup.smiles ? ' (' + d.headgroup.smiles + ')' : '') +
           '; amine: ' + str(d.amine && d.amine.class) + '; linkers: ' + (lk.join(', ') || '-') + '; chains: ' + (tails.join(' | ') || '-') + '.';
         feat('lipid_struktur', 'Ionizable lipid: ' + str(c.name || c.ref_name || '') + ' SMILES ' + il.smiles, il.smiles, null, il.quelle);
         feat('lipid_struktur', 'Formula / molecular weight' + ': ' + str(il.descriptors.formula) + ' / ' + str(il.descriptors.mw), il.descriptors.formula, null, 'berechnet');
-        feat('lipid_struktur', 'Head group and amine' + ': ' + str(d.head) + ', ' + str(d.amine && d.amine.class) + ' ' + str(d.amine && d.amine.count) + '', str(d.head), null, 'berechnet');
+        feat('lipid_struktur', 'Head group and amine' + ': ' + str(d.head) + ', ' + str(d.amine && d.amine.class) + ' (' + str(d.amine && d.amine.count) + ')', str(d.head), null, 'berechnet');
         feat('lipid_struktur', 'Linkers' + ': ' + (lk.join(', ') || '-'), lk.join(', ') || null, null, 'berechnet');
         tails.forEach(function (t, k) { feat('lipid_struktur', 'Chain ' + (k + 1) + ': ' + t + ' (acyl: carbonyl carbon counted)', arr(d.tails)[k].nC, 'C', 'berechnet'); });
         feat('lipid_struktur', 'Total carbon atoms' + ': ' + str(il.descriptors.c_atoms_total), il.descriptors.c_atoms_total, 'C', 'berechnet');
@@ -240,7 +240,7 @@
     var payTyp = mapFirst(PAYLOAD_MAP, pay.type, ['mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR_mRNA_gRNA', 'leer', 'sonstiges']);
     if (payTyp) feat('payload', 'Payload: ' + str(pay.type) + (pay.modification ? ', ' + pay.modification : ''), payTyp, null, 'nutzer');
     [['sizeNm', 'Particle size', 'nm'], ['pdi', 'PDI', null], ['encapsulationPct', 'Encapsulation', '%'], ['zetaMv', 'Zeta', 'mV']].forEach(function (x) {
-      var v = num(part[x[0]]); if (v !== null) feat('partikel', x[1] + (x[0] === 'sizeNm' && part.sizeMethod ? ' ' + part.sizeMethod + '' : ''), v, x[2], 'nutzer');
+      var v = num(part[x[0]]); if (v !== null) feat('partikel', x[1] + (x[0] === 'sizeNm' && part.sizeMethod ? ' (' + part.sizeMethod + ')' : ''), v, x[2], 'nutzer');
     });
     var mix = mapFirst(MIX_MAP, proc.mixing, ['t_stueck', 'impinging_jet', 'mikrofluidik_herringbone', 'mikrofluidik_bifurkierend_toroidal', 'ethanol_injektion', 'extrusion', 'sonstiges']);
     if (mix) feat('verfahren', 'Mixing principle: ' + str(proc.mixing), mix, null, 'nutzer');
@@ -314,7 +314,7 @@
     input = englishForm(input);
     var lang = 'en', ai = eng('ai'), P = eng('prompts'), warnings = [];
     return Promise.all(arr(input.lipids).map(function (l) { return computeLipid(l || {}); })).then(function (lipids) {
-      lipids.forEach(function (c) { if (!c.ok) warnings.push('Structure not read: ' + str(c.name || c.smiles_input) + ' ' + str(c.error) + ''); });
+      lipids.forEach(function (c) { if (!c.ok) warnings.push('Structure not read: ' + str(c.name || c.smiles_input) + ' (' + str(c.error) + ')'); });
       var base = baseProfile(input, lipids, lang);
       function finish(p, model, note) {
         if (note) warnings.push(note);
@@ -573,7 +573,7 @@
              "structure in the claims" can find it. */
           if (c.exact && pt.hasImg) { c.by.markush = Math.max(c.by.markush || 0, 9); (c.whyBy.markush = c.whyBy.markush || []).push('Possible generic formula claim: ' + c.exact + ' is disclosed in the document and an independent claim contains a formula that exists only as an image \u2013 formula test needed'); total(c); }
           var why = whyOf(c).map(function (w) { return c.fromFamily != null && pnOf[c.fromFamily] ? w.replace('index ' + c.fromFamily, pnOf[c.fromFamily]) : w; });
-          if (pt.seedFam && c.by.seed) why = why.map(function (w) { return w.indexOf('Key family') === 0 ? w + ': ' + pt.seedFam + (pt.player ? ' ' + pt.player + '' : '') : w; });
+          if (pt.seedFam && c.by.seed) why = why.map(function (w) { return w.indexOf('Key family') === 0 ? w + ': ' + pt.seedFam + (pt.player ? ' (' + pt.player + ')' : '') : w; });
           out.push({ p: c.p, pn: pt.pn, auth: pt.auth, kind: pt.kind, title: pt.title, assignee: pt.assignee, player: pt.player || null, status: pt.status || null, text: !!pt.text, family: pt.fam, routes: routesOf(c), score: Math.round(c.score * 100) / 100, why: why, must: !!(c.by.manual || c.by.seed >= 3 || c.mkCovered) });
         });
         return out;
@@ -626,7 +626,7 @@
     var appealOpen = r.code === 'revoked' && (r.appeal === true || (r.opposition && r.opposition.outcome === 'pending'));
     r.appealOpen = !!appealOpen;
     if (DEAD[r.code] && st && st.src && st.asof && !appealOpen) { r.dead = true; r.deadReason = r.code; }
-    else if (r.expiry.date && r.expiry.date < now) { r.dead = true; r.deadReason = 'expired'; r.notes.push('estimated expiry ' + r.expiry.date + ' has passed'); }
+    else if (r.expiry.date && r.expiry.date < now) { r.dead = true; r.deadReason = 'expired'; r.notes.push('estimated expiry (' + r.expiry.date + ') has passed'); }
     else if (auth === 'EP' && r.granted && r.inForceDe === false && st && st.src && r.markets.length && r.markets.every(function (m) { return m === 'DE'; })) { r.dead = true; r.deadReason = 'lapsed_de'; }
     r.pending = !r.granted && !r.dead;
     if (appealOpen) r.notes.push('Revoked according to the register, but an appeal is on record: finality not checked, treated as in force');
@@ -786,7 +786,7 @@
       c.app.literal_e = rc.literal_ergebnis_revidiert;
       c.app.literal_final = worseLiteral(c.app.literal, rc.literal_ergebnis_revidiert) || c.app.literal;
       if (c.app.literal_final !== c.app.literal) notes.push('Claim ' + rc.claim_no + ': red-team result more adverse (' + ll(c.app.literal) + ' -> ' + ll(c.app.literal_final) + ')');
-      else if (rc.literal_ergebnis_revidiert !== c.app.literal) notes.push('Claim ' + rc.claim_no + ': red-team result more favourable ' + ll(rc.literal_ergebnis_revidiert) + ', not adopted');
+      else if (rc.literal_ergebnis_revidiert !== c.app.literal) notes.push('Claim ' + rc.claim_no + ': red-team result more favourable (' + ll(rc.literal_ergebnis_revidiert) + '), not adopted');
       if (LIT_RANK[c.app.literal_final] > LIT_RANK[worst]) { worst = c.app.literal_final; worstClaim = rc.claim_no; }
       arr(rc.angriffe).forEach(function (a) { var m = arr(c.merkmale).filter(function (x) { return x.feature_id === a.feature_id; })[0]; if (m) m.app.redteam = a.ergebnis; });
     });

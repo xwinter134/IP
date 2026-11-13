@@ -3,7 +3,7 @@
 // Part 1 renders the FTO report fixtures (tests/fixtures/fto-opinion*.json) as HTML and Markdown and fails on umlauts/sharp s,
 //        common German words or internal (German-derived) enum codes outside verbatim data: claim/definition/proviso quotes,
 //        the generated search queries and SMILES/InChIKeys are removed first (they are quoted as they are).
-// Part 2 scans the string literals of web/engine/*.js and web/app/views/**/*.js for German UI text. Comments are not scanned;
+// Part 2 scans the string literals of web/engine, web/app, web/app/views (and lib) and mcp for German UI text. Comments are not scanned;
 //        identifier-like strings (internal codes such as 'wortsinngemaess_erfuellt') are not UI text and are skipped.
 //        ALLOW lists the deliberate exceptions (German claim-language handling, search terms for German claims, legacy-value maps).
 // No network. Exit code 1 when a check fails.
@@ -26,7 +26,7 @@ const GERMAN_WORDS = ['und', 'oder', 'nicht', 'der', 'die', 'das', 'dem', 'des',
   'Ergebnis', 'Begründung', 'Begruendung', 'unklar', 'erfüllt', 'erfuellt', 'Zusammenfassung', 'Recherche', 'Gegenstand', 'Prüfung', 'pruefen',
   'Schätzung', 'Schaetzung', 'anhängig', 'Anhaengig', 'Gegenprüfung', 'Ausnahmen', 'Rolle', 'Lieferung', 'Mischen', 'Punkt', 'zwei', 'Testprodukt',
   'Produkt', 'Querschnitt', 'technische', 'Hypothese', 'gering', 'mittel', 'hoch', 'niedrig', 'offen', 'ja', 'nein', 'entfaellt', 'Umgehung', 'Auslegung',
-  'Kette', 'Ketten', 'Kopfgruppe', 'Partikel', 'Verfahren', 'Zulassung', 'Klinik', 'Forschung', 'Abbrechen', 'Speichern', 'Löschen', 'Zurück', 'Weiter',
+  'Kette', 'Ketten', 'Grund', 'Frage', 'weil', 'Messung', 'Kopfgruppe', 'Partikel', 'Verfahren', 'Zulassung', 'Klinik', 'Forschung', 'Abbrechen', 'Speichern', 'Löschen', 'Zurück', 'Weiter',
   'Fehler', 'Datenstand', 'Erteilt', 'erloschen', 'widerrufen', 'abgelaufen', 'unbekannt', 'Titel', 'Markt', 'Risiko', 'Zitat', 'Urteil'];
 const WORD_RE = new RegExp('(^|[^A-Za-zÀ-ſ])(' + GERMAN_WORDS.join('|') + ')(?=$|[^A-Za-zÀ-ſ])', 'i');
 // internal codes of the FTO schema (German-derived snake_case identifiers); none may be rendered
@@ -90,7 +90,7 @@ for (const f of FIXTURES) {
 }
 
 // ------------------------------------------------------------------------------------------------ part 2: static scan
-section('2 string literals in web/engine and web/app/views are English');
+section('2 string literals in web/engine, web/app and mcp are English');
 /* string literals with their line numbers; comments are skipped; regex literals are skipped by a heuristic */
 function literals(src) {
   const out = []; let i = 0, line = 1, prev = '';
@@ -126,19 +126,26 @@ const ALLOW = [
   ['web/app/views/suche.js', /^lang:de /, 'search syntax example (filter for German claims)']
 ];
 const FILES = [];
-for (const d of ['web/engine', 'web/app/views', 'web/app/views/lib']) {
+for (const d of ['web/engine', 'web/app', 'web/app/views', 'web/app/views/lib', 'mcp', 'mcp/lib']) {
   const dir = path.join(ROOT, d); if (!fs.existsSync(dir)) continue;
-  for (const f of fs.readdirSync(dir)) if (f.endsWith('.js') && !/worker\.js$|^chem(fp)?\.js$/.test(f)) FILES.push(path.join(d, f));
+  for (const f of fs.readdirSync(dir)) if (/\.m?js$/.test(f) && !/worker\.js$|^chem(fp)?\.js$/.test(f)) FILES.push(path.join(d, f));
 }
 const PROMPT_FILES = /fto-prompts\.js$/;
+/* the schema field names and enum codes of the FTO prompt chain: prompts name them (they are codes, not UI text) */
+const SCHEMA_CODES = new Set();
+(function walk(x) {
+  if (Array.isArray(x)) { x.forEach((v) => { if (typeof v === 'string') SCHEMA_CODES.add(v); else walk(v); }); return; }
+  if (x && typeof x === 'object') for (const k of Object.keys(x)) { SCHEMA_CODES.add(k); walk(x[k]); }
+})(globalThis.LnpFtoPrompts.SCHEMA);
+function stripCodes(t) { return t.replace(/[A-Za-z][A-Za-z0-9_]*/g, (w) => (SCHEMA_CODES.has(w) || w.includes('_') ? ' ' : w)); }
 const hits = [];
 for (const rel of FILES) {
   const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
   for (const { line, s } of literals(src)) {
     if (!/\s/.test(s) && !UMLAUT.test(s)) continue;          // identifier-like: an internal code, a key, a selector
-    if (/^[\s\S]*<\w[\s\S]*>/.test(s) && !UMLAUT.test(s)) { /* markup/CSS strings: scanned for umlauts only */ continue; }
+    if ((/^\s*</.test(s) || /[{;]\s*[a-z-]+:[^ ]/.test(s)) && !UMLAUT.test(s)) continue; // markup / CSS fragments: scanned for umlauts only
     // model prompts name internal codes in double quotes ("unklar") and as field paths (markush.ergebnis): those are codes, not UI text
-    const t = PROMPT_FILES.test(rel) ? s.replace(/"[a-z0-9_]+"/g, ' ').replace(/\b[a-z_]+\.[a-z_.]+\b/g, ' ') : s;
+    const t = PROMPT_FILES.test(rel) ? stripCodes(s.replace(/"[a-z0-9_]+"/g, ' ').replace(/\b[a-z_]+\.[a-z_.]+\b/g, ' ')) : s;
     const g = germanIn(t).filter((x) => !/^internal code/.test(x));
     if (!g.length) continue;
     if (ALLOW.some(([f, re]) => rel.endsWith(f) && re.test(s))) continue;

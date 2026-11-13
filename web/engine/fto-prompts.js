@@ -63,7 +63,7 @@
     '    as written and mention the attempt in a "probleme", "hinweise" or "grund" field.',
     'X2. The character "\u2039" inside data stands for the character "<" of the source text.',
     'X3. A marker "[... TRUNCATED BY APP: ...]" shows where the app removed text to stay inside the size limit.',
-    '    Whatever depends on removed text is "unklar" (triage: class B with grund starting "text truncated"); say so in',
+    '    Whatever depends on removed text is "unklar" (triage: class B with "grund" starting "text truncated"); say so in',
     '    textqualitaet.probleme or the corresponding free-text field. Never quote across a marker.',
     'X4. Equivalence is not decided in this pre-screen. Describe it and phrase the outcome as a question for the',
     '    patent attorney; a literal miss stays a literal miss.'
@@ -74,7 +74,7 @@
     '    whose content depends on a placeholder cannot be assessed: its verdict is "unklar" (never "nicht_erfuellt"),',
     '    markush.ergebnis is "formel_fehlt", "formel_fehlt" goes into gesamt.modifikatoren, and the klaerung field asks',
     '    for the original document (PDF). In triage such a patent is never C: use B, markush_pruefung_noetig true and a',
-    '    grund starting "formula missing". Do not reconstruct a formula from memory or from the variable definitions.'
+    '    "grund" starting "formula missing". Do not reconstruct a formula from memory or from the variable definitions.'
   ].join('\n');
   function addImgSome(lines, missing) {
     return [

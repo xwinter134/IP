@@ -100,11 +100,11 @@ function rgDoc() {
 }
 
 // ------------------------------------------------------------------------------------------------ canned model output
-const feat = (id, quote, verdict) => ({ feature_id: id, claim_quote: quote, paraphrase: 'p', auslegung: { definition_quote: null, definition_para: null, weite_auslegung: 'weit', enge_auslegung: null, ergebnis_abhaengig_von_auslegung: false },
-  product_refs: ['P1'], product_value: 'v', verdict, begruendung: 'B ' + id, annahme: null, klaerung: verdict === 'unklar' ? 'Messung' : null, konfidenz: 'hoch' });
+const feat = (id, quote, verdict) => ({ feature_id: id, claim_quote: quote, paraphrase: 'p', auslegung: { definition_quote: null, definition_para: null, weite_auslegung: 'broad', enge_auslegung: null, ergebnis_abhaengig_von_auslegung: false },
+  product_refs: ['P1'], product_value: 'v', verdict, begruendung: 'Reasoning ' + id, annahme: null, klaerung: verdict === 'unklar' ? 'Measurement' : null, konfidenz: 'hoch' });
 const claimObj = (no, merkmale, literal) => ({ claim_no: no, kategorie: 'stoff', betroffene_akte: ['herstellen'], merkmale, literal_ergebnis: literal, tragende_merkmale: merkmale.filter((m) => m.verdict === 'nicht_erfuellt').map((m) => m.feature_id), robustheit: 'robust', konfidenz: 'mittel' });
-const gesamt = (risiko) => ({ literal_ergebnis_schlechtester_fall: 'wortsinngemaess_moeglich', kritischster_anspruch: 1, risiko, risiko_begruendung: 'weil', modifikatoren: [], rolle_des_nutzers: { unmittelbar: 'ja', mittelbar_par10_patg_oder_271bc: 'offen', erlaeuterung: 'Rolle' },
-  ausnahmen: { versuchsprivileg_par11_nr2: 'offen', zulassungsprivileg_par11_nr2b: 'ja', us_safe_harbor_271e1: 'entfaellt', kipppunkt: 'k', erlaeuterung: 'A' }, umgehungsloesungen: [], offene_fragen: ['Frage?'], fuer_unteransprueche: [], konfidenz: 'mittel', hinweise: [] });
+const gesamt = (risiko) => ({ literal_ergebnis_schlechtester_fall: 'wortsinngemaess_moeglich', kritischster_anspruch: 1, risiko, risiko_begruendung: 'because', modifikatoren: [], rolle_des_nutzers: { unmittelbar: 'ja', mittelbar_par10_patg_oder_271bc: 'offen', erlaeuterung: 'Role' },
+  ausnahmen: { versuchsprivileg_par11_nr2: 'offen', zulassungsprivileg_par11_nr2b: 'ja', us_safe_harbor_271e1: 'entfaellt', kipppunkt: 'k', erlaeuterung: 'A' }, umgehungsloesungen: [], offene_fragen: ['Question?'], fuer_unteransprueche: [], konfidenz: 'mittel', hinweise: [] });
 const chartObj = (id, claims, g) => ({ schema_version: 'cc-1', patent_id: id, jurisdiction: id.slice(0, 2), claims_version: 'as granted', textqualitaet: { quelle: 'original', probleme: [] }, claims, gesamt: g });
 const q = (t, a, b) => t.slice(a, b).trim();
 /* the model under-rates the Markush patent: a verified quote marked "not met" and risk "low" */

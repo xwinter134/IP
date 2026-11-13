@@ -29,7 +29,7 @@
       otherLipids: 'Other lipids', role: 'Role', composition: 'Composition (mol-% of total lipid)', basis: 'Basis', payload: 'Payload', particle: 'Particle', process: 'Process', formulation: 'Formulation / storage', use: 'Use', acts: 'Acts and markets',
       features: 'Product feature list', id: 'ID', category: 'Category', statement: 'Statement', value: 'Value', source: 'Source', certainty: 'Certainty', assumptions: 'Assumptions', openData: 'Open questions on the product', profileWarn: 'App notes on the profile',
       modelText: 'Description by Claude', s_search: '3. Search record (for reproducibility)', snapshot: 'Corpus and snapshots', counts: 'Size', structRoute: 'Structure search (exact / substructure / similarity per lipid)', lipid: 'Lipid', mode: 'Mode', compounds: 'Compounds', pubs: 'Occurrences',
-      textRoute: 'Text search (generated boolean queries, verbatim)', query: 'Query', hits: 'Hits', taken: 'Evaluated', seedRoute: 'Key families of the watched applicants', tier: 'Tier', semRoute: 'Semantic search (Claude)', candidates: 'Candidates', triage: 'Triage',
+      textRoute: 'Text search (generated boolean queries, verbatim; they include German terms so that German-language claims are found too)', query: 'Query', hits: 'Hits', taken: 'Evaluated', seedRoute: 'Key families of the watched applicants', tier: 'Tier', semRoute: 'Semantic search (Claude)', candidates: 'Candidates', triage: 'Triage',
       charted: 'Analysed', s_patents: '4. Individual assessment of the analysed patent rights', assignee: 'Proprietor/applicant', assessedFor: 'Assessed for', found: 'Found via', relevance: 'Triage', expiryBasis: 'Basis', riskFinal: 'Risk (final = the more adverse of chart and red team)',
       riskChartDead: 'Result of the claim chart (hypothetical, patent right no longer in force)', appNotes: 'App checks', failed: 'Analysis failed', claim: 'Claim', claimChart: 'Claim chart', feature: 'Feature', quote: 'Claim wording (quote)', quoteCheck: 'Quote check', product: 'Product',
       verdict: 'Verdict', reasoning: 'Reasoning / construction / clarification', resultApp: 'Result (computed from the feature rows)', resultModel: 'Model', resultE: 'Red team', resultFinal: 'Final', markush: 'Formula test (Markush)', scaffold: 'Scaffold', variables: 'Variables', mappings: 'Mappings',
@@ -99,7 +99,7 @@
     c = str(c);
     if (!c) return c;
     if (Object.prototype.hasOwnProperty.call(CODE_EN, c)) return CODE_EN[c];
-    var m = /^markush_widerspruch_(.+)$/.exec(c); if (m) return 'formula test contradicts the verdict ' + m[1] + '';
+    var m = /^markush_widerspruch_(.+)$/.exec(c); if (m) return 'formula test contradicts the verdict (' + m[1] + ')';
     m = /^unteransprueche_(.+)$/.exec(c); if (m) return 'dependent claims: ' + label(m[1], lang);
     m = /^rechtsstand_(.+)$/.exec(c); if (m) return 'legal status: ' + label(m[1], lang);
     return c.replace(/_/g, ' ');
@@ -154,7 +154,7 @@
     h(2, L.s_summary);
     if (!op.aiUsed) p(L.noAi, 'warn');
     var missed = arr(op.notCharted).filter(function (n) { return n.reason === 'depth_limit'; });
-    if (missed.length) p(L.depthWarn + ': ' + missed.map(function (n) { return n.pn + ' ' + str(n.rel) + ''; }).join(', ') + ' - ' + L.seeNotCharted + '.', 'warn');
+    if (missed.length) p(L.depthWarn + ': ' + missed.map(function (n) { return n.pn + ' (' + str(n.rel) + ')'; }).join(', ') + ' - ' + L.seeNotCharted + '.', 'warn');
     if (op.overall) {
       h(3, L.s_overall);
       table([L.market, L.risk, L.drivers], arr(op.overall.markets).map(function (m) { return [m.market === 'EP_UPC' ? 'EP / UPC' : m.market, risk(m.risk), arr(m.drivers).join(', ')]; }));
@@ -163,7 +163,7 @@
     h(3, L.matrix);
     if (!arr(op.matrix).length) p(L.noCharts);
     table([L.right, L.market, L.rel, L.risk, L.riskBE, L.literal, L.status, L.expiry, L.notes], arr(op.matrix).map(function (m) {
-      return [m.pn, arr(m.markets).join('/'), m.rel, risk(m.risk), risk(m.riskB) + ' / ' + (m.riskE ? risk(m.riskE) : '-'), lit(m.literal), m.status, m.expiry ? m.expiry + ' ' + L.estimate + '' : L.unknown, codes(m.flags)];
+      return [m.pn, arr(m.markets).join('/'), m.rel, risk(m.risk), risk(m.riskB) + ' / ' + (m.riskE ? risk(m.riskE) : '-'), lit(m.literal), m.status, m.expiry ? m.expiry + ' (' + L.estimate + ')' : L.unknown, codes(m.flags)];
     }), 'matrix');
     if (syn) { h(3, L.modelSummary); md(syn.zusammenfassung); if (syn.app && arr(syn.app.flags).length) p(L.synthFlags + ': ' + codes(syn.app.flags) + (arr(syn.app.wording).length ? ' (' + syn.app.wording.map(function (w) { return '"' + w.phrase + '"'; }).join(', ') + ')' : ''), 'warn'); }
     if (op.synthesisFailed) p(L.synthFailed + ': ' + str(op.synthesisFailed.message), 'warn');
@@ -174,7 +174,7 @@
     h(2, L.s_profile);
     p(pf.bezeichnung);
     h(3, L.ionLipid);
-    kv([[L.name, [il.name_user, il.name_normalised].filter(Boolean).join(' / ')], ['SMILES', il.smiles], ['InChIKey', il.inchikey], [L.formula + ' ' + L.computed + '', ds.formula], [L.mw, ds.mw], ['pKa', il.pka_apparent], [L.structDesc, il.strukturbeschreibung]]);
+    kv([[L.name, [il.name_user, il.name_normalised].filter(Boolean).join(' / ')], ['SMILES', il.smiles], ['InChIKey', il.inchikey], [L.formula + ' (' + L.computed + ')', ds.formula], [L.mw, ds.mw], ['pKa', il.pka_apparent], [L.structDesc, il.strukturbeschreibung]]);
     if (arr(pf.weitere_lipide).length) { h(3, L.otherLipids); table([L.role, L.name, 'SMILES', 'PEG-MW'], pf.weitere_lipide.map(function (l) { return [code(l.rolle), [l.name_user, l.name_normalised].filter(Boolean).join(' / '), l.smiles, l.peg_mw]; })); }
     h(3, L.composition);
     kv([[code('ionizable_lipid'), val(mol.ionizable_lipid)], [code('phospholipid'), val(mol.phospholipid)], [code('sterol'), val(mol.sterol)], [code('peg_lipid'), val(mol.peg_lipid)], [code('sonstige'), val(mol.sonstige)], [L.basis, soft(z.basis, lang)], ['N/P', val(z.np_verhaeltnis)]]);
@@ -197,7 +197,7 @@
     // 3 search record
     var se = op.search || {}, rec = se.record || null;
     h(2, L.s_search);
-    kv([[L.snapshot, Object.keys(snap).map(function (k) { return k + ' ' + snap[k]; }).join('; ')],
+    kv([[L.snapshot, Object.keys(snap).map(function (k) { return ({ ep_text: 'EP full text', us_text: 'US full text', ep_register: 'EP Register', surechembl: 'SureChEMBL', corpus: 'corpus' }[k] || field(k)) + ' ' + snap[k]; }).join('; ')],
       [L.counts, rec && rec.counts ? Object.keys(rec.counts).map(function (k) { return k + ' ' + rec.counts[k]; }).join('; ') : null],
       [L.candidates, se.candidates], [L.triage, se.triage ? 'A ' + (se.triage.A || 0) + ', B ' + (se.triage.B || 0) + ', C ' + (se.triage.C || 0) : null], [L.charted, se.charted]]);
     if (rec) {
@@ -218,8 +218,8 @@
     arr(op.patents).forEach(function (e) {
       var ch = e.chart, rt = e.redteam, da = e.dependent, gs = (ch && ch.gesamt) || {};
       h(3, e.pn + ' - ' + str(e.title));
-      kv([[L.assignee, e.assignee], [L.assessedFor, arr(e.markets).join(', ') + ' ' + e.jurisdiction + ''], [L.relevance, str(e.rel) + (e.relWhy ? ': ' + e.relWhy : '')], [L.found, arr(e.why).join(' | ')],
-        [L.status, e.status + (e.right && arr(e.right.notes).length ? '; ' + e.right.notes.join('; ') : '')], [L.expiry, e.expiry && e.expiry.date ? e.expiry.date + ' ' + L.estimate + '' : L.unknown], [L.expiryBasis, e.expiry && e.expiry.basis],
+      kv([[L.assignee, e.assignee], [L.assessedFor, arr(e.markets).join(', ') + ' (' + e.jurisdiction + ')'], [L.relevance, str(e.rel) + (e.relWhy ? ': ' + e.relWhy : '')], [L.found, arr(e.why).join(' | ')],
+        [L.status, e.status + (e.right && arr(e.right.notes).length ? '; ' + e.right.notes.join('; ') : '')], [L.expiry, e.expiry && e.expiry.date ? e.expiry.date + ' (' + L.estimate + ')' : L.unknown], [L.expiryBasis, e.expiry && e.expiry.basis],
         [L.riskFinal, risk(e.risk && e.risk.final) + ' [' + L.riskBE + ': ' + risk(e.risk && e.risk.b) + ' / ' + (e.risk && e.risk.e ? risk(e.risk.e) : '-') + ']'],
         [L.riskChartDead, e.risk && e.risk.chart ? risk(e.risk.chart) : null], [L.modelRisk, ch && ch.app && ch.app.risk_model ? risk(ch.app.risk_model) : null],
         [L.flagsLabel, codes(e.flags)], [L.claimsLang, e.claimsLang], [L.imagesSent, ch && ch.app && ch.app.images_sent ? ch.app.images_sent : null]]);
@@ -230,12 +230,12 @@
         if (ch.textqualitaet && arr(ch.textqualitaet.probleme).length) ul(ch.textqualitaet.probleme);
         arr(ch.claims).forEach(function (c) {
           var a = c.app || {};
-          h(4, L.claimChart + ': ' + L.claim + ' ' + c.claim_no + ' ' + code(c.kategorie) + '');
+          h(4, L.claimChart + ': ' + L.claim + ' ' + c.claim_no + ' (' + code(c.kategorie) + ')');
           kv([[L.resultApp, lit(a.literal)], [L.resultModel, a.literal_model ? lit(a.literal_model) : null], [L.resultE, a.literal_e ? lit(a.literal_e) : null], [L.resultFinal, a.literal_final ? lit(a.literal_final) : null], [L.flagsLabel, codes(a.flags)]]);
           table([L.feature, L.quote, L.quoteCheck, L.product, L.verdict, L.reasoning], arr(c.merkmale).map(function (m) {
             var x = m.app || {}, au = m.auslegung || {}, nu = m.numerik || null, parts = [str(m.begruendung)];
             if (au.weite_auslegung || au.enge_auslegung) parts.push(L.construction + ': ' + L.broad + ' = ' + str(au.weite_auslegung) + '; ' + L.narrow + ' = ' + str(au.enge_auslegung));
-            if (au.definition_quote) parts.push(L.definition + (au.definition_para ? ' [' + au.definition_para + ']' : '') + ': "' + au.definition_quote + '"' + (x.def_quote && x.def_quote !== 'ok' ? ' ' + QCHK[lang][x.def_quote] + '' : ''));
+            if (au.definition_quote) parts.push(L.definition + (au.definition_para ? ' [' + au.definition_para + ']' : '') + ': "' + au.definition_quote + '"' + (x.def_quote && x.def_quote !== 'ok' ? ' (' + QCHK[lang][x.def_quote] + ')' : ''));
             if (nu && (nu.anspruch_min != null || nu.anspruch_max != null)) parts.push(L.numeric + ': ' + str(nu.anspruch_min) + ' - ' + str(nu.anspruch_max) + ' ' + str(nu.einheit) + '; ' + L.product + ' ' + str(nu.produktwert) + '; \u0394 ' + str(nu.abstand_zur_grenze));
             if (m.annahme) parts.push(L.assumption + ': ' + m.annahme);
             if (m.klaerung) parts.push(L.clarification + ': ' + m.klaerung);
@@ -248,7 +248,7 @@
             h(5, L.markush + ' ' + m.feature_id + ': ' + code(mk.app_ergebnis || mk.ergebnis) + (mk.app_ergebnis && mk.app_ergebnis !== mk.ergebnis ? ' (' + L.resultModel + ': ' + code(mk.ergebnis) + ')' : ''));
             kv([[L.scaffold, mk.geruest], [fld('abstand'), val(mk.abstand)], [fld('konfidenz'), code(mk.konfidenz)], ['Not mapped', arr(mk.nicht_zugeordnete_teile).join('; ')], [L.species, code(mk.einzelverbindung_genannt)]]);
             table([L.variables, L.definition, L.quoteCheck], arr(mk.variablen).map(function (v) { return [v.name, v.definition_quote, v.app ? QCHK[lang][v.app.quote] : '']; }));
-            arr(mk.mappings).forEach(function (mp) { table([L.mappings + ' ' + str(mp.mapping_id) + ' (' + 'all met: ' + code(mp.alle_erfuellt) + ')', 'Fragment', L.verdict, L.reasoning], arr(mp.zuordnung).map(function (zz) { return [zz.variable, zz.fragment + (zz.zaehlung ? ' [' + zz.zaehlung + ']' : ''), verd(zz.verdict), str(zz.begruendung) + (zz.naechster_zulaessiger_wert ? ' ' + zz.naechster_zulaessiger_wert + '' : '')]; })); });
+            arr(mk.mappings).forEach(function (mp) { table([L.mappings + ' ' + str(mp.mapping_id) + ' (' + 'all met: ' + code(mp.alle_erfuellt) + ')', 'Fragment', L.verdict, L.reasoning], arr(mp.zuordnung).map(function (zz) { return [zz.variable, zz.fragment + (zz.zaehlung ? ' [' + zz.zaehlung + ']' : ''), verd(zz.verdict), str(zz.begruendung) + (zz.naechster_zulaessiger_wert ? ' (' + zz.naechster_zulaessiger_wert + ')' : '')]; })); });
             table([L.provisos, 'excludes product', L.reasoning], arr(mk.massgaben).map(function (v) { return [v.quote, code(v.schliesst_produkt_aus), v.begruendung]; }));
           });
           if (arr(c.aequivalenz).length) {
@@ -278,7 +278,7 @@
           if (rgv.reason) p(rgv.reason);
           else if (!arr(rgv.claims).length) p(L.evNoRanges);
           var rrows = [];
-          arr(rgv.claims).forEach(function (c) { arr(c.values).forEach(function (v) { if (v.status === 'no_range') return; rrows.push([c.claim + (c.indep ? '' : ' (dep.)'), v.label + (v.comp ? ' ' + v.comp + '' : ''), str(v.value) + (v.unit ? ' ' + v.unit : ''), str(v.range) + (v.inherited ? ' [' + L.claim + ' ' + v.fromClaim + ']' : '') + (v.approx ? ' (about)' : '') + (v.compUnknown ? ' (component not identified)' : ''), code(v.status), v.quote, str(v.quoteSource) + (v.quoteVerified === true ? ' (verified)' : v.quoteVerified === false ? ' (NOT verified)' : '')]); }); });
+          arr(rgv.claims).forEach(function (c) { arr(c.values).forEach(function (v) { if (v.status === 'no_range') return; rrows.push([c.claim + (c.indep ? '' : ' (dep.)'), v.label + (v.comp ? ' (' + v.comp + ')' : ''), str(v.value) + (v.unit ? ' ' + v.unit : ''), str(v.range) + (v.inherited ? ' [' + L.claim + ' ' + v.fromClaim + ']' : '') + (v.approx ? ' (about)' : '') + (v.compUnknown ? ' (component not identified)' : ''), code(v.status), v.quote, str(v.quoteSource) + (v.quoteVerified === true ? ' (verified)' : v.quoteVerified === false ? ' (NOT verified)' : '')]); }); });
           table([L.claim, L.evParam, L.product, L.evRange, L.outcome, L.quote, L.evQuoteSrc], rrows);
           ul(rgv.notes);
         }
@@ -294,7 +294,7 @@
           zs.forEach(function (zz, i) { rows.push([i ? '' : u.claim_no, zz.claim_quote + (zz.app && zz.app.quote !== 'ok' ? ' [' + QCHK[lang][zz.app.quote] + ']' : ''), verd((zz.app && zz.app.verdict) || zz.verdict) + ': ' + str(zz.begruendung), i ? '' : verd((u.app && u.app.ketten_ergebnis) || u.ketten_ergebnis), i ? '' : code(u.einzelnennung) + (u.einzelnennung_quote ? ': "' + u.einzelnennung_quote + '"' : '')]); });
         });
         table([L.claim, L.added, L.verdict, L.chain, L.species], rows);
-        if (arr(da.rueckzugspositionen).length) { h(5, L.fallback); ul(da.rueckzugspositionen.map(function (r) { return L.claim + ' ' + r.unabhaengiger_anspruch + ' -> ' + (r.engster_noch_treffender_anspruch == null ? '-' : L.claim + ' ' + r.engster_noch_treffender_anspruch) + (r.produkt_faellt_heraus_bei ? ' ' + r.produkt_faellt_heraus_bei + '' : '') + ': ' + str(r.erlaeuterung); })); }
+        if (arr(da.rueckzugspositionen).length) { h(5, L.fallback); ul(da.rueckzugspositionen.map(function (r) { return L.claim + ' ' + r.unabhaengiger_anspruch + ' -> ' + (r.engster_noch_treffender_anspruch == null ? '-' : L.claim + ' ' + r.engster_noch_treffender_anspruch) + (r.produkt_faellt_heraus_bei ? ' (' + r.produkt_faellt_heraus_bei + ')' : '') + ': ' + str(r.erlaeuterung); })); }
         if (arr(da.auslegungshinweise).length) { h(5, L.constructionHints); ul(da.auslegungshinweise.map(function (r) { return str(r.begriff) + ' (' + L.claim + ' ' + r.unteranspruch + '): ' + str(r.hinweis); })); }
         if (arr(da.revision_empfohlen).length) { h(5, L.revision); ul(da.revision_empfohlen.map(function (r) { return L.claim + ' ' + r.claim_no + ' ' + str(r.feature_id) + ': ' + str(r.grund); })); }
       }
@@ -309,7 +309,7 @@
           if (miss.length) rr.push([rc.claim_no, '', 'completeness', miss.join(' | '), '', '']);
         });
         table([L.claim, L.feature, L.attack, L.patentee, L.counter, L.outcome], rr);
-        if (arr(rt.weitere_angriffswege).length) { h(5, L.otherRoutes); ul(rt.weitere_angriffswege.map(function (w) { return code(w.weg) + ' ' + code(w.relevanz) + ': ' + str(w.beschreibung); })); }
+        if (arr(rt.weitere_angriffswege).length) { h(5, L.otherRoutes); ul(rt.weitere_angriffswege.map(function (w) { return code(w.weg) + ' (' + code(w.relevanz) + '): ' + str(w.beschreibung); })); }
         if (rt.revidiert) p(L.revised + ': ' + risk(rt.revidiert.risiko) + '. ' + str(rt.revidiert.begruendung));
       }
       if (ch) {
@@ -341,7 +341,7 @@
     if (!arr(op.notCharted).length) p(L.none);
     order.concat(Object.keys(groups).filter(function (k) { return order.indexOf(k) < 0; })).forEach(function (k) {
       if (!groups[k]) return;
-      h(3, (REASON[lang][k] || k) + ' ' + groups[k].length + '');
+      h(3, (REASON[lang][k] || k) + ' (' + groups[k].length + ')');
       table([L.right, 'Title', L.status, L.expiry, L.reason], groups[k].map(function (n) { return [n.pn, n.title, n.status, n.expiry, n.text]; }));
     });
 

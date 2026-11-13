@@ -612,8 +612,8 @@ and formula features are marked `formel_fehlt`. No dependencies; `LnpSearch` / `
 - Calls are queued (one `sample` call at a time). `signal` (AbortSignal) rejects `{code: "cancelled"}`, also while queued.
 - Errors are `{code, message, text?}` (codes of `sample.d.ts` plus `unavailable`, `schema_invalid`). `not_granted`,
   `sampling_disabled`, `not_declared`, `capability_disabled`, `capability_removed` switch the feature off for the view
-  (`available()` false, no further call is sent); `rate_limited` is never retried. `LnpAI.message(err, lang)` gives the
-  German / English UI copy, `LnpAI.action(err)` -> `"off" | "wait" | "login" | "retry" | "none"`, `LnpAI.isFatal(err)`.
+  (`available()` false, no further call is sent); `rate_limited` is never retried. `LnpAI.message(err)` gives the
+  English UI copy (a `lang` argument is accepted and ignored), `LnpAI.action(err)` -> `"off" | "wait" | "login" | "retry" | "none"`, `LnpAI.isFatal(err)`.
 - `LnpAI.usage()` -> `{calls, ok, failed, repairs, bytesIn, bytesOut, images, ms, byTier, last, log[]}` (in memory);
   `LnpAI.onUsage(fn)`.
 - `LnpAI.semanticSearch(query, {n = 60, batch = 30, filters, signal, onStage})` ->
@@ -621,8 +621,8 @@ and formula features are marked `formel_fehlt`. No dependencies; `LnpSearch` / `
   query expansion (1 call) -> BM25 on independent claims with the expanded boolean query (strict, plus relaxed when
   fewer than n/2 hits) -> re-ranking in batches of 30 claims (sequential) -> merged ranking with a one-line reason per
   hit. Without Claude, or when a call fails, the BM25 order is kept and `degraded` says why.
-- `LnpAI.explainClaim(pn | p, claimNo, {lang, signal, onText})` -> `{text, truncated, pn, claimNo, claimLang, cuts}`: plain-language
-  explanation of one claim with the claims it refers to and the definitions excerpt. `LnpAI.explain(...)` is both:
+- `LnpAI.explainClaim(pn | p, claimNo, {claimLang, signal, onText})` -> `{text, truncated, pn, claimNo, claimLang, cuts}`: plain-language
+  explanation (always in English, quotes verbatim) of one claim with the claims it refers to and the definitions excerpt. `LnpAI.explain(...)` is both:
   `explain(err, lang)` = `message(err, lang)`, `explain(pn, claimNo, opts)` = `explainClaim`.
 - `LnpAI.useProvider(p | null)` registers the user's own provider (`engine/x-llm.js`, `LnpLLM`; docs/INTEGRATION.md section 6):
   `p = {id, label(), call(input, opts) -> {text, truncated, modelTierApplied}, limits()}`, the contract of `sample`; `json()` calls
@@ -697,7 +697,8 @@ taken from the globals or from `LnpFto.configure({data, search, chem, store, ai,
 - `LnpFto.chartOne(profile, pn | p, {depth = "quick", lang, markets, signal, onEvent})` -> one entry of `Opinion.patents` (plus
   `limits`, `warnings`); nothing is saved.
 - `LnpFto.render(opinion, "md" | "html" | "json")` -> string. Every rendering starts and ends with the verbatim limits block
-  (`LIMITS_DE` / `LIMITS_EN` with the status snapshot date). HTML is a self-contained printable document (inline CSS, no
+  (`LIMITS_EN` with the status snapshot date; an opinion saved by an older version with the German block is rendered with
+  the English block and the same date). HTML is a self-contained printable document (inline CSS, no
   scripts, only in-page anchors, fixed tag set, every string escaped); `LnpFtoRender.fragment(opinion)` is the same without the
   document frame. The HTML has a cover band (app tokens, system font fallbacks, no remote resources), executive summary with
   the overall risk as a text level, contents, per-right sections and an A4 print stylesheet (running footer with the status
@@ -710,6 +711,13 @@ taken from the globals or from `LnpFto.configure({data, search, chem, store, ai,
   `literalFromVerdicts`, `maxRisk`, `rightOf`, `statusLabel`, `checkChart`, `textQueries`.
 - `Opinion` = `{v, id, created, finished, lang, depth, markets, aiUsed, title, snapshot (manifest.snapshots), statusSnapshot, limits, profile, search: {record, candidates, triage: {A, B, C}, charted, report}, patents: [{p, pn, auth, kind, title, assignee, family, filing, routes, why, jurisdiction, markets, rel, relWhy, status (text), right: {granted, pending, dead, deadReason, code, src, asof, stale, unverified, inForceDe, lapsedIn, opposition, modifiers, notes, expiry}, expiry: {date, basis, estimate: true, ptaDays}, risk: {b, e, final, chart?}, literal: {b, e, final, claim}, flags[], failed, chart (ClaimChart + `app` blocks), dependent, redteam, digest (ChartDigest)}], notCharted: [{p, pn, reason, text, rel, status, expiry}], overall: {markets: [{market: "DE"|"EP_UPC"|"US", risk, drivers[]}], pending}, synthesis (Opinion schema `op-1` of prompts.md + `app`) | null, matrix: [{pn, jurisdiction, markets, rel, risk, riskB, riskE, literal, status, expiry, expiryBasis, dead, pending, flags}], warnings[], usage, run: {calls, resumedSteps}}`.
   Risk codes: `1_sehr_gering` ... `5_sehr_hoch`, `nicht_beurteilbar` (ranks between 3 and 4).
+- Language: all UI copy, reports and model free text are English (`lang` options are accepted and ignored; `opinion.lang` is
+  always `"en"`). Schema field names and enum codes (`5_sehr_hoch`, `wortsinngemaess_erfuellt`, `offene_fragen`, ...) are internal
+  ASCII identifiers derived from German; they are kept so that stored opinions, resumable runs and the prompt schemas stay
+  valid, and they are never shown: `LnpFtoRender.label(code)` maps every code to an English label (also used by `#fto`,
+  `x-context.js`). Verbatim quotes and the generated search queries (which include German terms for German claims) stay as
+  they are. `LnpFto.englishForm(form)` maps the German option values of profiles saved by older versions to English.
+  Guard: `tests/english_test.mjs` (rendered reports and a static scan of the string literals).
 
 ## Work views (`web/app/views/`)
 

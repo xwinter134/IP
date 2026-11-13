@@ -1,5 +1,5 @@
 // Tests for the FTO report export: the HTML design of web/engine/fto-render.js (render(op, "html")) and its print/PDF form.
-//   node tests/report_test.mjs                  checks on the fixture opinion (tests/fixtures/fto-opinion.json), then a Chromium
+//   node tests/report_test.mjs                  checks on the fixture opinion (English-only content: tests/english_test.mjs) (tests/fixtures/fto-opinion.json), then a Chromium
 //                                               pass (PDF + screenshots in a temp folder) when Playwright is installed
 //   node tests/report_test.mjs --write-samples  also writes docs/samples/fto-report-sample.{html,pdf} (fixture data only)
 //   node tests/report_test.mjs --no-browser     skip the Chromium pass
@@ -83,11 +83,11 @@ section('3 untrusted text is escaped, in the new design as well');
   ok(md.startsWith(op.limits) && md.endsWith(op.limits) && JSON.parse(js).hinweis === op.limits && JSON.parse(js).patents.length === op.patents.length, 'Markdown and JSON exports unchanged in shape (limits first and last)');
 }
 
-section('4 German rendering and fragment');
+section('4 English only, and fragment');
 {
   const de = clone(op); de.lang = 'de';
   const h = R.render(de, 'html');
-  ok(/<html lang="de">/.test(h) && /Vorprüfung, keine Rechtsberatung/.test(h) && /Gesamtrisiko/.test(h) && /Rechtsstand 2026-08-23/.test(h), 'German cover, summary and footer');
+  ok(h === html && /<html lang="en">/.test(h) && !/Vorpr\u00fcfung|Gesamtrisiko|Rechtsstand/.test(h), 'an opinion stored with lang "de" renders exactly like the English one (no German mode)');
   const f = R.fragment(op); ok(f.startsWith('<pre class="limits">') && !/<html/.test(f), 'fragment() still returns the body without the document frame');
 }
 
