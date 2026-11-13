@@ -22,7 +22,8 @@ This file is generated from `web/app/views/lib/howto-data.js` by `node tests/how
 12. [Similar patents](#12-similar-patents)
 13. [Watchlist and saved searches](#13-watchlist-and-saved-searches)
 14. [Using the data with your own AI](#14-using-the-data-with-your-own-ai)
-15. [About the data](#15-about-the-data)
+15. [Using your own AI provider](#15-using-your-own-ai-provider)
+16. [About the data](#16-about-the-data)
 
 ## Words used in these tutorials
 
@@ -60,7 +61,7 @@ Try it in the app: `#suche`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 2. Searching patents
 
@@ -90,7 +91,7 @@ Try it in the app: `#suche`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 3. Reading a patent page
 
@@ -118,7 +119,7 @@ Try it in the app: `#patent-EP3532103B1`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 4. Structure search
 
@@ -144,7 +145,7 @@ Try it in the app: `#struktur`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 5. FTO pre-screening
 
@@ -172,7 +173,7 @@ Try it: `#produkte`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 6. Markush check
 
@@ -202,7 +203,7 @@ Try it in the app: `#markush`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 7. Library screen
 
@@ -228,7 +229,7 @@ Try it in the app: `#screen`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 8. Range check
 
@@ -254,7 +255,7 @@ Try it in the app: `#ranges`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 9. Design-around ideas
 
@@ -276,7 +277,7 @@ Try it in the app: `#designs`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 10. Earliest disclosure and white space
 
@@ -302,7 +303,7 @@ Try it: `#whitespace`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 11. Expiry timeline
 
@@ -326,7 +327,7 @@ Try it in the app: `#expiry`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 12. Similar patents
 
@@ -347,7 +348,7 @@ Try it in the app: `#similar`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 13. Watchlist and saved searches
 
@@ -372,7 +373,7 @@ Try it: `#suche`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
 ## 14. Using the data with your own AI
 
@@ -398,9 +399,33 @@ Try it in the app: `#tools`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
 
-## 15. About the data
+## 15. Using your own AI provider
+
+Switch the AI features on in the website version with your own API key from Anthropic, OpenAI, Google Gemini, Mistral, OpenRouter or any OpenAI-compatible endpoint, including a local server.
+
+Try it in the app: `#ai`
+
+**Step 1.** Open System and follow "AI provider settings", or go to #ai. Choose the provider. For "OpenAI-compatible endpoint" enter the base URL (https, or http://localhost for a server on your computer, e.g. Ollama or LM Studio) and how the key is sent.
+
+**Step 2.** Paste your API key. Tick "Remember the key on this device" only on your own computer; otherwise the key is kept until the tab closes. "Show" reveals it while you check it.
+
+**Step 3.** Press "Load models". The list comes from the provider with your key. Tap a model for the Default tier, or untick "One model for all tasks" and type models for the Quick tier (many small calls: a fast model) and the Complex tier (red-team review and synthesis: your strongest model). Untick "The model reads images" for a text-only model.
+
+**Step 4.** Press "Test connection" (one short call), then "Save and use". The status at the top, the Tools page and the System page now say "AI available: <provider> - <model>". "Forget key" removes the key from this browser; "Remove all AI settings" removes everything.
+
+**Limits**
+
+- The key stays in this browser and is sent only to the provider you chose. When you run an AI feature, patent text and what you entered (product profile, structures, formulation data) go to that provider; its terms apply.
+- Calls are billed by the provider to your own account. Set a spending limit there; an FTO analysis can make many calls.
+- The prompts were written and tested with Claude; other models can answer differently or less reliably. Some providers do not allow calls from a web page (CORS); then use a gateway or a local server.
+- Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
+- Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
+- Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.
+
+## 16. About the data
 
 What the corpus holds, where it comes from, how it was processed, and what is missing, so that you can judge the results. The numbers are those of the builds of 2026-11-13 (corpus written 04:47 UTC); the System page shows the numbers of the build you are using.
 
@@ -499,4 +524,4 @@ Try it in the app: `#system`
 - Corpus snapshot: every result comes from the patents in this build, as of the snapshot date shown on the System page. Patents that are not in the corpus, or have no full text, are not searched.
 - Legal status and expiry dates are estimates from public register data of that snapshot; they can be out of date or wrong.
 - Pre-screening aid, not legal advice. Have the result checked by a patent attorney before you rely on it.
-- Claude features (AI search help, FTO analysis, reading formula images) exist only in the claude.ai Artifact version. The public website has none of them; every tool has a manual mode.
+- AI features (AI search help, FTO analysis, reading formula images) use Claude in the claude.ai Artifact version. On the public website they work only after you connect your own AI provider (see "Using your own AI provider"); every tool has a manual mode.

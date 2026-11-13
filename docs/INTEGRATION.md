@@ -11,9 +11,9 @@ All results are a pre-screening from a corpus snapshot, not legal advice.
 | Build | `pipeline/run_all.sh` (writes `dist/`) | `pipeline/build_pages.sh` (writes `dist-pages/`) |
 | Data files | base64 text (`*.b64.txt`), at most 240 MB and 500 files | raw binary (`*.bin`), no size limit (about 160 MB now) |
 | Text index | cut by the size budget when the corpus outgrows it (oldest tier-5 claims first, stated in the page) | complete (budget 900 MB), all definitions, the full formula-image set, long range quotes |
-| Claude features | yes: FTO analysis, AI search help, formula-image reading (Markush / OCSR), saved work in the Artifact database, through `window.claude` | none; every Claude-dependent feature shows a manual mode or says what is missing |
+| AI features | yes: FTO analysis, AI search help, formula-image reading (Markush / OCSR), saved work in the Artifact database, through `window.claude` | only with your own AI provider and API key (section 6); otherwise every AI feature shows a manual mode or says what is missing |
 | Hosting | private claude.ai Artifact, published in batches (`dist/publish_batches.json`) | any static host (GitHub Pages, an intranet folder, `python3 -m http.server`) or just the folder for the MCP server |
-| Network | the page never fetches from other origins | same |
+| Network | the page never fetches from other origins | same, except the AI provider you configure yourself (section 6): only its endpoint |
 
 The two builds contain the same tools and the same engine code. Use the Artifact when you want Claude inside the page;
 use the website build when you want the whole corpus, a host without Claude, or the MCP server (section 5). Saved
@@ -268,3 +268,49 @@ substructure query (a single atom against all compounds) about 8 s. A call is st
 | Results look old | rebuild the data (`pipeline/build_pages.sh`); the snapshot dates are in every `corpus` field |
 
 Run `node mcp/server.mjs --dist dist-pages --verbose` to log every call and its time to stderr. Tests: `node tests/mcp_test.mjs`.
+
+## 6. Use your own AI provider ("bring your own key")
+
+The AI features of the page (FTO analysis, AI search help, claim explanations, Markush translation and formula-image reading,
+design-around commentary) all go through one engine, `LnpAI`. In the claude.ai Artifact it uses Claude through the `sample`
+capability. Where that capability does not exist (the website build, a plain file server) you can connect your own account at
+an AI provider instead. Open **System > AI provider settings** (route `#ai`).
+
+| Provider | Endpoint | Key header | Images | JSON mode | Model list |
+|---|---|---|---|---|---|
+| Anthropic | `https://api.anthropic.com/v1/messages` | `x-api-key` (+ `anthropic-dangerous-direct-browser-access: true`) | yes | no (prompt + repair) | `/v1/models` |
+| OpenAI | `https://api.openai.com/v1/chat/completions` | `Authorization: Bearer` | yes | `response_format: json_object` | `/v1/models` |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent` | `x-goog-api-key` (never in the URL) | yes | `responseMimeType` | `/v1beta/models` |
+| Mistral | `https://api.mistral.ai/v1/chat/completions` | `Authorization: Bearer` | if the model reads images | `response_format` | `/v1/models` |
+| OpenRouter | `https://openrouter.ai/api/v1/chat/completions` | `Authorization: Bearer` | if the model reads images | off by default | `/api/v1/models` (with prices) |
+| OpenAI-compatible | `<your base URL>/chat/completions` | Bearer, `api-key` (Azure-style) or none | off by default | off by default | `<base>/models`, Ollama also `/api/tags` |
+
+Steps: choose the provider, paste the key (for a compatible endpoint also the base URL), press **Load models**, pick one model for
+everything or one per task tier (Quick: triage, query expansion, re-ranking; Default: claim charts, explanations, formula reading;
+Complex: red team and synthesis), press **Test connection** (one short call) and **Save and use**. The Tools hub, the System page
+and the settings page then say `AI available: <provider> · <model>`. No model name is built into the app; the list comes from the
+provider, and you can type a model id by hand.
+
+How it is wired: `engine/x-llm.js` (`LnpLLM`) registers a function with the contract of `sample` through `LnpAI.useProvider()`.
+Order: the Artifact's `sample` when present, otherwise your provider, otherwise off (manual modes). The 256 KiB prompt cap, the
+one-at-a-time queue, schema validation and the single repair call stay in `LnpAI`. Provider errors are mapped to `LnpAI` codes:
+`key_invalid` (401/403, switches the AI off until the settings change), `rate_limited` (429, never retried), `prompt_too_large`
+(context too long), `model_unavailable`, `unreachable` (network, CORS or the page's security policy), `timeout` (5 min per call),
+`refused`, `images_unavailable`, `upstream_error`.
+
+Security and privacy:
+
+- The key is kept only in this browser: `localStorage` when "Remember the key on this device" is ticked, otherwise
+  `sessionStorage` (gone with the tab). It is never written to the app database (`LnpStore`), the diagnostics, context packs,
+  exports, links or logs, and every error text is redacted. "Forget key" deletes it; "Remove all AI settings" deletes everything.
+- The key is sent only to the chosen endpoint, as a header, never in the URL; requests omit cookies and the referrer and refuse
+  redirects. A custom base URL must be `https://`, or `http://` on `localhost`, `127.0.0.1` or `[::1]`.
+- When you run an AI feature, the prompt goes to that provider: patent text and whatever you entered (product profile, lipid
+  structures, formulation data). Patent text stays wrapped as untrusted data in the prompts. The provider's terms apply.
+- Costs are billed by the provider to your own account; the app charges nothing. Set a spending limit at the provider.
+
+Limits: the prompts were written and tested with Claude; other models can answer differently or less reliably, and every result
+remains a pre-screening, not legal advice. Replies are not streamed (progress text appears when a call ends). A provider that
+does not allow calls from a web page (CORS) cannot be used directly; put a gateway or a local server with an OpenAI-compatible
+endpoint in between. Inside the claude.ai Artifact, Claude is used and other hosts may be blocked by the page's security policy;
+the provider then reports "not reachable here". Tests: `node tests/llm_test.mjs`.

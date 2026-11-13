@@ -60,6 +60,7 @@
     return x ? { ok: true, built: x.built || '' } : { ok: false };
   }
   function aiAvail() { try { return !!(g.LnpAI && typeof g.LnpAI.available === 'function' && g.LnpAI.available()); } catch (e) { return false; } }
+  function aiLabel() { try { var s = g.LnpAI.state(); return (s && s.label) || ''; } catch (e) { return ''; } }
 
   // -> {engine, data, ai, state: 'ready'|'limited'|'missing', notes[], dataText, aiText}
   function assess(t, App) {
@@ -76,7 +77,7 @@
     state = !eng || !view ? 'missing' : (!data ? 'limited' : 'ready');
     var ai = t.ai === 'none' ? 'none' : (aiAvail() ? 'available' : 'manual');
     return { engine: eng && view, data: data, ai: ai, state: state, notes: notes, dataText: dataText,
-      aiText: ai === 'none' ? 'No Claude needed' : (ai === 'available' ? 'Claude available' : 'Manual mode (Claude not available)') };
+      aiText: ai === 'none' ? 'No AI needed' : (ai === 'available' ? 'AI available' + (aiLabel() ? ': ' + aiLabel() : '') : 'Manual mode (no AI connected)') };
   }
 
   function mount(host, route, App) {
@@ -103,7 +104,7 @@
         h('ul.tl-av', { 'aria-label': 'Availability of ' + t.title },
           h('li', { data: { k: 'engine' } }, h('span.tl-k', { text: 'Engine' }), h('span', { text: a.engine ? 'Loaded' : 'Not loaded' })),
           h('li', { data: { k: 'data' } }, h('span.tl-k', { text: 'Data' }), h('span', { text: a.dataText })),
-          h('li', { data: { k: 'ai' } }, h('span.tl-k', { text: 'Claude' }), h('span', { text: a.aiText }))),
+          h('li', { data: { k: 'ai' } }, h('span.tl-k', { text: 'AI' }), h('span', { text: a.aiText }))),
         a.ai === 'manual' && t.aiNote ? h('p.tl-note', { text: t.aiNote }) : (a.ai === 'available' && t.aiNote ? h('p.tl-note', { text: t.aiNote }) : null),
         a.state !== 'ready' && a.notes.length ? h('p.tl-note.warn', { text: 'Unavailable here: ' + a.notes.join('; ') + '.' }) : null,
         h('div.tl-foot', null, link));
@@ -115,7 +116,8 @@
       TOOLS.forEach(function (t) { var c = card(t); counts[c.dataset.state]++; gridEl.appendChild(c); });
       var note = document.getElementById('tl-note');
       if (note) note.textContent = counts.ready + ' of ' + TOOLS.length + ' tools are ready in this build' + (counts.limited ? ', ' + counts.limited + ' limited by missing data' : '') + (counts.missing ? ', ' + counts.missing + ' not loaded' : '') +
-        '. Results are pre-screening aids computed from a corpus snapshot, not legal advice. Claude is ' + (aiAvail() ? 'available' : 'not available') + ' here; every tool has a manual mode.';
+        '. Results are pre-screening aids computed from a corpus snapshot, not legal advice. ' + (aiAvail() ? 'AI is available here (' + (aiLabel() || 'connected') + ')' : 'No AI is connected here') + '; every tool has a manual mode. ';
+      if (note) note.appendChild(h('a', { href: '#ai', text: aiAvail() ? 'AI provider settings' : 'Connect your own AI provider' }));
     }
     drawCards();
 

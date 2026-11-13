@@ -227,7 +227,7 @@
   }
   function available() { return !!(S.mock || S.sample || S.provider) && !S.off; }
   function source() { return S.mock ? 'mock' : S.sample ? 'sample' : S.provider ? 'provider' : null; }
-  /* label: who answers, for availability lines ("Claude (claude.ai)", "<provider> · <model>") */
+  /* label: who answers, for availability lines ("Claude (claude.ai)", "<provider> - <model>") */
   function state() {
     var src = source(), label = src === 'sample' ? 'Claude (claude.ai)' : src === 'mock' ? 'test double' : null;
     if (src === 'provider') { try { label = String(S.provider.label ? S.provider.label() : S.provider.id || 'own provider'); } catch (e) { label = 'own provider'; } }

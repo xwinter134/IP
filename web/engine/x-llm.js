@@ -357,7 +357,7 @@
   }
   var providerObj = {
     id: 'own',
-    label: function () { var a = active(); return a ? a.name + ' · ' + a.model : 'own provider (not set up)'; },
+    label: function () { var a = active(); return a ? a.name + ' \u00b7 ' + a.model : 'own provider (not set up)'; },
     call: function (input, opt) { if (!ready()) return Promise.reject(mkErr('unavailable', 'no AI provider is set up')); return callWith(S.cfg, S.key, input, opt); },
     limits: function () { return S.cfg ? limitsFor(S.cfg) : { maxPromptBytes: MAX_PROMPT_BYTES }; },
     toJSON: function () { return { id: 'own' }; }
@@ -392,7 +392,7 @@
     if (needKey(c) && !validKey(keep)) throw mkErr('invalid_config', 'Enter the API key of ' + prov(c).name + '.', { field: 'key' });
     if (!sSet(store('localStorage'), CFG_KEY, JSON.stringify(c))) { /* settings then live for this page only */ }
     S.cfg = c;
-    writeKey(needKey(c) || keep ? keep : null, c.remember);
+    writeKey(needKey(c) ? keep : null, c.remember);
     apply();
     return config();
   }

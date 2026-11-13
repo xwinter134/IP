@@ -102,7 +102,7 @@
           ['Structures', chemCell],
           ['File format', d.enc === 'b64' ? 'Base64 text (fallback format)' : 'binary (gzip)'],
           ['Storage', ({ db: 'Artifact database: profiles, checks and watchlist follow the account', local: 'Browser storage: only in this browser on this device', memory: 'this session only: everything is lost on closing' })[App.store.backend] + (sd.readonly ? ' · Writing to the database was rejected, changes stay local' : '')],
-          ['Claude (analysis, AI search)', d.aiAvailable ? 'available' : d.caps.claude ? 'not usable by the page (not enabled or switched off)' : 'not available: page runs outside claude.ai'],
+          ['AI (analysis, AI search)', h('span', null, d.aiAvailable ? 'available: ' + ((g.LnpAI && g.LnpAI.state && g.LnpAI.state().label) || 'yes') + ' ' : d.caps.claude ? 'not usable by the page (not enabled or switched off) ' : 'no Claude here (page runs outside claude.ai) and no own provider set up ', h('a', { href: '#ai', text: 'AI provider settings' }))],
           ['File export', d.caps.downloads ? 'via the claude.ai save dialog' : 'via a browser file link'],
           ['Start-up', d.ms.ready != null ? U.num(d.ms.ready) + ' ms to first view (table ' + U.num(d.ms.meta) + ' ms, index ' + U.num(d.ms.index) + ' ms)' : '–'],
           ['Browser', d.ua.browser + ' ' + (d.ua.major || '') + ' · ' + d.ua.os + ' · ' + d.viewport[0] + ' × ' + d.viewport[1]],

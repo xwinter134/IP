@@ -624,6 +624,11 @@ and formula features are marked `formel_fehlt`. No dependencies; `LnpSearch` / `
 - `LnpAI.explainClaim(pn | p, claimNo, {lang, signal, onText})` -> `{text, truncated, pn, claimNo, claimLang, cuts}`: plain-language
   explanation of one claim with the claims it refers to and the definitions excerpt. `LnpAI.explain(...)` is both:
   `explain(err, lang)` = `message(err, lang)`, `explain(pn, claimNo, opts)` = `explainClaim`.
+- `LnpAI.useProvider(p | null)` registers the user's own provider (`engine/x-llm.js`, `LnpLLM`; docs/INTEGRATION.md section 6):
+  `p = {id, label(), call(input, opts) -> {text, truncated, modelTierApplied}, limits()}`, the contract of `sample`; `json()` calls
+  pass `opts.json = true` to it (JSON mode). Order: mock > `sample` > provider > off. `LnpAI.state()` adds `source`
+  (`"sample" | "provider" | "mock" | null`) and `label` (e.g. `"<provider> · <model>"`). Extra error codes from providers:
+  `key_invalid` (switches off), `unreachable`, `model_unavailable` (fatal for a chain), `timeout`.
 - `LnpAI.mock(fn, {limits})` installs a test double (`fn(input, options)` -> string | `{text, truncated}` | JSON value;
   throw `{code}` to simulate failures); `LnpAI.mock(null)` removes it; `LnpAI.reset()`.
 
