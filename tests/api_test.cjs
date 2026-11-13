@@ -210,7 +210,7 @@ async function browser() {
     });
     ok(info.claude === 'undefined' && info.ai === false, 'window.claude is absent and LnpAI is not available', info);
     ok(info.api === 'object' && info.ctx === 'object', 'LnpAPI and LnpContext are loaded');
-    ok(info.newRail.slice().sort().join() === 'howto,tools' && info.railHrefs.filter((h) => h === '#tools').length === 1, 'Tools and How to are the only new rail entries', [info.newRail, info.railHrefs]);
+    ok(info.newRail.slice().sort().join() === 'ai,howto,tools' && info.railHrefs.filter((h) => h === '#tools').length === 1, 'Tools, How to and AI provider are the only new rail entries', [info.newRail, info.railHrefs]);
     ok(info.children.every((c) => c[1] && !c[2]), 'the tool views are registered without a rail entry', info.children);
 
     section('browser: LnpAPI, every method, JSON round trip');
