@@ -33,6 +33,6 @@ Pick the cheapest model that can do the job well:
 - Every result shown to a user states its limits (corpus snapshot, missing formulae, status age). FTO output is a
   pre-screening, not legal advice.
 - No secrets, personal data or model identifiers in the repo, commits or code comments.
-- Tests: `node tests/e2e.cjs`, `node tests/fto_test.mjs`, `node tests/chem_test.cjs`, `node tests/search_test.mjs`.
+- Tests: `node tests/e2e.cjs`, `node tests/fto_test.mjs`, `node tests/chem_test.cjs`, `node --max-old-space-size=6144 tests/search_test.mjs`.
   Build: `pipeline/run_all.sh` (Artifact, `dist/`), `pipeline/build_pages.sh` (website, `dist-pages/`).
 - Raw data (`data/`) is not in git; it is re-fetchable with the pipeline and backed up separately.
