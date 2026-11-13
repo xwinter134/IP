@@ -290,7 +290,7 @@
     o = o || {}; input = input || {};
     var lang = (o.lang || input.lang) === 'de' ? 'de' : 'en', ai = eng('ai'), P = eng('prompts'), warnings = [];
     return Promise.all(arr(input.lipids).map(function (l) { return computeLipid(l || {}); })).then(function (lipids) {
-      lipids.forEach(function (c) { if (!c.ok) warnings.push('Structure not read: ') + str(c.name || c.smiles_input) + ' (' + str(c.error) + ')'); });
+      lipids.forEach(function (c) { if (!c.ok) warnings.push(('Structure not read: ') + str(c.name || c.smiles_input) + ' (' + str(c.error) + ')'); });
       var base = baseProfile(input, lipids, lang);
       function finish(p, model, note) {
         if (note) warnings.push(note);
@@ -305,7 +305,7 @@
           return finish(mergeProfile(base, m, lang, warnings), true);
         }, function (e) {
           if (e && e.code === 'cancelled') throw e;
-          return finish(base, false, 'Step A (Claude) failed, profile from the form fields only: ') + (ai.message ? ai.message(e, lang) : str(e && e.code)));
+          return finish(base, false, ('Step A (Claude) failed, profile from the form fields only: ') + (ai.message ? ai.message(e, lang) : str(e && e.code)));
         });
       });
     });
