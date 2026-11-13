@@ -32,7 +32,7 @@
 
   function mount(host, route, App) {
     var K = g.LnpKit, D = g.LnpHowtoData, dead = false, lightbox = null;
-    var T = D.tutorials, byId = {};
+    var T = D.tutorials, byId = Object.create(null);
     T.forEach(function (t) { byId[t.id] = t; });
     var cur = byId[route.arg] ? route.arg : T[0].id;
 
@@ -67,11 +67,12 @@
       closeBox();
       var prev = document.activeElement;
       var close = h('button.btn.sm.hw-lb-x', { type: 'button', 'aria-label': 'Close', onclick: closeBox }, U.icon('x'), 'Close');
-      var open = h('a.btn.sm', { href: src, target: '_blank', rel: 'noopener' }, U.icon('ext'), 'Open in a new tab');
+      var abs = src; try { abs = new URL(src, document.baseURI).href; } catch (e) { /* keep relative */ }
+      var open = h('a.btn.sm', { href: abs, target: '_blank', rel: 'noopener' }, U.icon('ext'), 'Open in a new tab');
       var el = h('div.hw-lb', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Screenshot: ' + alt, onmousedown: function (ev) { if (ev.target === el) closeBox(); } },
         h('div.hw-lb-bar', null, h('span.hw-lb-cap', { text: alt }), open, close),
         h('div.hw-lb-body', null, h('img', { src: src, alt: alt })));
-      function key(ev) { if (ev.key === 'Escape') { ev.stopPropagation(); closeBox(); } else if (ev.key === 'Tab') { ev.preventDefault(); close.focus(); } }
+      function key(ev) { if (ev.key === 'Escape') { ev.stopPropagation(); closeBox(); } else if (ev.key === 'Tab') { ev.preventDefault(); (document.activeElement === close ? open : close).focus(); } }
       document.addEventListener('keydown', key, true);
       document.getElementById('overlays').appendChild(el);
       lightbox = { el: el, key: key, prev: prev };
@@ -81,7 +82,9 @@
       var src = IMG_DIR + step.img + '.jpg';
       var im = h('img', { src: src, alt: step.alt, loading: 'lazy', decoding: 'async', width: '1366', height: '854' });
       var btn = h('button.hw-shot', { type: 'button', 'aria-label': 'Enlarge screenshot: ' + step.alt, title: 'Click to enlarge', onclick: function () { openBox(src, step.alt); } }, im);
+      var retried = false;
       im.addEventListener('error', function () {
+        if (!retried) { retried = true; setTimeout(function () { if (!dead) im.src = src + '?r=1'; }, 1500); return; }
         U.set(fig, h('p.hw-miss', { role: 'img', 'aria-label': step.alt, text: 'Screenshot not available in this build: ' + step.alt }));
       });
       var fig = h('figure.hw-fig', null, btn);
@@ -99,7 +102,7 @@
       if (s.list) out.push(h('ul.hw-list-x', null, s.list.map(function (x) { return h('li', { text: x }); })));
       if (s.table) out.push(h('div.table-wrap.hw-table', null, h('table.data', null,
         h('thead', null, h('tr', null, s.table.cols.map(function (c) { return h('th', { scope: 'col', text: c }); }))),
-        h('tbody', null, s.table.rows.map(function (r) { return h('tr', null, r.map(function (c, j) { return h(j ? 'td.num' : 'td', { text: c }); })); })))));
+        h('tbody', null, s.table.rows.map(function (r) { return h('tr', null, r.map(function (c, j) { return h(j && /^[\d.,]+( ?(%|MB))?$/.test(c) ? 'td.num' : 'td', { text: c }); })); })))));
       if (s.link && /^https:\/\//.test(s.link.href)) out.push(h('p.hw-act', null, h('a.btn.sm', { href: s.link.href, target: '_blank', rel: 'noopener noreferrer' }, U.icon('ext'), s.link.label)));
       return out;
     }

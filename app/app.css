@@ -231,7 +231,7 @@ mark.hit { background: var(--hit-bg); color: var(--hit-fg); border-radius: 2px; 
 .search[data-density="compact"] .hit-title { font-size: 14px; font-weight: 500; }
 .res-ph { display: flex; align-items: center; justify-content: center; color: var(--faint); font-family: var(--mono); font-size: 11px; border-top: 1px solid var(--line); }
 .selbar { position: sticky; bottom: 0; z-index: 4; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px max(24px, env(safe-area-inset-right, 0px)) 10px 18px; background: var(--btn-bg); color: var(--btn-fg); font-size: 13.5px; }
-.selbar[hidden] { display: none; }
+[hidden] { display: none !important; }
 .selbar .btn { background: transparent; color: inherit; border-color: currentColor; }
 .selbar .btn.primary { background: var(--btn-fg); color: var(--btn-bg); border-color: var(--btn-fg); }
 .selbar .grow { margin-right: auto; }

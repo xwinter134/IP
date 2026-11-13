@@ -961,7 +961,7 @@
     var ev = e.app && e.app.evidence;
     /* independence of a claim: from the claim set; without one (no claim text) from the range table, else unknown (null) */
     function indepOf(no) {
-      if (cs) { var src = cs.byNo[no]; return !!(src && src.indep); }
+      if (cs && cs.byNo[no]) return !!cs.byNo[no].indep;   // a claim number outside the claim set is unknown (null), not dependent
       var rc = ev && ev.ranges ? arr(ev.ranges.claims).filter(function (c) { return c.claim === no; })[0] : null;
       return rc ? !!rc.indep : null;
     }

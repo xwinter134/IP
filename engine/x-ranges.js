@@ -389,7 +389,15 @@
   /* ------------------------------------------------------------------ quotes */
   function cut(text, off, ml) {
     var a = Math.max(0, off - S.win.lead), b = Math.min(text.length, a + S.win.max);
-    return { text: text.slice(a, b), start: off - a, len: Math.min(ml, b - off) };
+    return { text: text.slice(a, b), start: off - a, len: Math.min(ml, b - off), end: b };
+  }
+  /* the stored offset is only trusted when the numbers of the row occur in the matched text (a corpus rebuilt after the
+     ranges dataset shifts offsets); true when every finite bound is found, else null (not confirmed), never a guess */
+  function boundsInText(r, seg) {
+    var nums = (String(seg == null ? "" : seg).match(/\d+(?:[.,]\d+)?/g) || []).map(function (x) { return parseFloat(x.replace(',', '.')); });
+    var want = [r.lo, r.hi].filter(function (x) { return typeof x === 'number' && isFinite(x); });
+    if (!want.length || !nums.length) return null;
+    return want.every(function (w) { return nums.some(function (n) { return Math.abs(n - w) <= Math.abs(w) * 1e-9; }); }) ? true : null;
   }
   // verbatim quote of a row: from the file, else cut from the claim text (LnpSearch.claims); verified against the claim text when it is there
   function quote(r) {
@@ -412,7 +420,7 @@
     return fromClaim().then(function (t) {
       if (t == null) return base;
       var c = cut(t, r.off, r.ml);
-      return { text: c.text, start: c.start, len: c.len, source: 'claim', verified: true, cutStart: r.off > S.win.lead, cutEnd: c.text.length >= S.win.max && r.off - c.start + c.text.length < t.length + 0 };
+      return { text: c.text, start: c.start, len: c.len, source: 'claim', verified: boundsInText(r, t.slice(r.off, r.off + (r.ml || 0))), cutStart: r.off > S.win.lead, cutEnd: c.end < t.length };
     });
   }
 
