@@ -6,6 +6,8 @@
    - The 256 KiB input cap is enforced here with a byte counter; over-long prompts are shortened in a
      deterministic way and the result says what was cut (see fit()).
    - Errors are plain objects {code, message, text?}; message(err, lang) gives the UI copy (English by default, German with lang "de").
+   - Without "sample", a provider registered with useProvider(p) (engine/x-llm.js: the user's own API key) takes its place with the
+     same contract; order: mock > sample > provider > off.
    API: docs/ARCHITECTURE.md (LnpAI). */
 (function (g) {
   'use strict';
@@ -16,12 +18,12 @@
      the red team and the synthesis */
   var TASK_TIER = { expand: 'quick', rerank: 'quick', triage: 'quick', T: 'quick', normalize: 'default', A: 'default', chart: 'default', B: 'default',
     dependent: 'default', C: 'default', explain: 'default', redteam: 'complex', E: 'complex', synthesis: 'complex', D: 'complex' };
-  var OFF_CODES = { not_granted: 1, sampling_disabled: 1, not_declared: 1, capability_disabled: 1, capability_removed: 1 };
+  var OFF_CODES = { not_granted: 1, sampling_disabled: 1, not_declared: 1, capability_disabled: 1, capability_removed: 1, key_invalid: 1 };
   var REPAIR_TEXT = 'Your previous output was not valid against the schema. Validation errors:\n<errors>{errors}</errors>\n' +
     'Return the corrected, complete JSON object only. Do not change verdicts or reasoning; fix structure,\n' +
     'missing required fields (use null or [] where you have no content) and enum spellings.';
 
-  var S = { sample: null, mock: null, mockLimits: null, ready: null, off: null, limits: null, noImages: false, log: [], seq: 0, listeners: [], queue: Promise.resolve(), eng: {} };
+  var S = { sample: null, provider: null, mock: null, mockLimits: null, ready: null, off: null, limits: null, noImages: false, log: [], seq: 0, listeners: [], queue: Promise.resolve(), eng: {} };
 
   function mkErr(code, message, extra) { var e = { code: code, message: message || code }, k; if (extra) for (k in extra) e[k] = extra[k]; return e; }
   function noop() { }
@@ -223,15 +225,29 @@
     }).then(function () { return available(); });
     return S.ready;
   }
-  function available() { return !!(S.mock || S.sample) && !S.off; }
-  function state() { return { available: available(), off: S.off, mock: !!S.mock, noImages: S.noImages }; }
+  function available() { return !!(S.mock || S.sample || S.provider) && !S.off; }
+  function source() { return S.mock ? 'mock' : S.sample ? 'sample' : S.provider ? 'provider' : null; }
+  /* label: who answers, for availability lines ("Claude (claude.ai)", "<provider> · <model>") */
+  function state() {
+    var src = source(), label = src === 'sample' ? 'Claude (claude.ai)' : src === 'mock' ? 'test double' : null;
+    if (src === 'provider') { try { label = String(S.provider.label ? S.provider.label() : S.provider.id || 'own provider'); } catch (e) { label = 'own provider'; } }
+    return { available: available(), off: S.off, mock: !!S.mock, noImages: S.noImages, source: src, label: label };
+  }
+  /* useProvider(p | null): p = {id, label() -> string, call(input, options) -> {text, truncated, modelTierApplied?}, limits() -> limits}.
+     Used only when the "sample" capability is absent. Re-registering clears "off" and the cached limits. */
+  function useProvider(p) {
+    S.provider = (p && typeof p.call === 'function') ? p : null;
+    S.ready = null; S.off = null; S.limits = null; S.noImages = false;
+    return api;
+  }
   function limits() {
     return init().then(function () {
       var base = { maxPromptBytes: MAX_PROMPT_BYTES };
       if (S.mock) return copyLimits(S.mockLimits || base);
-      if (!S.sample) return base;
+      var src = S.sample || S.provider;
+      if (!src || typeof src.limits !== 'function') return base;
       if (S.limits) return copyLimits(S.limits);
-      return Promise.resolve().then(function () { return S.sample.limits(); }).then(function (l) { S.limits = (l && typeof l === 'object') ? l : base; return copyLimits(S.limits); }, function () { S.limits = base; return copyLimits(base); });
+      return Promise.resolve().then(function () { return src.limits(); }).then(function (l) { S.limits = (l && typeof l === 'object') ? l : base; return copyLimits(S.limits); }, function () { S.limits = base; return copyLimits(base); });
     });
   }
   function copyLimits(l) {
@@ -279,16 +295,20 @@
       rate_limited: 'Das Nutzungslimit ist erreicht oder es laufen zu viele Anfragen. Bitte einige Zeit warten und dann von Hand fortsetzen; es wird nicht automatisch wiederholt. Abgeschlossene Schritte bleiben gespeichert.',
       session_expired: 'Die Anmeldung ist abgelaufen. Bitte neu anmelden und den Vorgang fortsetzen.',
       cancelled: 'Abgebrochen. Abgeschlossene Schritte bleiben gespeichert.',
-      refused: 'Claude hat diese Anfrage abgelehnt. Eine unver\u00e4nderte Wiederholung f\u00fchrt zum selben Ergebnis.',
-      empty_completion: 'Claude hat keinen Text geliefert. Bitte mit weniger Material erneut versuchen.',
+      refused: 'Das KI-Modell hat diese Anfrage abgelehnt. Eine unver\u00e4nderte Wiederholung f\u00fchrt zum selben Ergebnis.',
+      empty_completion: 'Das KI-Modell hat keinen Text geliefert. Bitte mit weniger Material erneut versuchen.',
       invalid_json: 'Die Antwort war auch nach der einen Korrekturrunde nicht als Daten lesbar. Der Schritt wurde nicht gewertet.',
       schema_invalid: 'Die Antwort entsprach auch nach der einen Korrekturrunde nicht dem geforderten Aufbau. Der Schritt wurde nicht gewertet.',
       prompt_too_large: 'Der Text f\u00fcr diese Anfrage ist auch nach dem K\u00fcrzen zu gro\u00df (Grenze 256 KiB).',
       images_unavailable: 'Bilder k\u00f6nnen in dieser Ansicht nicht an Claude gesendet werden. Formelbilder fehlen daher in der Analyse; betroffene Merkmale gelten als unklar.',
       image_rejected: 'Ein Formelbild wurde nicht angenommen. Betroffene Merkmale gelten als unklar.',
       upstream_error: 'Vor\u00fcbergehender Fehler beim Dienst oder bei der Verbindung. Bitte sp\u00e4ter von Hand erneut versuchen.',
+      key_invalid: 'Der KI-Anbieter hat den API-Schl\u00fcssel abgelehnt (ung\u00fcltig oder ohne Zugriff). Die KI-Funktionen sind abgeschaltet, bis der Schl\u00fcssel unter "AI provider" ge\u00e4ndert wird.',
+      unreachable: 'Der KI-Anbieter ist von dieser Seite aus nicht erreichbar (Netzwerk, CORS-Regel des Anbieters oder Sicherheitsregel der Seite). Einstellungen unter "AI provider" pr\u00fcfen.',
+      timeout: 'Der KI-Anbieter hat nicht rechtzeitig geantwortet. Bitte von Hand erneut versuchen, eventuell mit weniger Material.',
+      model_unavailable: 'Das gew\u00e4hlte Modell ist f\u00fcr diesen Schl\u00fcssel nicht verf\u00fcgbar. Unter "AI provider" ein anderes Modell w\u00e4hlen.',
       invalid_request: 'Interner Fehler: Die Anfrage an Claude war fehlerhaft aufgebaut.',
-      other: 'Unerwarteter Fehler beim Aufruf von Claude.'
+      other: 'Unerwarteter Fehler beim Aufruf des KI-Modells.'
     },
     en: {
       unavailable: 'The AI features are not available in this view. Search, structure comparison and legal status keep working.',
@@ -300,16 +320,20 @@
       rate_limited: 'The usage limit is reached or too many requests are running. Please wait a while and continue by hand; nothing is retried automatically. Finished steps stay saved.',
       session_expired: 'The session has expired. Please sign in again and continue.',
       cancelled: 'Cancelled. Finished steps stay saved.',
-      refused: 'Claude declined this request. Sending it again unchanged gives the same result.',
-      empty_completion: 'Claude returned no text. Please try again with less material.',
+      refused: 'The AI model declined this request. Sending it again unchanged gives the same result.',
+      empty_completion: 'The AI model returned no text. Please try again with less material.',
       invalid_json: 'The reply could not be read as data, even after the one repair round. The step was not counted.',
       schema_invalid: 'The reply did not have the required structure, even after the one repair round. The step was not counted.',
       prompt_too_large: 'The text for this request is too large even after shortening (limit 256 KiB).',
       images_unavailable: 'Images cannot be sent to Claude in this view. Formula images are missing from the analysis; affected features count as unclear.',
       image_rejected: 'A formula image was not accepted. Affected features count as unclear.',
       upstream_error: 'Temporary service or connection failure. Please try again by hand later.',
+      key_invalid: 'The AI provider rejected the API key (invalid or without access). The AI features are off until you change the key under "AI provider".',
+      unreachable: 'The AI provider cannot be reached from this page (network, the provider\'s CORS policy or the page\'s security policy). Check the settings under "AI provider".',
+      timeout: 'The AI provider did not answer in time. Please try again by hand, perhaps with less material.',
+      model_unavailable: 'The selected model is not available for this key. Choose another model under "AI provider".',
       invalid_request: 'Internal error: the request to Claude was malformed.',
-      other: 'Unexpected error while calling Claude.'
+      other: 'Unexpected error while calling the AI model.'
     }
   };
   /* what the UI should do: "off" = hide the AI features for this view, "wait" = tell the user to wait and let them
@@ -328,7 +352,7 @@
     return m[c] || m.other;
   }
   /* fatal for a running chain: the chain stops, keeps what is saved and can be continued by hand */
-  function isFatal(err) { var c = err && err.code; return !!(OFF_CODES[c] || c === 'unavailable' || c === 'rate_limited' || c === 'session_expired' || c === 'cancelled'); }
+  function isFatal(err) { var c = err && err.code; return !!(OFF_CODES[c] || c === 'unavailable' || c === 'rate_limited' || c === 'session_expired' || c === 'cancelled' || c === 'unreachable' || c === 'model_unavailable'); }
 
   // ------------------------------------------------------------------------------------------------ calls
   function withAbort(p, signal) {
@@ -346,7 +370,7 @@
     return withAbort(run, signal);
   }
   function notify(entry) { for (var i = 0; i < S.listeners.length; i++) { try { S.listeners[i](entry, usage()); } catch (e) { /* ignore */ } } }
-  function callSample(input, opt, tier) {
+  function callSample(input, opt, tier, asJson) {
     if (S.mock) {
       return Promise.resolve().then(function () { return S.mock(input, opt); }).then(function (r) {
         var o = (typeof r === 'string') ? { text: r } : (r && typeof r === 'object' && typeof r.text === 'string' && !Array.isArray(r)) ? r : { text: JSON.stringify(r) };
@@ -354,7 +378,10 @@
         return { text: o.text, truncated: !!o.truncated, modelTierApplied: o.modelTierApplied || tier };
       });
     }
-    return Promise.resolve().then(function () { return S.sample(input, opt); });
+    if (S.sample) return Promise.resolve().then(function () { return S.sample(input, opt); });
+    // own provider: may use a JSON mode for json() calls; the key never passes through here
+    if (asJson) { var o2 = {}, k; for (k in opt) o2[k] = opt[k]; o2.json = true; opt = o2; }
+    return Promise.resolve().then(function () { return S.provider.call(input, opt); });
   }
   /* text(prompt, {tier, signal, onText, images, cache, label, reserve}) -> {text, truncated, tier, tierApplied, cuts,
      bytesIn, bytesOut, imagesSent, imagesDropped, input} */
@@ -362,7 +389,7 @@
     o = o || {};
     var entry = { n: ++S.seq, t: Date.now(), label: o.label || o.tier || 'text', tier: null, tierApplied: null, bytesIn: 0, bytesOut: 0, images: 0, cuts: 0, ms: 0, ok: false, code: null, repair: !!o._repair };
     return init().then(function () {
-      if (!available()) throw mkErr(S.off || 'unavailable', 'sample capability is not available');
+      if (!available()) throw mkErr(S.off || 'unavailable', 'no AI is available (no sample capability, no own provider)');
       if (o.signal && o.signal.aborted) throw mkErr('cancelled', 'cancelled');
       return limits();
     }).then(function (lim) {
@@ -376,7 +403,7 @@
       if (typeof o.onText === 'function') opt.onText = function (u) { try { o.onText(u); } catch (e) { /* ignore */ } };
       entry.tier = tier; entry.bytesIn = fitted.bytes; entry.images = img.list.length; entry.cuts = fitted.cuts.length;
       var t0 = Date.now();
-      return enqueue(function () { t0 = Date.now(); return callSample(fitted.input, opt, tier); }, o.signal).then(function (r) {
+      return enqueue(function () { t0 = Date.now(); return callSample(fitted.input, opt, tier, !!o._json); }, o.signal).then(function (r) {
         var out = String(r && r.text != null ? r.text : '');
         entry.ms = Date.now() - t0; entry.ok = true; entry.bytesOut = bytes(out); entry.tierApplied = (r && r.modelTierApplied) || tier;
         S.log.push(entry); if (S.log.length > 500) S.log.shift(); notify(entry);
@@ -425,7 +452,7 @@
       if (r.imagesDropped) status({ type: 'images_dropped', n: r.imagesDropped });
     }
     var base = { tier: o.tier, signal: o.signal, images: o.images, onText: o.onText, cache: o.cache, label: o.label || o.tier || 'json' };
-    base.reserve = REPAIR_RESERVE;
+    base.reserve = REPAIR_RESERVE; base._json = true;
     return text(prompt, base).then(function (r1) {
       fill(r1);
       var v1 = evaluate(r1, o);
@@ -437,7 +464,7 @@
       if (first !== null && r1.text.trim() && bytes(first) + bytes(r1.text) + bytes(rep) <= MAX_PROMPT_BYTES - 64) turns = [{ role: 'user', content: first }, { role: 'assistant', content: r1.text }, { role: 'user', content: rep }];
       else if (first !== null) turns = [{ role: 'user', content: first + '\n\n' + rep + '\n(The previous output is not repeated here because of the size limit; produce the complete JSON object again.)' }];
       else turns = r1.input.concat([{ role: 'assistant', content: r1.text.trim() ? r1.text : '(empty)' }, { role: 'user', content: rep }]);
-      var o2 = { tier: o.tier, signal: o.signal, images: o.images, onText: o.onText, cache: false, label: base.label + '/repair', _repair: true };
+      var o2 = { tier: o.tier, signal: o.signal, images: o.images, onText: o.onText, cache: false, label: base.label + '/repair', _repair: true, _json: true };
       return text(turns, o2).then(function (r2) {
         fill(r2);
         var v2 = evaluate(r2, o);
@@ -645,7 +672,7 @@
   }
 
   var api = {
-    init: init, available: available, state: state, limits: limits, json: json, text: text, message: message, action: action, isFatal: isFatal,
+    init: init, available: available, state: state, useProvider: useProvider, limits: limits, json: json, text: text, message: message, action: action, isFatal: isFatal,
     explain: explain, explainClaim: explainClaim, semanticSearch: semanticSearch, usage: usage, onUsage: onUsage, mock: mock, reset: reset, configure: configure,
     bytes: bytes, sliceBytes: sliceBytes, fit: fit, extractJson: extractJson, validate: validate, tierFor: function (t) { return pickTier(t, null); },
     expansionPrompt: expansionPrompt, rerankPrompt: rerankPrompt, toQueries: toQueries, MAX_PROMPT_BYTES: MAX_PROMPT_BYTES, TASK_TIER: TASK_TIER
