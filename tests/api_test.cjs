@@ -210,7 +210,7 @@ async function browser() {
     });
     ok(info.claude === 'undefined' && info.ai === false, 'window.claude is absent and LnpAI is not available', info);
     ok(info.api === 'object' && info.ctx === 'object', 'LnpAPI and LnpContext are loaded');
-    ok(info.newRail.length === 1 && info.newRail[0] === 'tools' && info.railHrefs.filter((h) => h === '#tools').length === 1, 'Tools is the only new rail entry', [info.newRail, info.railHrefs]);
+    ok(info.newRail.slice().sort().join() === 'howto,tools' && info.railHrefs.filter((h) => h === '#tools').length === 1, 'Tools and How to are the only new rail entries', [info.newRail, info.railHrefs]);
     ok(info.children.every((c) => c[1] && !c[2]), 'the tool views are registered without a rail entry', info.children);
 
     section('browser: LnpAPI, every method, JSON round trip');
@@ -377,7 +377,7 @@ async function browser() {
     ok(hub.every((c) => c.title && c.what.length > 30 && c.what.length < 260 && c.av.length === 3), 'every card has a title, a one-line purpose and three availability lines');
     ok(hub.every((c) => c.state === 'ready' && c.engine === '1' && c.data === '1' && c.pill === 'Ready'), 'in a full build every tool is Ready (engine loaded, data in this build)', hub.filter((c) => c.state !== 'ready').map((c) => c.id + ':' + c.state));
     ok(hub.filter((c) => c.ai === 'manual').map((c) => c.id).sort().join() === 'designs,markush' && hub.filter((c) => c.ai === 'none').length === 8, 'Claude state: manual mode for markush and designs, not needed for the other eight', hub.map((c) => c.id + ':' + c.ai));
-    ok(/Manual mode/.test(hub[0].av[2]) && /No AI needed/.test(hub[1].av[2]) && /Data "ranges" in this build/.test(hub[2].av[1]) && /Chemistry set/.test(hub[1].av[1]) && /Loaded/.test(hub[0].av[0]), 'availability lines name engine, data and Claude state', hub[0].av);
+    ok(/Manual mode/.test(hub[0].av[2]) && /No AI needed/.test(hub[1].av[2]) && /Data "ranges" in this build/.test(hub[2].av[1]) && /Chemistry set/.test(hub[1].av[1]) && /Loaded/.test(hub[0].av[0]), 'availability lines name engine, data and AI state', hub.slice(0, 3).map((c) => c.av));
     const links = hub.map((c) => c.link); ok(links.every((l) => /^#[a-z]+$/.test(l)) && links[0] === '#markush' && links[2] === '#ranges' && links[7] === '#similar', 'cards link to the tool routes', links);
     const sec = await S.page.evaluate(() => { const ai = document.getElementById('tl-ai'); return { text: ai.textContent, ext: Array.from(document.querySelectorAll('#view a')).map((a) => a.getAttribute('href')).filter((h) => /^(https?:)?\/\//.test(h || '')), parts: Array.from(ai.querySelectorAll('[data-part]')).map((e) => e.dataset.part) }; });
     ok(sec.parts.join() === 'api,packs,mcp' && /LnpAPI/.test(sec.text) && /docs\/LNPAPI\.md/.test(sec.text) && /mcp\/README\.md/.test(sec.text) && /untrusted/.test(sec.text), '"For your AI tools": LnpAPI, context packs, MCP server, with documentation path names', sec.parts);
