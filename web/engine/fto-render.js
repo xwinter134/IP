@@ -1,8 +1,9 @@
 /* LNP-FTO opinion renderer (global LnpFtoRender). Plain script, no dependencies.
    render(opinion, "md" | "html" | "json") -> string.
-   - Output language: English by default; German only when opinion.lang === "de". Internal codes (risk levels, verdicts,
-     flags, schema field names) are mapped to English labels for display; claim quotes stay verbatim.
-   - Every rendering STARTS and ENDS with the verbatim limits block (opinion.limits = LIMITS_EN / LIMITS_DE with the
+   - Output language: English only (a stored opinion's "lang" is ignored). Internal codes (risk levels, verdicts, flags,
+     schema field names; ASCII German-derived identifiers that are never shown) are mapped to English labels for display;
+     claim quotes and the generated search queries stay verbatim.
+   - Every rendering STARTS and ENDS with the verbatim limits block (opinion.limits = LIMITS_EN with the
      status snapshot date filled in). Markdown: first and last characters; HTML: first and last element of <body>;
      JSON: first key "hinweis" and last key "hinweis_ende".
    - Model output and patent text are untrusted. The document is first built as a list of plain-data nodes; the HTML
@@ -17,31 +18,6 @@
   function esc(s) { return str(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
   var T = {
-    de: {
-      title: 'FTO-Vorpr\u00fcfung (kein Rechtsgutachten)', created: 'Erstellt', depth: 'Tiefe', markets: 'M\u00e4rkte', corpus: 'Korpusstand', none: 'keine', yes: 'ja', no: 'nein', unknown: 'unbekannt',
-      s_summary: '1. Zusammenfassung', s_overall: 'Gesamtrisiko je Markt (von der App aus den Einzelbewertungen berechnet)', market: 'Markt', risk: 'Risiko', drivers: 'Treibende Schutzrechte',
-      pendingApps: 'Anh\u00e4ngige Anmeldungen (gesondert; Anspr\u00fcche ver\u00e4nderlich)', matrix: 'Risikomatrix', right: 'Schutzrecht', rel: 'Relevanz', literal: 'Wortsinn (ung\u00fcnstigster Anspruch)', status: 'Rechtsstand', expiry: 'Ablauf (Sch\u00e4tzung)', notes: 'Hinweise',
-      riskBE: 'Analyse / Gegenpr\u00fcfung', noAi: 'Die KI-Funktion stand nicht zur Verf\u00fcgung. Dieses Dokument enth\u00e4lt nur die Recherche und den Rechtsstand, keine Merkmalsanalyse.',
-      noCharts: 'Es wurde kein Schutzrecht analysiert.', depthWarn: 'Achtung: Schutzrechte mit Triage-Relevanz A oder B wurden wegen der gew\u00e4hlten Tiefe NICHT analysiert', seeNotCharted: 'siehe Abschnitt 6',
-      warnings: 'Hinweise der App zu diesem Lauf', modelSummary: 'Zusammenfassende Bewertung (Claude; aus den Einzelbewertungen, nicht bindend)', synthFailed: 'Die zusammenfassende Bewertung (Synthese) ist fehlgeschlagen', synthFlags: 'Hinweise der App zur Synthese',
-      s_profile: '2. Gepr\u00fcfter Gegenstand (Produktprofil, wie verstanden)', ionLipid: 'Ionisierbares Lipid', name: 'Name', structDesc: 'Strukturbeschreibung', formula: 'Summenformel', mw: 'Molmasse', computed: 'von der App berechnet (OpenChemLib), nicht vom Modell',
-      otherLipids: 'Weitere Lipide', role: 'Rolle', composition: 'Zusammensetzung (mol-% des Gesamtlipids)', basis: 'Basis', payload: 'Payload', particle: 'Partikel', process: 'Verfahren', formulation: 'Formulierung / Lagerung', use: 'Anwendung', acts: 'Handlungen und M\u00e4rkte',
-      features: 'Merkmalsliste des Produkts', id: 'ID', category: 'Kategorie', statement: 'Aussage', value: 'Wert', source: 'Quelle', certainty: 'Sicherheit', assumptions: 'Annahmen', openData: 'Offene Fragen zum Produkt', profileWarn: 'Hinweise der App zum Profil',
-      modelText: 'Darstellung durch Claude', s_search: '3. Recherche (Protokoll zur Nachvollziehbarkeit)', snapshot: 'Korpus und Datenst\u00e4nde', counts: 'Umfang', structRoute: 'Strukturrecherche (exakt / Teilstruktur / \u00c4hnlichkeit je Lipid)', lipid: 'Lipid', mode: 'Modus', compounds: 'Verbindungen', pubs: 'Fundstellen',
-      textRoute: 'Textrecherche (erzeugte boolesche Anfragen, w\u00f6rtlich)', query: 'Anfrage', hits: 'Treffer', taken: 'ausgewertet', seedRoute: 'Schl\u00fcsselfamilien der beobachteten Anmelder', tier: 'Stufe', semRoute: 'Semantische Suche (Claude)', candidates: 'Kandidaten', triage: 'Triage',
-      charted: 'analysiert', s_patents: '4. Einzelbewertung der analysierten Schutzrechte', assignee: 'Inhaber/Anmelder', assessedFor: 'Bewertet f\u00fcr', found: 'Gefunden \u00fcber', relevance: 'Triage', expiryBasis: 'Grundlage', riskFinal: 'Risiko (final = das nachteiligere aus Analyse und Gegenpr\u00fcfung)',
-      riskChartDead: 'Ergebnis der Merkmalsanalyse (hypothetisch, Recht nicht mehr in Kraft)', appNotes: 'Pr\u00fcfungen der App', failed: 'Analyse fehlgeschlagen', claim: 'Anspruch', claimChart: 'Merkmalsanalyse', feature: 'Merkmal', quote: 'Anspruchswortlaut (Zitat)', quoteCheck: 'Zitatpr\u00fcfung', product: 'Produkt',
-      verdict: 'Urteil', reasoning: 'Begr\u00fcndung / Auslegung / Kl\u00e4rung', resultApp: 'Ergebnis (aus den Merkmalszeilen berechnet)', resultModel: 'Modell', resultE: 'Gegenpr\u00fcfung', resultFinal: 'final', markush: 'Formelpr\u00fcfung (Markush)', scaffold: 'Ger\u00fcst', variables: 'Variablen', mappings: 'Zuordnungen',
-      provisos: 'Ma\u00dfgaben', equivalence: 'Fragen zur \u00c4quivalenz f\u00fcr die anwaltliche Pr\u00fcfung (hier NICHT entschieden)', eqNote: 'Einsch\u00e4tzung des Modells, keine Entscheidung', replaced: 'Austauschmittel', dependent: 'Unteranspr\u00fcche (R\u00fcckzugspositionen)', added: 'Zusatzmerkmal (Zitat)',
-      chain: 'Kette (App)', species: 'Einzelnennung', fallback: 'R\u00fcckzugspositionen', constructionHints: 'Auslegungshinweise aus den Unteranspr\u00fcchen', revision: '\u00dcberpr\u00fcfung empfohlen', redteam: 'Gegenpr\u00fcfung (Sicht des Patentinhabers)', attack: 'Angriff', patentee: 'Argument Patentinhaber',
-      counter: 'Gegenargument', outcome: 'Ergebnis', otherRoutes: 'Weitere Angriffswege', revised: 'Revidiertes Risiko der Gegenpr\u00fcfung', questions: 'Offene Fragen f\u00fcr die anwaltliche Pr\u00fcfung', designAround: 'Umgehungsideen (nur Ideen: technische Hypothesen, fachlich und rechtlich zu validieren)',
-      exemptions: 'Ausnahmen und Rolle (Einsch\u00e4tzung des Modells)', shortVerdict: 'Kurzfazit (Claude)', s_cross: '5. \u00dcbergreifende Punkte (Claude; aus den Einzelbewertungen)', crossPatterns: 'Querschnitt', timeline: 'Zeitachse (Ablaufdaten sind Sch\u00e4tzungen)', exemptionsAll: 'Ausnahmen',
-      daAll: 'Umgehungsideen im Quervergleich (nur Ideen)', collides: 'Kollision mit', redAll: 'Gegenpr\u00fcfung', pendingText: 'Anh\u00e4ngige Anmeldungen', s_not: '6. Nicht analysierte Schutzrechte und Gr\u00fcnde', reason: 'Grund', s_next: '7. N\u00e4chste Schritte', prio: 'Priorit\u00e4t', step: 'Schritt', why: 'Warum',
-      alwaysNext: 'Stets empfohlen (Methodik)', openQ: 'Offene Fragen', s_usage: 'Nutzung', calls: 'Aufrufe', resumed: 'aus Zwischenstand \u00fcbernommene Schritte', notAssessed: 'nicht bewertet', estimate: 'Sch\u00e4tzung', flagsLabel: 'Kennzeichen', dependentFailed: 'Unteranspruchsanalyse fehlgeschlagen', redteamFailed: 'Gegenpr\u00fcfung fehlgeschlagen',
-      forcedBy: 'von der App auf \u201eunklar\u201c gesetzt', modelRisk: 'Risiko laut Modell', construction: 'Auslegung', broad: 'weit', narrow: 'eng', definition: 'Definition', clarification: 'Kl\u00e4rung', assumption: 'Annahme', numeric: 'Zahlenvergleich', imagesSent: 'gesendete Formelbilder', claimsLang: 'Anspruchssprache',
-      evidence: 'Von der App berechnete Belege', evIntro: 'Von Code aus gespeicherten Daten berechnet, keine Modellausgabe. Diese Belege setzen nur Kennzeichen, Fragen und Risikountergrenzen; sie senken kein Risiko.', evApplied: 'Angewandte Regeln', evMarkush: 'Markush-Pr\u00fcfung (von Code gepr\u00fcft, gespeicherte und kuratierte Datens\u00e4tze)', evNoRecord: 'Kein gespeicherter oder kuratierter Markush-Datensatz f\u00fcr diese Ver\u00f6ffentlichung.',
-      evTranslation: '\u00dcbersetzung', evReviewed: 'gepr\u00fcft', evNotReviewed: 'nicht gepr\u00fcft', evOrigin: 'Herkunft', evGroup: 'Gefundene Gruppe', evRanges: 'Zahlenbereiche der Anspr\u00fcche (von Code verglichen)', evParam: 'Parameter', evRange: 'Beanspruchter Bereich', evQuoteSrc: 'Zitatquelle', evLimits: 'Grenzen dieser Belege', evRoute: 'Markush-Route (gespeicherte und kuratierte Datens\u00e4tze, von Code gepr\u00fcft)', evNoRanges: 'Kein Anspruch dieser Ver\u00f6ffentlichung nennt einen Bereich f\u00fcr die verglichenen Werte.'
-    },
     en: {
       title: 'FTO pre-screen (not a legal opinion)', created: 'Created', depth: 'Depth', markets: 'Markets', corpus: 'Corpus snapshot', none: 'none', yes: 'yes', no: 'no', unknown: 'unknown',
       s_summary: '1. Summary', s_overall: 'Overall risk per market (computed by the app from the individual assessments)', market: 'Market', risk: 'Risk', drivers: 'Driving patent rights',
@@ -69,11 +45,10 @@
     }
   };
   var RISK = {
-    de: { '5_sehr_hoch': 'sehr hoch (5)', '4_hoch': 'hoch (4)', '3_mittel': 'mittel (3)', '2_gering': 'gering (2)', '1_sehr_gering': 'sehr gering (1)', nicht_beurteilbar: 'nicht beurteilbar' },
     en: { '5_sehr_hoch': 'very high (5)', '4_hoch': 'high (4)', '3_mittel': 'medium (3)', '2_gering': 'low (2)', '1_sehr_gering': 'very low (1)', nicht_beurteilbar: 'cannot be assessed' }
   };
   /* English labels for the internal codes (schema enum values, app flags, modifiers) and for the schema field names
-     that appear as row labels. The codes themselves never change; German output shows them as they are. */
+     that appear as row labels. The codes themselves never change and are never shown. */
   var CODE_EN = {
     ja: 'yes', nein: 'no', offen: 'open', entfaellt: 'n/a', hoch: 'high', mittel: 'medium', niedrig: 'low', gering: 'low', keine: 'none',
     erfuellt: 'met', nicht_erfuellt: 'not met', unklar: 'unclear', moeglich: 'possible', nicht_beurteilbar: 'cannot be assessed',
@@ -115,40 +90,31 @@
     ort_der_herstellung: 'Manufacturing site', hersteller: 'Manufacturer', endpuffer: 'Final buffer', kryoprotektor: 'Cryoprotectant', lyophilisiert: 'Lyophilised', lagerung: 'Storage',
     applikationsweg: 'Route of administration', indikationsklasse: 'Indication class', zielgewebe: 'Target tissue', dosis: 'Dose',
     entwicklungsstand: 'Development stage', regulatorischer_zweck: 'Regulatory purpose', oeffentlicher_auftraggeber_us: 'US government contract',
-    land: 'Country', akt: 'Act', zeitpunkt: 'Timing', geplant_ab: 'Planned from', zweck: 'Purpose', abstand: 'Distance (failing variables)', konfidenz: 'Confidence', 'nicht zugeordnet': 'Not mapped',
-    'Versuchsprivileg \u00a7 11 Nr. 2 PatG': 'Experimental-use exemption (\u00a7 11 No. 2 PatG)', 'Zulassungsprivileg \u00a7 11 Nr. 2b PatG': 'Regulatory (Bolar) exemption (\u00a7 11 No. 2b PatG)',
-    'US safe harbor \u00a7 271(e)(1)': 'US safe harbor (35 U.S.C. \u00a7 271(e)(1))', Kipppunkt: 'Tipping point', lipid_zu_nukleinsaeure_gewicht: 'Lipid : nucleic acid (w/w)', chargenvariabilitaet: 'Batch variability'
+    land: 'Country', akt: 'Act', zeitpunkt: 'Timing', geplant_ab: 'Planned from', zweck: 'Purpose', abstand: 'Distance (failing variables)', konfidenz: 'Confidence',
+    lipid_zu_nukleinsaeure_gewicht: 'Lipid : nucleic acid (w/w)', chargenvariabilitaet: 'Batch variability'
   };
-  /* label(code, lang): display text of an internal code. German: the code as it is. English: the mapped label; compound
-     flags are resolved by their prefix; unknown codes are shown with blanks instead of underscores. */
+  /* label(code): English display text of an internal code; compound flags are resolved by their prefix; unknown codes
+     are shown with blanks instead of underscores (tests/english_test.mjs guards that every code in use is mapped). */
   function label(c, lang) {
     c = str(c);
-    if (lang === 'de' || !c) return c;
+    if (!c) return c;
     if (Object.prototype.hasOwnProperty.call(CODE_EN, c)) return CODE_EN[c];
-    var m = /^markush_widerspruch_(.+)$/.exec(c); if (m) return 'formula test contradicts the verdict (' + m[1] + ')';
+    var m = /^markush_widerspruch_(.+)$/.exec(c); if (m) return 'formula test contradicts the verdict ' + m[1] + '';
     m = /^unteransprueche_(.+)$/.exec(c); if (m) return 'dependent claims: ' + label(m[1], lang);
     m = /^rechtsstand_(.+)$/.exec(c); if (m) return 'legal status: ' + label(m[1], lang);
     return c.replace(/_/g, ' ');
   }
   /* a value that may be a code or free text: mapped only when it is a known code */
-  function soft(v, lang) { v = str(v); return lang !== 'de' && Object.prototype.hasOwnProperty.call(CODE_EN, v) ? CODE_EN[v] : v; }
-  function field(k, lang) { return lang !== 'de' && Object.prototype.hasOwnProperty.call(FIELD_EN, k) ? FIELD_EN[k] : k; }
+  function soft(v) { v = str(v); return Object.prototype.hasOwnProperty.call(CODE_EN, v) ? CODE_EN[v] : v; }
+  function field(k) { k = str(k); return Object.prototype.hasOwnProperty.call(FIELD_EN, k) ? FIELD_EN[k] : k.replace(/_/g, ' '); }
   var LIT = {
-    de: { wortsinngemaess_erfuellt: 'wortsinngem\u00e4\u00df erf\u00fcllt', wortsinngemaess_moeglich: 'wortsinngem\u00e4\u00df m\u00f6glich', wortsinngemaess_nicht_erfuellt: 'wortsinngem\u00e4\u00df nicht erf\u00fcllt', nicht_beurteilbar: 'nicht beurteilbar' },
     en: { wortsinngemaess_erfuellt: 'literally met', wortsinngemaess_moeglich: 'literally possible', wortsinngemaess_nicht_erfuellt: 'literally not met', nicht_beurteilbar: 'cannot be assessed' }
   };
-  var VERD = { de: { erfuellt: 'erf\u00fcllt', nicht_erfuellt: 'nicht erf\u00fcllt', unklar: 'unklar', moeglich: 'm\u00f6glich' }, en: { erfuellt: 'met', nicht_erfuellt: 'not met', unklar: 'unclear', moeglich: 'possible' } };
+  var VERD = { en: { erfuellt: 'met', nicht_erfuellt: 'not met', unklar: 'unclear', moeglich: 'possible' } };
   var QCHK = {
-    de: { ok: 'w\u00f6rtlich im Anspruch gefunden', elided: 'ABWEICHEND: nur mit Auslassung gefunden', approx: 'ABWEICHEND: nur bei gelockerter Schreibweise gefunden', fail: 'NICHT VERIFIZIERT: Zitat steht nicht im Anspruchstext', empty: 'NICHT VERIFIZIERT: kein Zitat' },
     en: { ok: 'found verbatim in the claim', elided: 'DEVIATING: found only with an omission', approx: 'DEVIATING: found only with relaxed spelling', fail: 'NOT VERIFIED: quote is not in the claim text', empty: 'NOT VERIFIED: no quote' }
   };
   var NEXT = {
-    de: ['Markush-/Strukturrecherche in CAS STN (REGISTRY + MARPAT) und/oder Derwent Markush f\u00fcr das ionisierbare Lipid und das PEG-Lipid.',
-      'Aktueller Rechtsstand aus den Registern (EP-Register einschlie\u00dflich Einspruchsakte, DPMAregister, UPC-Register/Opt-out, USPTO Patent Center, PTAB), INPADOC-Familie, ESZ/PTE.',
-      'Durchsicht der Erteilungsakten der h\u00f6chstbewerteten Schutzrechte (\u00c4nderungen, Erkl\u00e4rungen).',
-      'Analytische Daten zur Kl\u00e4rung unklarer Merkmale (gemessene mol-% im Partikel, Gr\u00f6\u00dfe nach der im Patent genannten Methode, pKa, Verkapselung).',
-      'Schriftliche Stellungnahme einer Patentanw\u00e4ltin oder eines Patentanwalts vor GMP- oder kommerziellen Festlegungen.',
-      '\u00dcberwachung der anh\u00e4ngigen Anmeldungen und Teilanmeldungen/Continuations der betroffenen Familien und der beobachteten Anmelder.'],
     en: ['Markush/structure search in CAS STN (REGISTRY + MARPAT) and/or Derwent Markush for the ionizable lipid and the PEG-lipid.',
       'Current legal status from the registers (EP Register incl. opposition file, DPMAregister, UPC register/opt-out, USPTO Patent Center, PTAB), INPADOC family, SPC/PTE.',
       'File-wrapper review for the top-rated rights (amendments, statements).',
@@ -157,14 +123,13 @@
       'Monitoring of pending applications and divisionals/continuations of the affected families and the watched applicants.']
   };
   var REASON = {
-    de: { dead: 'Rechtsstand (abgelaufen/erloschen/widerrufen)', triage_c: 'Triage C (anderer Gegenstand)', depth_limit: 'au\u00dferhalb der gew\u00e4hlten Tiefe', no_text: 'kein Anspruchstext im Korpus', text_cut: 'Anspruchstext nicht im Datenpaket', wo: 'WO-Ver\u00f6ffentlichung', market: 'kein Zielmarkt', no_ai: 'KI nicht verf\u00fcgbar' },
     en: { dead: 'legal status (expired/lapsed/revoked)', triage_c: 'triage C (different subject)', depth_limit: 'outside the selected depth', no_text: 'no claim text in the corpus', text_cut: 'claim text not in the data package', wo: 'WO publication', market: 'no target market', no_ai: 'AI not available' }
   };
 
   // ------------------------------------------------------------------------------------------------ node model
   /* nodes: {h: level, t} | {p: text, cls?} | {ul: [text]} | {table: {head: [..], rows: [[..]], cls?}} | {limits: text} | {md: model text} | {kv: [[k, v]]} */
   function build(op) {
-    var lang = op.lang === 'de' ? 'de' : 'en', L = T[lang], N = [], syn = op.synthesis || null, de = lang === 'de';
+    var lang = 'en', L = T.en, N = [], syn = op.synthesis || null; // English only; a stored opinion's lang is ignored
     function risk(r) { return r ? (RISK[lang][r] || str(r)) : L.notAssessed; }
     function lit(r) { return r ? (LIT[lang][r] || str(r)) : '-'; }
     function verd(v) { return VERD[lang][v] || str(v); }
@@ -183,13 +148,13 @@
     N.push({ limits: str(op.limits) });
     h(1, op.title || L.title);
     kv([[L.created, str(op.finished || op.created).slice(0, 16).replace('T', ' ')], [L.depth, op.depth], [L.markets, arr(op.markets).join(', ')],
-      [L.corpus, [snap.ep_text ? (de ? 'EP-Text ' : 'EP full text ') + snap.ep_text : '', snap.us_text ? (de ? 'US-Text ' : 'US full text ') + snap.us_text : '', snap.ep_register ? (de ? 'EP-Register ' : 'EP Register ') + snap.ep_register : '', snap.surechembl ? 'SureChEMBL ' + snap.surechembl : ''].filter(Boolean).join('; ')], ['ID', op.id]]);
+      [L.corpus, [snap.ep_text ? 'EP full text ' + snap.ep_text : '', snap.us_text ? 'US full text ' + snap.us_text : '', snap.ep_register ? 'EP Register ' + snap.ep_register : '', snap.surechembl ? 'SureChEMBL ' + snap.surechembl : ''].filter(Boolean).join('; ')], ['ID', op.id]]);
 
     // 1 summary
     h(2, L.s_summary);
     if (!op.aiUsed) p(L.noAi, 'warn');
     var missed = arr(op.notCharted).filter(function (n) { return n.reason === 'depth_limit'; });
-    if (missed.length) p(L.depthWarn + ': ' + missed.map(function (n) { return n.pn + ' (' + str(n.rel) + ')'; }).join(', ') + ' - ' + L.seeNotCharted + '.', 'warn');
+    if (missed.length) p(L.depthWarn + ': ' + missed.map(function (n) { return n.pn + ' ' + str(n.rel) + ''; }).join(', ') + ' - ' + L.seeNotCharted + '.', 'warn');
     if (op.overall) {
       h(3, L.s_overall);
       table([L.market, L.risk, L.drivers], arr(op.overall.markets).map(function (m) { return [m.market === 'EP_UPC' ? 'EP / UPC' : m.market, risk(m.risk), arr(m.drivers).join(', ')]; }));
@@ -198,7 +163,7 @@
     h(3, L.matrix);
     if (!arr(op.matrix).length) p(L.noCharts);
     table([L.right, L.market, L.rel, L.risk, L.riskBE, L.literal, L.status, L.expiry, L.notes], arr(op.matrix).map(function (m) {
-      return [m.pn, arr(m.markets).join('/'), m.rel, risk(m.risk), risk(m.riskB) + ' / ' + (m.riskE ? risk(m.riskE) : '-'), lit(m.literal), m.status, m.expiry ? m.expiry + ' (' + L.estimate + ')' : L.unknown, codes(m.flags)];
+      return [m.pn, arr(m.markets).join('/'), m.rel, risk(m.risk), risk(m.riskB) + ' / ' + (m.riskE ? risk(m.riskE) : '-'), lit(m.literal), m.status, m.expiry ? m.expiry + ' ' + L.estimate + '' : L.unknown, codes(m.flags)];
     }), 'matrix');
     if (syn) { h(3, L.modelSummary); md(syn.zusammenfassung); if (syn.app && arr(syn.app.flags).length) p(L.synthFlags + ': ' + codes(syn.app.flags) + (arr(syn.app.wording).length ? ' (' + syn.app.wording.map(function (w) { return '"' + w.phrase + '"'; }).join(', ') + ')' : ''), 'warn'); }
     if (op.synthesisFailed) p(L.synthFailed + ': ' + str(op.synthesisFailed.message), 'warn');
@@ -209,7 +174,7 @@
     h(2, L.s_profile);
     p(pf.bezeichnung);
     h(3, L.ionLipid);
-    kv([[L.name, [il.name_user, il.name_normalised].filter(Boolean).join(' / ')], ['SMILES', il.smiles], ['InChIKey', il.inchikey], [L.formula + ' (' + L.computed + ')', ds.formula], [L.mw, ds.mw], ['pKa', il.pka_apparent], [L.structDesc, il.strukturbeschreibung]]);
+    kv([[L.name, [il.name_user, il.name_normalised].filter(Boolean).join(' / ')], ['SMILES', il.smiles], ['InChIKey', il.inchikey], [L.formula + ' ' + L.computed + '', ds.formula], [L.mw, ds.mw], ['pKa', il.pka_apparent], [L.structDesc, il.strukturbeschreibung]]);
     if (arr(pf.weitere_lipide).length) { h(3, L.otherLipids); table([L.role, L.name, 'SMILES', 'PEG-MW'], pf.weitere_lipide.map(function (l) { return [code(l.rolle), [l.name_user, l.name_normalised].filter(Boolean).join(' / '), l.smiles, l.peg_mw]; })); }
     h(3, L.composition);
     kv([[code('ionizable_lipid'), val(mol.ionizable_lipid)], [code('phospholipid'), val(mol.phospholipid)], [code('sterol'), val(mol.sterol)], [code('peg_lipid'), val(mol.peg_lipid)], [code('sonstige'), val(mol.sonstige)], [L.basis, soft(z.basis, lang)], ['N/P', val(z.np_verhaeltnis)]]);
@@ -236,13 +201,13 @@
       [L.counts, rec && rec.counts ? Object.keys(rec.counts).map(function (k) { return k + ' ' + rec.counts[k]; }).join('; ') : null],
       [L.candidates, se.candidates], [L.triage, se.triage ? 'A ' + (se.triage.A || 0) + ', B ' + (se.triage.B || 0) + ', C ' + (se.triage.C || 0) : null], [L.charted, se.charted]]);
     if (rec) {
-      if (arr(rec.structure).length) { h(3, L.structRoute); table([L.lipid, L.role, L.mode, L.compounds, L.pubs], rec.structure.map(function (s) { return [s.lipid, s.role, de ? s.mode : ({ exact: 'exact', sub: 'substructure', sim: 'similarity' }[s.mode] || s.mode), s.error ? 'ERR: ' + s.error : s.compounds, s.publications]; })); }
+      if (arr(rec.structure).length) { h(3, L.structRoute); table([L.lipid, L.role, L.mode, L.compounds, L.pubs], rec.structure.map(function (s) { return [s.lipid, s.role, ({ exact: 'exact', sub: 'substructure', sim: 'similarity' }[s.mode] || s.mode), s.error ? 'ERR: ' + s.error : s.compounds, s.publications]; })); }
       if (arr(rec.text).length) { h(3, L.textRoute); table(['', L.query, L.hits, L.taken], rec.text.map(function (t) { return [t.label, t.query, t.error ? 'ERR: ' + t.error : t.total, t.taken]; }), 'queries'); }
       if (arr(rec.seed).length) { h(3, L.seedRoute); table([L.tier, L.hits], rec.seed.map(function (s) { return [s.tier, s.error ? 'ERR: ' + s.error : s.total]; })); }
-      if (rec.markush) { h(3, L.evRoute); kv([['Records', rec.markush.records], [L.lipid, rec.markush.lipids], [de ? 'gepr\u00fcft' : 'Checks', rec.markush.checked], [de ? 'nicht erfasst' : 'Not covered', rec.markush.notCovered]]);
+      if (rec.markush) { h(3, L.evRoute); kv([['Records', rec.markush.records], [L.lipid, rec.markush.lipids], ['Checks', rec.markush.checked], ['Not covered', rec.markush.notCovered]]);
         table([L.lipid, L.right, L.claim, L.outcome, L.evTranslation], arr(rec.markush.covered).concat(arr(rec.markush.unclear)).map(function (x) { return [x.lipid, x.pn, x.claim, code(x.overall), x.overall === 'covered' ? (x.reviewed ? L.evReviewed : L.evNotReviewed) : '']; })); }
       if (rec.semantic) { h(3, L.semRoute); kv([['strict', rec.semantic.queries && rec.semantic.queries.strict], ['relaxed', rec.semantic.queries && rec.semantic.queries.relaxed], [L.hits, rec.semantic.hits], [L.calls, rec.semantic.calls], ['degraded', arr(rec.semantic.degraded).join(', ') || rec.semantic.error]]); }
-      ul(arr(rec.notes).concat(rec.cut ? [(de ? 'Weitere Kandidaten unterhalb der Auswahlgrenze: ' : 'Further candidates below the cut-off: ') + rec.cut] : []));
+      ul(arr(rec.notes).concat(rec.cut ? [('Further candidates below the cut-off: ') + rec.cut] : []));
     }
     if (syn && syn.recherche) { h(3, L.modelText); md(syn.recherche); }
 
@@ -253,8 +218,8 @@
     arr(op.patents).forEach(function (e) {
       var ch = e.chart, rt = e.redteam, da = e.dependent, gs = (ch && ch.gesamt) || {};
       h(3, e.pn + ' - ' + str(e.title));
-      kv([[L.assignee, e.assignee], [L.assessedFor, arr(e.markets).join(', ') + ' (' + e.jurisdiction + ')'], [L.relevance, str(e.rel) + (e.relWhy ? ': ' + e.relWhy : '')], [L.found, arr(e.why).join(' | ')],
-        [L.status, e.status + (e.right && arr(e.right.notes).length ? '; ' + e.right.notes.join('; ') : '')], [L.expiry, e.expiry && e.expiry.date ? e.expiry.date + ' (' + L.estimate + ')' : L.unknown], [L.expiryBasis, e.expiry && e.expiry.basis],
+      kv([[L.assignee, e.assignee], [L.assessedFor, arr(e.markets).join(', ') + ' ' + e.jurisdiction + ''], [L.relevance, str(e.rel) + (e.relWhy ? ': ' + e.relWhy : '')], [L.found, arr(e.why).join(' | ')],
+        [L.status, e.status + (e.right && arr(e.right.notes).length ? '; ' + e.right.notes.join('; ') : '')], [L.expiry, e.expiry && e.expiry.date ? e.expiry.date + ' ' + L.estimate + '' : L.unknown], [L.expiryBasis, e.expiry && e.expiry.basis],
         [L.riskFinal, risk(e.risk && e.risk.final) + ' [' + L.riskBE + ': ' + risk(e.risk && e.risk.b) + ' / ' + (e.risk && e.risk.e ? risk(e.risk.e) : '-') + ']'],
         [L.riskChartDead, e.risk && e.risk.chart ? risk(e.risk.chart) : null], [L.modelRisk, ch && ch.app && ch.app.risk_model ? risk(ch.app.risk_model) : null],
         [L.flagsLabel, codes(e.flags)], [L.claimsLang, e.claimsLang], [L.imagesSent, ch && ch.app && ch.app.images_sent ? ch.app.images_sent : null]]);
@@ -265,12 +230,12 @@
         if (ch.textqualitaet && arr(ch.textqualitaet.probleme).length) ul(ch.textqualitaet.probleme);
         arr(ch.claims).forEach(function (c) {
           var a = c.app || {};
-          h(4, L.claimChart + ': ' + L.claim + ' ' + c.claim_no + ' (' + code(c.kategorie) + ')');
+          h(4, L.claimChart + ': ' + L.claim + ' ' + c.claim_no + ' ' + code(c.kategorie) + '');
           kv([[L.resultApp, lit(a.literal)], [L.resultModel, a.literal_model ? lit(a.literal_model) : null], [L.resultE, a.literal_e ? lit(a.literal_e) : null], [L.resultFinal, a.literal_final ? lit(a.literal_final) : null], [L.flagsLabel, codes(a.flags)]]);
           table([L.feature, L.quote, L.quoteCheck, L.product, L.verdict, L.reasoning], arr(c.merkmale).map(function (m) {
             var x = m.app || {}, au = m.auslegung || {}, nu = m.numerik || null, parts = [str(m.begruendung)];
             if (au.weite_auslegung || au.enge_auslegung) parts.push(L.construction + ': ' + L.broad + ' = ' + str(au.weite_auslegung) + '; ' + L.narrow + ' = ' + str(au.enge_auslegung));
-            if (au.definition_quote) parts.push(L.definition + (au.definition_para ? ' [' + au.definition_para + ']' : '') + ': "' + au.definition_quote + '"' + (x.def_quote && x.def_quote !== 'ok' ? ' (' + QCHK[lang][x.def_quote] + ')' : ''));
+            if (au.definition_quote) parts.push(L.definition + (au.definition_para ? ' [' + au.definition_para + ']' : '') + ': "' + au.definition_quote + '"' + (x.def_quote && x.def_quote !== 'ok' ? ' ' + QCHK[lang][x.def_quote] + '' : ''));
             if (nu && (nu.anspruch_min != null || nu.anspruch_max != null)) parts.push(L.numeric + ': ' + str(nu.anspruch_min) + ' - ' + str(nu.anspruch_max) + ' ' + str(nu.einheit) + '; ' + L.product + ' ' + str(nu.produktwert) + '; \u0394 ' + str(nu.abstand_zur_grenze));
             if (m.annahme) parts.push(L.assumption + ': ' + m.annahme);
             if (m.klaerung) parts.push(L.clarification + ': ' + m.klaerung);
@@ -281,10 +246,10 @@
           arr(c.merkmale).forEach(function (m) {
             var mk = m.markush; if (!mk) return;
             h(5, L.markush + ' ' + m.feature_id + ': ' + code(mk.app_ergebnis || mk.ergebnis) + (mk.app_ergebnis && mk.app_ergebnis !== mk.ergebnis ? ' (' + L.resultModel + ': ' + code(mk.ergebnis) + ')' : ''));
-            kv([[L.scaffold, mk.geruest], [fld('abstand'), val(mk.abstand)], [fld('konfidenz'), code(mk.konfidenz)], [fld('nicht zugeordnet'), arr(mk.nicht_zugeordnete_teile).join('; ')], [L.species, code(mk.einzelverbindung_genannt)]]);
+            kv([[L.scaffold, mk.geruest], [fld('abstand'), val(mk.abstand)], [fld('konfidenz'), code(mk.konfidenz)], ['Not mapped', arr(mk.nicht_zugeordnete_teile).join('; ')], [L.species, code(mk.einzelverbindung_genannt)]]);
             table([L.variables, L.definition, L.quoteCheck], arr(mk.variablen).map(function (v) { return [v.name, v.definition_quote, v.app ? QCHK[lang][v.app.quote] : '']; }));
-            arr(mk.mappings).forEach(function (mp) { table([L.mappings + ' ' + str(mp.mapping_id) + ' (' + (de ? '' : 'all met: ') + code(mp.alle_erfuellt) + ')', 'Fragment', L.verdict, L.reasoning], arr(mp.zuordnung).map(function (zz) { return [zz.variable, zz.fragment + (zz.zaehlung ? ' [' + zz.zaehlung + ']' : ''), verd(zz.verdict), str(zz.begruendung) + (zz.naechster_zulaessiger_wert ? ' (' + zz.naechster_zulaessiger_wert + ')' : '')]; })); });
-            table([L.provisos, de ? 'schlie\u00dft Produkt aus' : 'excludes product', L.reasoning], arr(mk.massgaben).map(function (v) { return [v.quote, code(v.schliesst_produkt_aus), v.begruendung]; }));
+            arr(mk.mappings).forEach(function (mp) { table([L.mappings + ' ' + str(mp.mapping_id) + ' (' + 'all met: ' + code(mp.alle_erfuellt) + ')', 'Fragment', L.verdict, L.reasoning], arr(mp.zuordnung).map(function (zz) { return [zz.variable, zz.fragment + (zz.zaehlung ? ' [' + zz.zaehlung + ']' : ''), verd(zz.verdict), str(zz.begruendung) + (zz.naechster_zulaessiger_wert ? ' ' + zz.naechster_zulaessiger_wert + '' : '')]; })); });
+            table([L.provisos, 'excludes product', L.reasoning], arr(mk.massgaben).map(function (v) { return [v.quote, code(v.schliesst_produkt_aus), v.begruendung]; }));
           });
           if (arr(c.aequivalenz).length) {
             h(5, L.equivalence);
@@ -303,7 +268,7 @@
           table([L.claim, L.lipid, L.outcome, L.evTranslation, L.evOrigin, L.reasoning], arr(ev.markush.results).map(function (r) { return [r.claim, r.lipid, code(r.overall) + (r.raw && r.raw !== r.overall ? ' (raw: ' + code(r.raw) + ')' : ''), r.reviewed ? L.evReviewed : L.evNotReviewed, r.origin, arr(r.reasons).join('; ')]; }));
           arr(ev.markush.results).forEach(function (r) {
             table([L.claim + ' ' + r.claim + ' / ' + r.lipid + ': ' + L.variables, L.verdict, L.evGroup, L.reasoning, L.quote, L.quoteCheck], arr(r.groups).map(function (gr) { return [gr.name, code(gr.verdict), gr.fragment, gr.why, gr.quote, gr.quoteStatus ? (QCHK[lang][gr.quoteStatus] || gr.quoteStatus) : '']; }));
-            table([L.provisos, L.outcome, L.quoteCheck], arr(r.provisos).map(function (pv) { return [pv.quote, pv.matched ? (de ? 'trifft zu' : 'applies') : str(pv.why), pv.quoteStatus ? (QCHK[lang][pv.quoteStatus] || pv.quoteStatus) : '']; }));
+            table([L.provisos, L.outcome, L.quoteCheck], arr(r.provisos).map(function (pv) { return [pv.quote, pv.matched ? 'applies' : str(pv.why), pv.quoteStatus ? (QCHK[lang][pv.quoteStatus] || pv.quoteStatus) : '']; }));
           });
           ul(arr(ev.markush.errors).map(function (x) { return 'ERR: ' + [x.lipid, x.claim != null ? L.claim + ' ' + x.claim : '', x.reason].filter(Boolean).join(' - '); }));
         }
@@ -313,7 +278,7 @@
           if (rgv.reason) p(rgv.reason);
           else if (!arr(rgv.claims).length) p(L.evNoRanges);
           var rrows = [];
-          arr(rgv.claims).forEach(function (c) { arr(c.values).forEach(function (v) { if (v.status === 'no_range') return; rrows.push([c.claim + (c.indep ? '' : ' (dep.)'), v.label + (v.comp ? ' (' + v.comp + ')' : ''), str(v.value) + (v.unit ? ' ' + v.unit : ''), str(v.range) + (v.inherited ? ' [' + L.claim + ' ' + v.fromClaim + ']' : '') + (v.approx ? ' (about)' : '') + (v.compUnknown ? (de ? ' (Komponente nicht erkannt)' : ' (component not identified)') : ''), code(v.status), v.quote, str(v.quoteSource) + (v.quoteVerified === true ? ' (verified)' : v.quoteVerified === false ? ' (NOT verified)' : '')]); }); });
+          arr(rgv.claims).forEach(function (c) { arr(c.values).forEach(function (v) { if (v.status === 'no_range') return; rrows.push([c.claim + (c.indep ? '' : ' (dep.)'), v.label + (v.comp ? ' ' + v.comp + '' : ''), str(v.value) + (v.unit ? ' ' + v.unit : ''), str(v.range) + (v.inherited ? ' [' + L.claim + ' ' + v.fromClaim + ']' : '') + (v.approx ? ' (about)' : '') + (v.compUnknown ? ' (component not identified)' : ''), code(v.status), v.quote, str(v.quoteSource) + (v.quoteVerified === true ? ' (verified)' : v.quoteVerified === false ? ' (NOT verified)' : '')]); }); });
           table([L.claim, L.evParam, L.product, L.evRange, L.outcome, L.quote, L.evQuoteSrc], rrows);
           ul(rgv.notes);
         }
@@ -329,7 +294,7 @@
           zs.forEach(function (zz, i) { rows.push([i ? '' : u.claim_no, zz.claim_quote + (zz.app && zz.app.quote !== 'ok' ? ' [' + QCHK[lang][zz.app.quote] + ']' : ''), verd((zz.app && zz.app.verdict) || zz.verdict) + ': ' + str(zz.begruendung), i ? '' : verd((u.app && u.app.ketten_ergebnis) || u.ketten_ergebnis), i ? '' : code(u.einzelnennung) + (u.einzelnennung_quote ? ': "' + u.einzelnennung_quote + '"' : '')]); });
         });
         table([L.claim, L.added, L.verdict, L.chain, L.species], rows);
-        if (arr(da.rueckzugspositionen).length) { h(5, L.fallback); ul(da.rueckzugspositionen.map(function (r) { return L.claim + ' ' + r.unabhaengiger_anspruch + ' -> ' + (r.engster_noch_treffender_anspruch == null ? '-' : L.claim + ' ' + r.engster_noch_treffender_anspruch) + (r.produkt_faellt_heraus_bei ? ' (' + r.produkt_faellt_heraus_bei + ')' : '') + ': ' + str(r.erlaeuterung); })); }
+        if (arr(da.rueckzugspositionen).length) { h(5, L.fallback); ul(da.rueckzugspositionen.map(function (r) { return L.claim + ' ' + r.unabhaengiger_anspruch + ' -> ' + (r.engster_noch_treffender_anspruch == null ? '-' : L.claim + ' ' + r.engster_noch_treffender_anspruch) + (r.produkt_faellt_heraus_bei ? ' ' + r.produkt_faellt_heraus_bei + '' : '') + ': ' + str(r.erlaeuterung); })); }
         if (arr(da.auslegungshinweise).length) { h(5, L.constructionHints); ul(da.auslegungshinweise.map(function (r) { return str(r.begriff) + ' (' + L.claim + ' ' + r.unteranspruch + '): ' + str(r.hinweis); })); }
         if (arr(da.revision_empfohlen).length) { h(5, L.revision); ul(da.revision_empfohlen.map(function (r) { return L.claim + ' ' + r.claim_no + ' ' + str(r.feature_id) + ': ' + str(r.grund); })); }
       }
@@ -341,19 +306,19 @@
           arr(rc.angriffe).forEach(function (a2) { rr.push([rc.claim_no, a2.feature_id, codes(a2.angriffsart), a2.argument_patentinhaber, a2.gegenargument_nutzer, code(a2.ergebnis) + ' -> ' + verd(a2.verdict_revidiert)]); });
           arr(rc.gegenfehler).forEach(function (a2) { rr.push([rc.claim_no, a2.feature_id, code('gegenfehler'), a2.problem, '', verd(a2.verdict_revidiert)]); });
           var v = rc.vollstaendigkeit || {}, miss = arr(v.fehlende_merkmale).concat(arr(v.zitatfehler)).concat(arr(v.uebersehene_alternativen));
-          if (miss.length) rr.push([rc.claim_no, '', de ? 'Vollst\u00e4ndigkeit' : 'completeness', miss.join(' | '), '', '']);
+          if (miss.length) rr.push([rc.claim_no, '', 'completeness', miss.join(' | '), '', '']);
         });
         table([L.claim, L.feature, L.attack, L.patentee, L.counter, L.outcome], rr);
-        if (arr(rt.weitere_angriffswege).length) { h(5, L.otherRoutes); ul(rt.weitere_angriffswege.map(function (w) { return code(w.weg) + ' (' + code(w.relevanz) + '): ' + str(w.beschreibung); })); }
+        if (arr(rt.weitere_angriffswege).length) { h(5, L.otherRoutes); ul(rt.weitere_angriffswege.map(function (w) { return code(w.weg) + ' ' + code(w.relevanz) + ': ' + str(w.beschreibung); })); }
         if (rt.revidiert) p(L.revised + ': ' + risk(rt.revidiert.risiko) + '. ' + str(rt.revidiert.begruendung));
       }
       if (ch) {
         var qs = arr(gs.offene_fragen).concat(rt ? arr(rt.zu_klaeren) : []).concat(ev ? arr(ev.questions) : []);
-        arr(ch.claims).forEach(function (c) { arr(c.merkmale).forEach(function (m) { if (m.app && m.app.verdict === 'unklar' && m.klaerung) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + m.klaerung); if (m.app && !m.app.verified) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + (QCHK[lang][m.app.quote] || '') + (de ? ' - am Originaldokument pr\u00fcfen' : ' - check against the original document')); }); if (arr(c.aequivalenz).length) qs.push(L.claim + ' ' + c.claim_no + ': ' + (de ? '\u00c4quivalenz f\u00fcr ' : 'equivalence for ') + c.aequivalenz.map(function (q) { return q.feature_id; }).join(', ') + (de ? ' (nicht entschieden)' : ' (not decided)')); });
+        arr(ch.claims).forEach(function (c) { arr(c.merkmale).forEach(function (m) { if (m.app && m.app.verdict === 'unklar' && m.klaerung) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + m.klaerung); if (m.app && !m.app.verified) qs.push(L.claim + ' ' + c.claim_no + ' ' + m.feature_id + ': ' + (QCHK[lang][m.app.quote] || '') + ' - check against the original document'); }); if (arr(c.aequivalenz).length) qs.push(L.claim + ' ' + c.claim_no + ': ' + 'equivalence for ' + c.aequivalenz.map(function (q) { return q.feature_id; }).join(', ') + ' (not decided)'); });
         if (qs.length) { h(4, L.questions); ul(qs); }
         if (arr(gs.umgehungsloesungen).length) { h(4, L.designAround); ul(gs.umgehungsloesungen.map(function (u) { return str(u.feature_id) + ': ' + str(u.aenderung) + ' [' + code(u.robustheit) + '] - ' + str(u.vorbehalt); })); }
         var ex = gs.ausnahmen || {}, ro = gs.rolle_des_nutzers || {};
-        if (ex.erlaeuterung || ro.erlaeuterung) { h(4, L.exemptions); kv([[fld('Versuchsprivileg \u00a7 11 Nr. 2 PatG'), code(ex.versuchsprivileg_par11_nr2)], [fld('Zulassungsprivileg \u00a7 11 Nr. 2b PatG'), code(ex.zulassungsprivileg_par11_nr2b)], [fld('US safe harbor \u00a7 271(e)(1)'), code(ex.us_safe_harbor_271e1)], [fld('Kipppunkt'), ex.kipppunkt], ['', ex.erlaeuterung], [de ? 'unmittelbar' : 'Direct infringement by the user', code(ro.unmittelbar)], [de ? 'mittelbar' : 'Indirect / contributory infringement', code(ro.mittelbar_par10_patg_oder_271bc)], ['', ro.erlaeuterung]]); }
+        if (ex.erlaeuterung || ro.erlaeuterung) { h(4, L.exemptions); kv([['Experimental-use exemption (\u00a7 11 No. 2 PatG)', code(ex.versuchsprivileg_par11_nr2)], ['Regulatory (Bolar) exemption (\u00a7 11 No. 2b PatG)', code(ex.zulassungsprivileg_par11_nr2b)], ['US safe harbor (35 U.S.C. \u00a7 271(e)(1))', code(ex.us_safe_harbor_271e1)], ['Tipping point', ex.kipppunkt], ['', ex.erlaeuterung], ['Direct infringement by the user', code(ro.unmittelbar)], ['Indirect / contributory infringement', code(ro.mittelbar_par10_patg_oder_271bc)], ['', ro.erlaeuterung]]); }
         if (arr(gs.hinweise).length) ul(gs.hinweise);
       }
     });
@@ -364,7 +329,7 @@
       if (syn.querschnitt) { h(3, L.crossPatterns); md(syn.querschnitt); }
       if (arr(syn.zeitachse).length) { h(3, L.timeline); table([L.right, L.expiry, L.notes], syn.zeitachse.map(function (zt) { var m = arr(op.matrix).filter(function (x) { return x.pn === zt.patent_id; })[0]; return [zt.patent_id, (m && m.expiry) || zt.ablauf_geschaetzt, zt.bemerkung]; })); }
       if (syn.ausnahmen) { h(3, L.exemptionsAll); md(syn.ausnahmen); }
-      if (arr(syn.umgehungsloesungen).length) { h(3, L.daAll); table([de ? '\u00c4nderung' : 'Change', L.right, L.collides, de ? 'Bewertung' : 'Assessment'], syn.umgehungsloesungen.map(function (u) { return [u.aenderung, arr(u.betrifft_schutzrechte).join(', '), arr(u.kollision_mit_anderen).join(', '), u.bewertung]; })); }
+      if (arr(syn.umgehungsloesungen).length) { h(3, L.daAll); table(['Change', L.right, L.collides, 'Assessment'], syn.umgehungsloesungen.map(function (u) { return [u.aenderung, arr(u.betrifft_schutzrechte).join(', '), arr(u.kollision_mit_anderen).join(', '), u.bewertung]; })); }
       if (syn.gegenpruefung) { h(3, L.redAll); md(syn.gegenpruefung); }
       if (syn.anhaengige_anmeldungen) { h(3, L.pendingText); md(syn.anhaengige_anmeldungen); }
     }
@@ -376,8 +341,8 @@
     if (!arr(op.notCharted).length) p(L.none);
     order.concat(Object.keys(groups).filter(function (k) { return order.indexOf(k) < 0; })).forEach(function (k) {
       if (!groups[k]) return;
-      h(3, (REASON[lang][k] || k) + ' (' + groups[k].length + ')');
-      table([L.right, de ? 'Titel' : 'Title', L.status, L.expiry, L.reason], groups[k].map(function (n) { return [n.pn, n.title, n.status, n.expiry, n.text]; }));
+      h(3, (REASON[lang][k] || k) + ' ' + groups[k].length + '');
+      table([L.right, 'Title', L.status, L.expiry, L.reason], groups[k].map(function (n) { return [n.pn, n.title, n.status, n.expiry, n.text]; }));
     });
 
     // 7 next steps
@@ -500,19 +465,14 @@
       pendingL: 'Pending applications', analysed: 'patent rights analysed', notAn: 'not analysed', byAI: 'AI analysis not available in this run', drivers: 'Driven by', about: 'How to read this report', scale: 'Risk scale (1 to 5; "cannot be assessed" is not a low risk)',
       markers: 'Marks', mq: 'quote found verbatim in the claim text (checked by code)', md: 'quote found only with an omission or relaxed spelling, to be checked by hand', mb: 'quote not verified; the row is treated as unclear',
       mv: 'Verdict "met" means the claim feature is found in the product; it is the adverse reading for the product.', method: 'Method', mt: 'Quotes are verified against the claim text, numeric ranges and structure matches are computed in code, and the final risk is the more adverse of the claim chart and the red-team review. The model only translates and explains. Evidence computed by the app only adds flags, questions and risk floors; it never lowers a risk.',
-      foot: 'LNP Patent Desk \u00b7 FTO pre-screening, not legal advice', snap: 'Status snapshot', page: 'Page', of: 'of', end: 'This document is a pre-screening and not legal advice. It is based on the corpus snapshot and legal status stated above; see the limits block.', created: 'Created', cannot: 'cannot be assessed' },
-    de: { kick: 'FTO-Vorpr\u00fcfung', tag: 'Vorpr\u00fcfung, keine Rechtsberatung', toc: 'Inhalt', overall: 'Gesamtrisiko', basis: 'H\u00f6chste Stufe \u00fcber die Zielm\u00e4rkte, von der App aus den Einzelbewertungen berechnet.',
-      pendingL: 'Anh\u00e4ngige Anmeldungen', analysed: 'Schutzrechte analysiert', notAn: 'nicht analysiert', byAI: 'KI-Analyse in diesem Lauf nicht verf\u00fcgbar', drivers: 'Getrieben durch', about: 'Hinweise zum Lesen', scale: 'Risikoskala (1 bis 5; \u201enicht beurteilbar\u201c ist kein geringes Risiko)',
-      markers: 'Markierungen', mq: 'Zitat w\u00f6rtlich im Anspruchstext gefunden (von Code gepr\u00fcft)', md: 'Zitat nur mit Auslassung oder gelockerter Schreibweise gefunden, von Hand zu pr\u00fcfen', mb: 'Zitat nicht verifiziert; die Zeile gilt als unklar',
-      mv: 'Urteil \u201eerf\u00fcllt\u201c hei\u00dft: das Anspruchsmerkmal findet sich im Produkt; das ist die f\u00fcr das Produkt ung\u00fcnstige Lesart.', method: 'Methode', mt: 'Zitate werden gegen den Anspruchstext verifiziert, Zahlenbereiche und Strukturtreffer berechnet der Code; das Gesamtrisiko ist das ung\u00fcnstigere von Merkmalsanalyse und Gegenpr\u00fcfung. Das Modell \u00fcbersetzt und erkl\u00e4rt nur. Von der App berechnete Belege setzen nur Kennzeichen, Fragen und Risikountergrenzen und senken nie ein Risiko.',
-      foot: 'LNP Patent Desk \u00b7 FTO-Vorpr\u00fcfung, keine Rechtsberatung', snap: 'Rechtsstand', page: 'Seite', of: 'von', end: 'Dieses Dokument ist eine Vorpr\u00fcfung und keine Rechtsberatung. Grundlage sind der oben genannte Korpus- und Rechtsstand; siehe Hinweisblock.', created: 'Erstellt', cannot: 'nicht beurteilbar' }
+      foot: 'LNP Patent Desk \u00b7 FTO pre-screening, not legal advice', snap: 'Status snapshot', page: 'Page', of: 'of', end: 'This document is a pre-screening and not legal advice. It is based on the corpus snapshot and legal status stated above; see the limits block.', created: 'Created', cannot: 'cannot be assessed' }
   };
   function lvl(code) { var m = /^(\d)_/.exec(str(code)); return m ? +m[1] : 0; }
   function pips(n) { return n ? '<span class="pips" aria-hidden="true">' + new Array(n + 1).join('\u25cf') + new Array(6 - n).join('\u25cb') + '</span>' : ''; }
   /* only fixed text and the safe characters of a date may enter a CSS string */
-  function cssStr(s) { return str(s).replace(/[^0-9A-Za-z .,:\-\u00b7\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df]/g, '').replace(/\u00b7/g, '\\00b7 '); }
+  function cssStr(s) { return str(s).replace(/[^0-9A-Za-z .,:\-\u00b7]/g, '').replace(/\u00b7/g, '\\00b7 '); }
   function toHtml(doc) {
-    var lang = doc.lang === 'de' ? 'de' : 'en', L = T[lang], U = UI[lang], meta = doc.meta || { rights: {}, markets: [] }, out = [], nodes = doc.nodes;
+    var lang = 'en', L = T.en, U = UI.en, meta = doc.meta || { rights: {}, markets: [] }, out = [], nodes = doc.nodes;
     function riskChip(code, text) { var n = lvl(code); return '<span class="rk r' + n + '">' + pips(n) + '<span>' + esc(text || RISK[lang][code] || code || L.notAssessed) + '</span></span>'; }
     var byLabel = {}; Object.keys(RISK[lang]).forEach(function (k) { byLabel[RISK[lang][k]] = k; });
     var qByLabel = {}; Object.keys(QCHK[lang]).forEach(function (k) { qByLabel[QCHK[lang][k]] = k; });
@@ -613,9 +573,20 @@
     o.hinweis_ende = str(op.limits);
     return JSON.stringify(o, null, 1);
   }
+  /* compatibility: an opinion saved by an older version may carry the German limits block; it is replaced by the
+     English block (same content, same snapshot date) so that no German text is rendered around the report */
+  function englishLimits(op) {
+    var P = g.LnpFtoPrompts, l = str(op.limits);
+    if (!/^Wichtiger Hinweis/.test(l) || !P || typeof P.limits !== 'function') return op;
+    var m = /Datenstand vom (\S+?) und/.exec(l), o = {}, k;
+    for (k in op) if (Object.prototype.hasOwnProperty.call(op, k)) o[k] = op[k];
+    o.limits = P.limits('en', (m && m[1]) || op.statusSnapshot || null);
+    return o;
+  }
   function render(op, fmt) {
     if (!op || typeof op !== 'object') throw { code: 'bad_opinion', message: 'no opinion' };
     if (!str(op.limits)) throw { code: 'bad_opinion', message: 'opinion without limits block is not rendered' };
+    op = englishLimits(op);
     if (fmt === 'json') return toJson(op);
     var doc = build(op);
     return fmt === 'html' ? toHtml(doc) : toMarkdown(doc);

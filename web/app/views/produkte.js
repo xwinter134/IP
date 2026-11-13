@@ -27,21 +27,23 @@
     };
   })();
 
-  // option lists: [stored value, label]; the stored values stay as they are because the FTO engine reads them
+  // option lists: [stored value, label]. The stored values are English (the FTO engine maps them to its internal codes);
+  // profiles saved by an older version carry German values, which LnpFto.englishForm maps to the English ones on load.
   function opts(vals, labels) { return vals.map(function (v, i) { return [v, labels[i]]; }); }
+  function same(vals) { return opts(vals, vals.map(function (v) { return v || 'not specified'; })); }
   var ROLES = [['ionizable', 'Ionizable lipid'], ['helper', 'Helper lipid'], ['sterol', 'Sterol'], ['peg', 'PEG lipid'], ['other', 'Other']];
-  var STAGES = opts(['', 'Forschung', 'Präklinik', 'Klinik Phase 1/2', 'Klinik Phase 3', 'Zulassung beantragt', 'Kommerziell'], ['not specified', 'Research', 'Preclinical', 'Clinical phase 1/2', 'Clinical phase 3', 'Approval applied for', 'Commercial']);
-  var PAYLOADS = opts(['', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'leer (ohne Wirkstoff)'], ['not specified', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'empty (no payload)']);
-  var MIXING = opts(['', 'T-Stück', 'Impinging-Jet-Mischer', 'Mikrofluidik Herringbone', 'Mikrofluidik toroidal', 'Ethanol-Injektion', 'Extrusion', 'sonstiges'], ['not specified', 'T-junction', 'Impinging jet mixer', 'Microfluidic herringbone', 'Microfluidic toroidal', 'Ethanol injection', 'Extrusion', 'Other']);
-  var ROUTES = opts(['', 'intravenös', 'intramuskulär', 'subkutan', 'inhalativ', 'intratumoral', 'intrathekal', 'topisch', 'andere'], ['not specified', 'Intravenous', 'Intramuscular', 'Subcutaneous', 'Inhaled', 'Intratumoral', 'Intrathecal', 'Topical', 'Other']);
-  var BASIS = [['nominal', 'nominal (input)'], ['gemessen', 'measured in the particle'], ['', 'unknown']];
+  var STAGES = same(['', 'Research', 'Preclinical', 'Clinical phase 1/2', 'Clinical phase 3', 'Approval applied for', 'Commercial']);
+  var PAYLOADS = opts(['', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'empty (no payload)'], ['not specified', 'mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR (mRNA + gRNA)', 'empty (no payload)']);
+  var MIXING = same(['', 'T-junction', 'Impinging jet mixer', 'Microfluidic herringbone', 'Microfluidic toroidal', 'Ethanol injection', 'Extrusion', 'Other']);
+  var ROUTES = same(['', 'Intravenous', 'Intramuscular', 'Subcutaneous', 'Inhaled', 'Intratumoral', 'Intrathecal', 'Topical', 'Other']);
+  var BASIS = [['nominal', 'nominal (input)'], ['measured', 'measured in the particle'], ['', 'unknown']];
   var MARKETS = [['DE', 'Germany'], ['EP', 'EP states'], ['UPC', 'Unitary patent'], ['US', 'USA']];
 
   function example() {
-    return { id: 'beispiel', example: true, name: 'Example: generic MC3 siRNA formulation', stage: 'Präklinik',
+    return { id: 'beispiel', example: true, name: 'Example: generic MC3 siRNA formulation', stage: 'Preclinical',
       lipids: [{ role: 'ionizable', name: 'DLin-MC3-DMA', smiles: '', molPct: 50, pka: 6.44 }, { role: 'helper', name: 'DSPC', smiles: '', molPct: 10 }, { role: 'sterol', name: 'cholesterol', smiles: '', molPct: 38.5 }, { role: 'peg', name: 'DMG-PEG 2000', smiles: '', molPct: 1.5, pegMw: 2000 }],
       ratioBasis: 'nominal', np: 3, payload: { type: 'siRNA', modification: '2\'-O-methyl, partial', lengthNt: 21 }, particle: { sizeNm: 80, sizeMethod: 'DLS (Z-Average)', pdi: 0.1, encapsulationPct: 95 },
-      process: { mixing: 'T-Stück', frr: 3, tfr: 12, buffer: 'Citrate 25 mM', ph: 4, solvent: 'Ethanol' }, use: { route: 'intravenös', indication: 'Liver disease (hepatocyte target gene)' },
+      process: { mixing: 'T-junction', frr: 3, tfr: 12, buffer: 'Citrate 25 mM', ph: 4, solvent: 'Ethanol' }, use: { route: 'Intravenous', indication: 'Liver disease (hepatocyte target gene)' },
       markets: ['DE', 'EP', 'US'], launchDate: '', freeText: 'Textbook-style composition of 50 / 10 / 38.5 / 1.5 mol % for demonstration. No information on a real product.' };
   }
   function blank() { return { id: '', name: 'New profile', stage: '', lipids: [{ role: 'ionizable', name: '', smiles: '', molPct: null }, { role: 'helper', name: '', smiles: '', molPct: null }, { role: 'sterol', name: 'cholesterol', smiles: '', molPct: null }, { role: 'peg', name: '', smiles: '', molPct: null }], ratioBasis: 'nominal', np: null, payload: {}, particle: {}, process: {}, use: {}, markets: ['DE', 'EP', 'US'], launchDate: '', freeText: '' }; }
@@ -51,6 +53,7 @@
     function num(v) { if (v == null || v === '') return null; var x = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : null; }
     function obj(o, keys) { var out = {}; o = (o && typeof o === 'object') ? o : {}; keys.forEach(function (k) { if (o[k] != null && o[k] !== '') out[k] = typeof o[k] === 'number' ? o[k] : s(o[k]); }); return out; }
     src = (src && typeof src === 'object') ? src : {};
+    if (g.LnpFto && typeof g.LnpFto.englishForm === 'function') src = g.LnpFto.englishForm(src); // older profiles: German option values -> English
     return { id: s(src.id, 80), example: !!src.example, name: s(src.name, 160) || 'Profile', stage: STAGES.some(function (x) { return x[0] === src.stage; }) ? src.stage : '',
       lipids: (Array.isArray(src.lipids) ? src.lipids : []).slice(0, 12).map(function (l) { l = l || {}; return { role: ROLES.some(function (r) { return r[0] === l.role; }) ? l.role : 'other', name: s(l.name, 120), smiles: s(l.smiles, 2000), molPct: num(l.molPct), pka: num(l.pka), pegMw: num(l.pegMw) }; }),
       ratioBasis: s(src.ratioBasis, 20), np: num(src.np), payload: obj(src.payload, ['type', 'modification', 'lengthNt', 'encodes']), particle: obj(src.particle, ['sizeNm', 'sizeMethod', 'pdi', 'encapsulationPct', 'zetaMv']),

@@ -56,6 +56,7 @@ function fakeEngines() {
   return { D, Se, Sc, F };
 }
 async function unit() {
+  require(path.join(ROOT, 'web', 'engine', 'fto-render.js')); // LnpFtoRender: English labels of the opinion codes
   const C = require(path.join(ROOT, 'web', 'engine', 'x-context.js'));
   const A = require(path.join(ROOT, 'web', 'engine', 'x-zapi.js'));
   const rej = async (fn) => { try { await fn(); return null; } catch (e) { return e; } };
@@ -130,7 +131,8 @@ async function unit() {
   const sc = await C.pack({ screen: 'sc1' }, { format: 'json' });
   ok(sc.patents === 2 && sc.data.patents[0].context.via[0].indexOf('SM-102') === 0 && sc.data.patents[0].markush.verdicts[0].verdict === 'covered', 'screen: the publications of the screen, with the molecule and the Markush verdict', sc.data.patents[0].context);
   const op = await C.pack({ opinion: 'op1' }, { format: 'md' });
-  ok(op.patents === 2 && /FTO opinion risk \(final \/ chart \/ red team\): 4_hoch/.test(op.text) && /Market DE: risk 4_hoch/.test(op.text), 'opinion: risk per patent and per market from the stored opinion');
+  ok(op.patents === 2 && /FTO opinion risk \(final \/ chart \/ red team\): high \(4\) \/ high \(4\) \/ medium \(3\)/.test(op.text) && /Market DE: risk high \(4\)/.test(op.text) && /flag: quote not verified/.test(op.text), 'opinion: risk per patent and per market from the stored opinion, codes shown as English labels');
+  ok(!/_hoch|_mittel|_gering|zitat_|nicht_/.test(op.text), 'opinion: no internal (German-derived) code in the pack', (op.text.match(/\S*(_hoch|_mittel|_gering|zitat_|nicht_)\S*/) || [])[0]);
   const nos = await rej(() => C.pack({ screen: 'nope' })); ok(nos && nos.code === 'not_found', 'unknown screen rejects not_found', nos);
   const emp = await rej(() => C.pack({ screen: 'empty' })); ok(emp && emp.code === 'no_results', 'a screen without stored results rejects no_results', emp);
   const nop = await rej(() => C.pack({ opinion: 'nope' })); ok(nop && nop.code === 'not_found', 'unknown opinion rejects not_found', nop);

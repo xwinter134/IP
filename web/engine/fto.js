@@ -185,7 +185,7 @@
   }
   var MIX_MAP = [[/t[- ]?(st(ue|\u00fc)ck|junction|connector|mix)/i, 't_stueck'], [/imping/i, 'impinging_jet'], [/herring|shm/i, 'mikrofluidik_herringbone'], [/toroid|bifurc|nanoassemblr|ignite|mikrofluid|microfluid/i, 'mikrofluidik_bifurkierend_toroidal'],
     [/injekt|injection/i, 'ethanol_injektion'], [/extru/i, 'extrusion']];
-  var STAGE_MAP = [[/kommerz|commerc|markt|market/i, 'kommerziell'], [/zulassung|approval|bla|maa/i, 'zulassung_beantragt'], [/phase\s*(3|iii)/i, 'klinik_phase_3'], [/phase|klini|clinic/i, 'klinik_phase_1_2'], [/pr(ae|\u00e4|e)klin|gmp|tox/i, 'praeklinik'], [/forsch|research|labor|discovery/i, 'forschung']];
+  var STAGE_MAP = [[/kommerz|commerc|markt|market/i, 'kommerziell'], [/zulassung|approval|bla|maa/i, 'zulassung_beantragt'], [/phase\s*(3|iii)/i, 'klinik_phase_3'], [/pr(ae|\u00e4|e)-?klin|pre-?clin/i, 'praeklinik'], [/phase|klini|clinic/i, 'klinik_phase_1_2'], [/pr(ae|\u00e4|e)klin|gmp|tox/i, 'praeklinik'], [/forsch|research|labor|discovery/i, 'forschung']];
   var PAYLOAD_MAP = [[/sa-?rna|self[- ]?ampl/i, 'saRNA'], [/circ/i, 'circRNA'], [/crispr|grna|cas9/i, 'CRISPR_mRNA_gRNA'], [/sirna/i, 'siRNA'], [/\baso\b|antisense/i, 'ASO'], [/pdna|plasmid|\bdna\b/i, 'pDNA'], [/mrna|messenger/i, 'mRNA'], [/leer|empty|none|ohne/i, 'leer']];
   function mapFirst(map, v, enumOk) { var s = str(v), i; if (!s) return null; if (enumOk && enumOk.indexOf(s) >= 0) return s; for (i = 0; i < map.length; i++) if (map[i][0].test(s)) return map[i][1]; return 'sonstiges'; }
   function marketsOf(list) {
@@ -196,7 +196,7 @@
   /* deterministic profile from the form (used alone when Claude is not available, and as the frame that the
      model output is checked against) */
   function baseProfile(input, lipids, lang) {
-    var de = lang === 'de', P = [], i;
+    var P = [], i;
     function feat(kat, text, wert, einheit, quelle, sicher) { P.push({ id: 'P' + (P.length + 1), kategorie: kat, aussage: text, wert: wert === undefined ? null : wert, einheit: einheit || null, quelle: quelle || 'nutzer', sicherheit: sicher || 'hoch' }); }
     var ion = null, others = [], mol = { ionizable_lipid: null, phospholipid: null, sterol: null, peg_lipid: null, sonstige: null };
     lipids.forEach(function (c, k) {
@@ -211,19 +211,19 @@
       il.pka_apparent = num(ion.src.pka); il.pka_methode = ion.src.pkaMethod || null; il.quelle = c.ok && c.source === 'reference lipid name' ? 'berechnet' : 'nutzer';
       if (c.ok && d) {
         il.descriptors = schemaDescriptors(c);
-        var tails = arr(d.tails).map(function (t) { return (t.acyl ? 'Acyl ' : '') + 'C' + t.nC + (t.branched ? (' branched at position ') + t.branchPosition + (arr(t.arms).length ? ' (' + t.arms.join('+') + ')' : '') : ' linear') + (t.nDoubleBonds ? ', ' + t.nDoubleBonds + ' C=C' : ''); });
+        var tails = arr(d.tails).map(function (t) { return (t.acyl ? 'Acyl ' : '') + 'C' + t.nC + (t.branched ? ' branched at position ' + t.branchPosition + (arr(t.arms).length ? ' (' + t.arms.join('+') + ')' : '') : ' linear') + (t.nDoubleBonds ? ', ' + t.nDoubleBonds + ' C=C' : ''); });
         var lk = arr(d.linkers).map(function (l) { return l.count + ' x ' + l.type; });
-        il.strukturbeschreibung = ('Computed by the app: head group ') + str(d.head) + (d.headgroup && d.headgroup.smiles ? ' (' + d.headgroup.smiles + ')' : '') +
-          ('; amine: ') + str(d.amine && d.amine.class) + ('; linkers: ') + (lk.join(', ') || '-') + ('; chains: ') + (tails.join(' | ') || '-') + '.';
-        feat('lipid_struktur', ('Ionizable lipid: ') + str(c.name || c.ref_name || '') + ' SMILES ' + il.smiles, il.smiles, null, il.quelle);
-        feat('lipid_struktur', ('Formula / molecular weight') + ': ' + str(il.descriptors.formula) + ' / ' + str(il.descriptors.mw), il.descriptors.formula, null, 'berechnet');
-        feat('lipid_struktur', ('Head group and amine') + ': ' + str(d.head) + ', ' + str(d.amine && d.amine.class) + ' (' + str(d.amine && d.amine.count) + ')', str(d.head), null, 'berechnet');
-        feat('lipid_struktur', ('Linkers') + ': ' + (lk.join(', ') || '-'), lk.join(', ') || null, null, 'berechnet');
-        tails.forEach(function (t, k) { feat('lipid_struktur', ('Chain ') + (k + 1) + ': ' + t + (' (acyl: carbonyl carbon counted)'), arr(d.tails)[k].nC, 'C', 'berechnet'); });
-        feat('lipid_struktur', ('Total carbon atoms') + ': ' + str(il.descriptors.c_atoms_total), il.descriptors.c_atoms_total, 'C', 'berechnet');
+        il.strukturbeschreibung = 'Computed by the app: head group ' + str(d.head) + (d.headgroup && d.headgroup.smiles ? ' ' + d.headgroup.smiles + '' : '') +
+          '; amine: ' + str(d.amine && d.amine.class) + '; linkers: ' + (lk.join(', ') || '-') + '; chains: ' + (tails.join(' | ') || '-') + '.';
+        feat('lipid_struktur', 'Ionizable lipid: ' + str(c.name || c.ref_name || '') + ' SMILES ' + il.smiles, il.smiles, null, il.quelle);
+        feat('lipid_struktur', 'Formula / molecular weight' + ': ' + str(il.descriptors.formula) + ' / ' + str(il.descriptors.mw), il.descriptors.formula, null, 'berechnet');
+        feat('lipid_struktur', 'Head group and amine' + ': ' + str(d.head) + ', ' + str(d.amine && d.amine.class) + ' ' + str(d.amine && d.amine.count) + '', str(d.head), null, 'berechnet');
+        feat('lipid_struktur', 'Linkers' + ': ' + (lk.join(', ') || '-'), lk.join(', ') || null, null, 'berechnet');
+        tails.forEach(function (t, k) { feat('lipid_struktur', 'Chain ' + (k + 1) + ': ' + t + ' (acyl: carbonyl carbon counted)', arr(d.tails)[k].nC, 'C', 'berechnet'); });
+        feat('lipid_struktur', 'Total carbon atoms' + ': ' + str(il.descriptors.c_atoms_total), il.descriptors.c_atoms_total, 'C', 'berechnet');
       } else {
         il.strukturbeschreibung = 'The app could not read the structure; descriptors are missing.';
-        if (c.name || c.smiles_input) feat('lipid_struktur', ('Ionizable lipid: ') + str(c.name || c.smiles_input), c.name || c.smiles_input, null, 'nutzer', 'mittel');
+        if (c.name || c.smiles_input) feat('lipid_struktur', 'Ionizable lipid: ' + str(c.name || c.smiles_input), c.name || c.smiles_input, null, 'nutzer', 'mittel');
       }
       if (il.pka_apparent !== null) feat('lipid_struktur', 'pKa (apparent)' + (il.pka_methode ? ', ' + il.pka_methode : ''), il.pka_apparent, null, 'nutzer');
     }
@@ -240,28 +240,28 @@
     var payTyp = mapFirst(PAYLOAD_MAP, pay.type, ['mRNA', 'saRNA', 'siRNA', 'ASO', 'pDNA', 'circRNA', 'CRISPR_mRNA_gRNA', 'leer', 'sonstiges']);
     if (payTyp) feat('payload', 'Payload: ' + str(pay.type) + (pay.modification ? ', ' + pay.modification : ''), payTyp, null, 'nutzer');
     [['sizeNm', 'Particle size', 'nm'], ['pdi', 'PDI', null], ['encapsulationPct', 'Encapsulation', '%'], ['zetaMv', 'Zeta', 'mV']].forEach(function (x) {
-      var v = num(part[x[0]]); if (v !== null) feat('partikel', x[1] + (x[0] === 'sizeNm' && part.sizeMethod ? ' (' + part.sizeMethod + ')' : ''), v, x[2], 'nutzer');
+      var v = num(part[x[0]]); if (v !== null) feat('partikel', x[1] + (x[0] === 'sizeNm' && part.sizeMethod ? ' ' + part.sizeMethod + '' : ''), v, x[2], 'nutzer');
     });
     var mix = mapFirst(MIX_MAP, proc.mixing, ['t_stueck', 'impinging_jet', 'mikrofluidik_herringbone', 'mikrofluidik_bifurkierend_toroidal', 'ethanol_injektion', 'extrusion', 'sonstiges']);
-    if (mix) feat('verfahren', ('Mixing principle: ') + str(proc.mixing), mix, null, 'nutzer');
+    if (mix) feat('verfahren', 'Mixing principle: ' + str(proc.mixing), mix, null, 'nutzer');
     [['frr', 'Flow rate ratio aqueous:organic', null], ['tfr', 'Total flow rate', 'mL/min'], ['ethanolPct', 'Ethanol at mixing', '%'], ['ph', 'pH at mixing', null], ['tempC', 'Temperature', '\u00b0C']].forEach(function (x) {
       var v = num(proc[x[0]]); if (v !== null) feat('verfahren', x[1], v, x[2], 'nutzer');
     });
-    if (proc.buffer) feat('verfahren', ('Aqueous buffer: ') + proc.buffer, proc.buffer, null, 'nutzer');
-    if (proc.site) feat('verfahren', ('Manufacturing site: ') + proc.site, proc.site, null, 'nutzer');
-    if (form.buffer || form.cryo || form.lyo != null || form.storage) feat('formulierung', ('Formulation/storage: ') + [form.buffer, form.cryo, form.lyo ? ('lyophilised') : null, form.storage].filter(Boolean).join('; '), null, null, 'nutzer');
-    if (use.route) feat('anwendung', ('Route: ') + use.route, use.route, null, 'nutzer');
-    if (use.indication) feat('anwendung', ('Indication class: ') + use.indication, use.indication, null, 'nutzer');
+    if (proc.buffer) feat('verfahren', 'Aqueous buffer: ' + proc.buffer, proc.buffer, null, 'nutzer');
+    if (proc.site) feat('verfahren', 'Manufacturing site: ' + proc.site, proc.site, null, 'nutzer');
+    if (form.buffer || form.cryo || form.lyo != null || form.storage) feat('formulierung', 'Formulation/storage: ' + [form.buffer, form.cryo, form.lyo ? 'lyophilised' : null, form.storage].filter(Boolean).join('; '), null, null, 'nutzer');
+    if (use.route) feat('anwendung', 'Route: ' + use.route, use.route, null, 'nutzer');
+    if (use.indication) feat('anwendung', 'Indication class: ' + use.indication, use.indication, null, 'nutzer');
     var markets = marketsOf(input.markets || input.countries), launch = input.launchDate || input.launch || null;
     if (!markets.length) markets = ['DE', 'EP', 'US'];
     var akte = arr(input.acts).filter(function (a) { return a && a.akt; }).map(function (a) { return { land: str(a.land || ''), akt: a.akt, zeitpunkt: a.zeitpunkt === 'derzeit' ? 'derzeit' : 'geplant', geplant_ab: a.geplant_ab || null, zweck: a.zweck || null }; });
     if (!akte.length && launch) markets.forEach(function (m) { if (m !== 'UPC') akte.push({ land: m, akt: 'inverkehrbringen', zeitpunkt: 'geplant', geplant_ab: str(launch), zweck: null }); });
-    if (launch) feat('handlung', ('Planned launch: ') + launch + ' (' + markets.join(', ') + ')', str(launch), null, 'nutzer');
+    if (launch) feat('handlung', 'Planned launch: ' + launch + ' (' + markets.join(', ') + ')', str(launch), null, 'nutzer');
     var names = [];
     lipids.forEach(function (c) { [c.name, c.ref_name, c.ref && c.ref.name].forEach(function (n) { if (n && names.indexOf(n) < 0) names.push(n); }); });
     arr(input.lipids).forEach(function (l) { if (l && l.cas && names.indexOf(l.cas) < 0) names.push(l.cas); });
     return {
-      schema_version: 'pf-1', output_language: 'en', bezeichnung: str(input.name || input.bezeichnung || ('LNP product')),
+      schema_version: 'pf-1', output_language: 'en', bezeichnung: str(input.name || input.bezeichnung || 'LNP product'),
       ionizable_lipid: il, weitere_lipide: wl,
       zusammensetzung: { molprozent: mol, basis: /gemessen|measured/i.test(str(input.ratioBasis)) ? 'gesamtlipid_gemessen_partikel' : (/nominal|einsatz|input/i.test(str(input.ratioBasis)) ? 'gesamtlipid_nominal_einsatz' : 'unbekannt'), np_verhaeltnis: np,
         lipid_zu_nukleinsaeure_gewicht: num(input.lipidToNaWeight), chargenvariabilitaet: input.batchVariability || null },
@@ -286,11 +286,35 @@
      Structures are parsed and described by LnpChem; Claude (step A) only arranges and words the profile. Whatever the
      model returns for SMILES and descriptors is replaced by the app's values. Without Claude the deterministic profile
      is returned (_app.model = false). */
+  /* englishForm(form) -> a copy of a profile form whose option values are English. Profiles saved by older versions carry
+     the German option values of the old form (e.g. stage "Pr\u00e4klinik", mixing "T-St\u00fcck", route "intraven\u00f6s"); they
+     would otherwise reach the report as free text. Unknown values are kept as they are. */
+  var LEGACY_FORM = {
+    stage: { 'Forschung': 'Research', 'Pr\u00e4klinik': 'Preclinical', 'Klinik Phase 1/2': 'Clinical phase 1/2', 'Klinik Phase 3': 'Clinical phase 3', 'Zulassung beantragt': 'Approval applied for', 'Kommerziell': 'Commercial' },
+    type: { 'leer (ohne Wirkstoff)': 'empty (no payload)' },
+    mixing: { 'T-St\u00fcck': 'T-junction', 'Impinging-Jet-Mischer': 'Impinging jet mixer', 'Mikrofluidik Herringbone': 'Microfluidic herringbone', 'Mikrofluidik toroidal': 'Microfluidic toroidal', 'Ethanol-Injektion': 'Ethanol injection', 'sonstiges': 'Other' },
+    route: { 'intraven\u00f6s': 'Intravenous', 'intramuskul\u00e4r': 'Intramuscular', 'subkutan': 'Subcutaneous', 'inhalativ': 'Inhaled', 'intratumoral': 'Intratumoral', 'intrathekal': 'Intrathecal', 'topisch': 'Topical', 'andere': 'Other' },
+    ratioBasis: { 'gemessen': 'measured' }
+  };
+  /* English text of an internal code for text that the model or the user reads (LnpFtoRender.label when loaded) */
+  function codeText(c) { var R = eng('render'); return R && typeof R.label === 'function' ? R.label(c) : str(c).replace(/_/g, ' '); }
+  function englishForm(src) {
+    if (!src || typeof src !== 'object') return src;
+    function m(kind, v) { return v != null && Object.prototype.hasOwnProperty.call(LEGACY_FORM[kind], v) ? LEGACY_FORM[kind][v] : v; }
+    function sub(o, k, kind) { if (!o || typeof o !== 'object' || o[k] == null) return o; var c = {}, x; for (x in o) if (Object.prototype.hasOwnProperty.call(o, x)) c[x] = o[x]; c[k] = m(kind, o[k]); return c; }
+    var out = {}, k;
+    for (k in src) if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
+    if (out.stage != null) out.stage = m('stage', out.stage);
+    if (out.ratioBasis != null) out.ratioBasis = m('ratioBasis', out.ratioBasis);
+    out.payload = sub(out.payload, 'type', 'type'); out.process = sub(out.process, 'mixing', 'mixing'); out.use = sub(out.use, 'route', 'route');
+    return out;
+  }
   function normalizeProfile(input, o) {
     o = o || {}; input = input || {};
-    var lang = (o.lang || input.lang) === 'de' ? 'de' : 'en', ai = eng('ai'), P = eng('prompts'), warnings = [];
+    input = englishForm(input);
+    var lang = 'en', ai = eng('ai'), P = eng('prompts'), warnings = [];
     return Promise.all(arr(input.lipids).map(function (l) { return computeLipid(l || {}); })).then(function (lipids) {
-      lipids.forEach(function (c) { if (!c.ok) warnings.push(('Structure not read: ') + str(c.name || c.smiles_input) + ' (' + str(c.error) + ')'); });
+      lipids.forEach(function (c) { if (!c.ok) warnings.push('Structure not read: ' + str(c.name || c.smiles_input) + ' ' + str(c.error) + ''); });
       var base = baseProfile(input, lipids, lang);
       function finish(p, model, note) {
         if (note) warnings.push(note);
@@ -305,14 +329,14 @@
           return finish(mergeProfile(base, m, lang, warnings), true);
         }, function (e) {
           if (e && e.code === 'cancelled') throw e;
-          return finish(base, false, ('Step A (Claude) failed, profile from the form fields only: ') + (ai.message ? ai.message(e, lang) : str(e && e.code)));
+          return finish(base, false, 'Step A (Claude) failed, profile from the form fields only: ' + (ai.message ? ai.message(e, lang) : str(e && e.code)));
         });
       });
     });
   }
   /* model output of step A, with every chemistry and number field that the app knows put back */
   function mergeProfile(base, m, lang, warnings) {
-    var out = clone(m), de = lang === 'de', k;
+    var out = clone(m), k;
     out.schema_version = 'pf-1'; out.output_language = base.output_language;
     var bi = base.ionizable_lipid, mi = out.ionizable_lipid || {};
     if (str(mi.smiles) !== str(bi.smiles) && mi.smiles) warnings.push('SMILES from the model reply discarded (differs from the input).');
@@ -549,7 +573,7 @@
              "structure in the claims" can find it. */
           if (c.exact && pt.hasImg) { c.by.markush = Math.max(c.by.markush || 0, 9); (c.whyBy.markush = c.whyBy.markush || []).push('Possible generic formula claim: ' + c.exact + ' is disclosed in the document and an independent claim contains a formula that exists only as an image \u2013 formula test needed'); total(c); }
           var why = whyOf(c).map(function (w) { return c.fromFamily != null && pnOf[c.fromFamily] ? w.replace('index ' + c.fromFamily, pnOf[c.fromFamily]) : w; });
-          if (pt.seedFam && c.by.seed) why = why.map(function (w) { return w.indexOf('Key family') === 0 ? w + ': ' + pt.seedFam + (pt.player ? ' (' + pt.player + ')' : '') : w; });
+          if (pt.seedFam && c.by.seed) why = why.map(function (w) { return w.indexOf('Key family') === 0 ? w + ': ' + pt.seedFam + (pt.player ? ' ' + pt.player + '' : '') : w; });
           out.push({ p: c.p, pn: pt.pn, auth: pt.auth, kind: pt.kind, title: pt.title, assignee: pt.assignee, player: pt.player || null, status: pt.status || null, text: !!pt.text, family: pt.fam, routes: routesOf(c), score: Math.round(c.score * 100) / 100, why: why, must: !!(c.by.manual || c.by.seed >= 3 || c.mkCovered) });
         });
         return out;
@@ -602,7 +626,7 @@
     var appealOpen = r.code === 'revoked' && (r.appeal === true || (r.opposition && r.opposition.outcome === 'pending'));
     r.appealOpen = !!appealOpen;
     if (DEAD[r.code] && st && st.src && st.asof && !appealOpen) { r.dead = true; r.deadReason = r.code; }
-    else if (r.expiry.date && r.expiry.date < now) { r.dead = true; r.deadReason = 'expired'; r.notes.push('estimated expiry (' + r.expiry.date + ') has passed'); }
+    else if (r.expiry.date && r.expiry.date < now) { r.dead = true; r.deadReason = 'expired'; r.notes.push('estimated expiry ' + r.expiry.date + ' has passed'); }
     else if (auth === 'EP' && r.granted && r.inForceDe === false && st && st.src && r.markets.length && r.markets.every(function (m) { return m === 'DE'; })) { r.dead = true; r.deadReason = 'lapsed_de'; }
     r.pending = !r.granted && !r.dead;
     if (appealOpen) r.notes.push('Revoked according to the register, but an appeal is on record: finality not checked, treated as in force');
@@ -612,16 +636,13 @@
     if (appealOpen || (r.opposition && (r.opposition.outcome === 'pending' || (r.opposition.filed && !r.opposition.outcome)))) r.modifiers.push('einspruch_ipr_anhaengig');
     return r;
   }
-  var STATUS_LABEL = {
-    de: { granted: 'erteilt', pending: 'anh\u00e4ngig', lapsed: 'erloschen', revoked: 'widerrufen', withdrawn: 'zur\u00fcckgenommen', refused: 'zur\u00fcckgewiesen', expired: 'abgelaufen', unknown: 'unbekannt', lapsed_de: 'in DE erloschen' },
-    en: { granted: 'granted', pending: 'pending', lapsed: 'lapsed', revoked: 'revoked', withdrawn: 'withdrawn', refused: 'refused', expired: 'expired', unknown: 'unknown', lapsed_de: 'lapsed in DE' }
-  };
+  var STATUS_LABEL = { granted: 'granted', pending: 'pending', lapsed: 'lapsed', revoked: 'revoked', withdrawn: 'withdrawn', refused: 'refused', expired: 'expired', unknown: 'unknown', lapsed_de: 'lapsed in DE' };
   function statusLabel(r, lang) {
-    var L = STATUS_LABEL['en'], de = lang === 'de', s = L[r.dead ? r.deadReason : r.code] || str(r.code);
+    var L = STATUS_LABEL, s = L[r.dead ? r.deadReason : r.code] || str(r.code);
     if (r.appealOpen) s = 'revocation not final (appeal on record)';
-    if (!r.granted && !r.dead && r.code !== 'pending') s = ('application, ') + s;
+    if (!r.granted && !r.dead && r.code !== 'pending') s = 'application, ' + s;
     if (r.src === 'us-calc' && r.granted && !r.dead) s += ', maintenance fees not checked';
-    if (r.jurisdiction === 'EP' && r.granted && !r.dead) s += r.inForceDe === true ? (', in force in DE') : r.inForceDe === false ? (', not in force in DE') : (', DE part unknown');
+    if (r.jurisdiction === 'EP' && r.granted && !r.dead) s += r.inForceDe === true ? ', in force in DE' : r.inForceDe === false ? ', not in force in DE' : ', DE part unknown';
     if (r.modifiers.indexOf('einspruch_ipr_anhaengig') >= 0 && !r.appealOpen) s += ', opposition/appeal pending';
     if (!r.dead && r.unverified) s += ' (unverified' + (r.asof ? ', snapshot ' + r.asof : ', no record') + '; treated as in force)';
     else if (r.asof) s += ' (snapshot ' + r.asof + ')';
@@ -765,7 +786,7 @@
       c.app.literal_e = rc.literal_ergebnis_revidiert;
       c.app.literal_final = worseLiteral(c.app.literal, rc.literal_ergebnis_revidiert) || c.app.literal;
       if (c.app.literal_final !== c.app.literal) notes.push('Claim ' + rc.claim_no + ': red-team result more adverse (' + ll(c.app.literal) + ' -> ' + ll(c.app.literal_final) + ')');
-      else if (rc.literal_ergebnis_revidiert !== c.app.literal) notes.push('Claim ' + rc.claim_no + ': red-team result more favourable (' + ll(rc.literal_ergebnis_revidiert) + '), not adopted');
+      else if (rc.literal_ergebnis_revidiert !== c.app.literal) notes.push('Claim ' + rc.claim_no + ': red-team result more favourable ' + ll(rc.literal_ergebnis_revidiert) + ', not adopted');
       if (LIT_RANK[c.app.literal_final] > LIT_RANK[worst]) { worst = c.app.literal_final; worstClaim = rc.claim_no; }
       arr(rc.angriffe).forEach(function (a) { var m = arr(c.merkmale).filter(function (x) { return x.feature_id === a.feature_id; })[0]; if (m) m.app.redteam = a.ergebnis; });
     });
@@ -796,7 +817,7 @@
       var d = {
         claim_no: c.claim_no, kategorie: str(c.kategorie), literal_b: c.app.literal, literal_e: c.app.literal_e || null,
         tragende_merkmale: arr(c.merkmale).filter(function (m) { return m.app && m.app.verdict === 'nicht_erfuellt'; }).map(function (m) { return { feature_id: m.feature_id, claim_quote: str(m.claim_quote).slice(0, 400), product_value: m.product_value == null ? null : str(m.product_value).slice(0, 200), robustheit: str(c.robustheit), redteam: att[m.feature_id] || null }; }),
-        unklare_merkmale: arr(c.merkmale).filter(function (m) { return m.app && m.app.verdict === 'unklar'; }).map(function (m) { return { feature_id: m.feature_id, claim_quote: str(m.claim_quote).slice(0, 400), klaerung: m.app.forced ? 'set to unklar by the app: ' + m.app.forced : (m.klaerung == null ? null : str(m.klaerung).slice(0, 300)) }; }),
+        unklare_merkmale: arr(c.merkmale).filter(function (m) { return m.app && m.app.verdict === 'unklar'; }).map(function (m) { return { feature_id: m.feature_id, claim_quote: str(m.claim_quote).slice(0, 400), klaerung: m.app.forced ? 'set to unclear by the app: ' + codeText(m.app.forced) : (m.klaerung == null ? null : str(m.klaerung).slice(0, 300)) }; }),
         markush_ergebnis: mk, markush_fehlende_variablen: mkMiss, aequivalenz_risiko_max: eq, engster_treffender_unteranspruch: fb[c.claim_no] === undefined ? null : fb[c.claim_no]
       };
       return d;
@@ -1224,7 +1245,7 @@
     var data = eng('data'), ai = eng('ai'), P = eng('prompts');
     if (!data || !P) return Promise.reject(mkErr('not_ready', 'LnpData and LnpFtoPrompts are required'));
     if (!profile || profile.schema_version !== 'pf-1') return Promise.reject(mkErr('bad_profile', 'profile must come from normalizeProfile()'));
-    var depth = DEPTH[o.depth] ? o.depth : 'standard', lang = (o.lang || profile.output_language) === 'de' ? 'de' : 'en';
+    var depth = DEPTH[o.depth] ? o.depth : 'standard', lang = 'en'; // all output is English (o.lang is accepted and ignored)
     var markets = marketsOf(o.markets || (profile.handlungen && profile.handlungen.maerkte)); if (!markets.length) markets = ['DE', 'EP', 'US'];
     var emit = function (ev) { if (typeof o.onEvent === 'function') { try { o.onEvent(ev); } catch (x) { /* ignore */ } } };
     var ctx = { profile: profile, depth: depth, depthCfg: DEPTH[depth], lang: lang, markets: markets, signal: o.signal || null, emit: emit, persist: o.persist !== false, mem: {}, calls: 0, resumed: 0, warnings: [], head: null, id: null, single: false };
@@ -1263,11 +1284,11 @@
   }
 
   function execute(ctx, cands, record) {
-    var data = eng('data'), ai = eng('ai'), P = eng('prompts'), emit = ctx.emit, lang = ctx.lang, de = lang === 'de';
+    var data = eng('data'), ai = eng('ai'), P = eng('prompts'), emit = ctx.emit, lang = ctx.lang;
     var entries = [], notCharted = [], triageCounts = { A: 0, B: 0, C: 0 }, aiOk = false, snap = (data.manifest && data.manifest.snapshots) || {};
     function skip(e, reason, text) {
       var mc = mkCovOf(e), n = { p: e.p, pn: e.pn, auth: e.auth, kind: e.kind, title: e.title, assignee: e.assignee, reason: reason, text: text, rel: e.rel, relWhy: e.relWhy, status: e.statusText, expiry: e.right.expiry.date, expiryBasis: e.right.expiry.basis, score: e.score, routes: e.routes };
-      if (mc.length) { n.text = str(text) + (' | Code result (Markush): ') + mkCovText(mc); n.markushCovered = mc.map(function (r) { return { claim: r.claim, lipid: r.lipid, reviewed: r.reviewed }; }); }
+      if (mc.length) { n.text = str(text) + ' | Code result (Markush): ' + mkCovText(mc); n.markushCovered = mc.map(function (r) { return { claim: r.claim, lipid: r.lipid, reviewed: r.reviewed }; }); }
       if (e.app && e.app.evidence) n.evidence = e.app.evidence;
       notCharted.push(n);
     }
@@ -1304,8 +1325,8 @@
       entries.forEach(function (e) {
         if (e.auth === 'WO') return skip(e, 'wo', 'WO publication: not enforceable; the EP/US family members count');
         if (!e.right.markets.length) return skip(e, 'market', 'no target market selected for this right');
-        if (e.right.dead && !ctx.depthCfg.dead) return skip(e, 'dead', ('Legal status: ') + e.statusText + (e.right.expiry.date ? ('; expiry (estimate) ') + e.right.expiry.date : '') + ('; no claim chart (only at depth "deep")'));
-        if (!e.hasText && !mkc(e)) return skip(e, e.textCut ? 'text_cut' : 'no_text', e.textCut ? ('claim text not in the data package (size budget)') : ('no claim text in the corpus (biblio only); check a family member'));
+        if (e.right.dead && !ctx.depthCfg.dead) return skip(e, 'dead', 'Legal status: ' + e.statusText + (e.right.expiry.date ? '; expiry (estimate) ' + e.right.expiry.date : '') + '; no claim chart (only at depth "deep")');
+        if (!e.hasText && !mkc(e)) return skip(e, e.textCut ? 'text_cut' : 'no_text', e.textCut ? 'claim text not in the data package (size budget)' : 'no claim text in the corpus (biblio only); check a family member');
         live.push(e);
       });
       if (!aiOk) {
@@ -1330,7 +1351,7 @@
             b.forEach(function (e) {
               var r = by[e.pn];
               if (r) { e.rel = r.relevanz; e.relWhy = str(r.grund); e.triage = r; }
-              else { e.rel = 'B'; e.relWhy = res.failed ? ('triage failed (') + res.failed.code + ('); class B as a precaution') : ('no triage result; class B as a precaution'); e.flags.push('triage_ohne_ergebnis'); }
+              else { e.rel = 'B'; e.relWhy = res.failed ? 'triage failed (' + res.failed.code + '); class B as a precaution' : 'no triage result; class B as a precaution'; e.flags.push('triage_ohne_ergebnis'); }
               triageCounts[e.rel] = (triageCounts[e.rel] || 0) + 1;
               emit({ type: 'triage', p: e.p, pn: e.pn, rel: e.rel, why: e.relWhy });
             });
@@ -1344,12 +1365,12 @@
           if (!mkc(e) || e.rel !== 'C') return;
           triageCounts.C--; triageCounts.B = (triageCounts.B || 0) + 1;
           e.relModel = 'C'; e.rel = 'B';
-          e.relWhy = ('Triage C overridden by the code result (') + mkCovText(e.mkCov) + ('); model reason: ') + str(e.relWhy);
+          e.relWhy = 'Triage C overridden by the code result (' + mkCovText(e.mkCov) + '); model reason: ' + str(e.relWhy);
           if (e.flags.indexOf('triage_c_ueberstimmt') < 0) e.flags.push('triage_c_ueberstimmt');
         });
         // order of analysis: rights in force before dead ones, code-verified Markush hits first, A before B, granted rights before applications, then score
         var order = live.filter(function (e) { return e.rel !== 'C'; }).sort(function (a, b) { return ((a.right.dead ? 1 : 0) - (b.right.dead ? 1 : 0)) || ((mkc(a) ? 0 : 1) - (mkc(b) ? 0 : 1)) || ((a.rel === 'A' ? 0 : 1) - (b.rel === 'A' ? 0 : 1)) || ((a.right.granted ? 0 : 1) - (b.right.granted ? 0 : 1)) || (b.score - a.score) || (a.p - b.p); });
-        live.filter(function (e) { return e.rel === 'C'; }).forEach(function (e) { skip(e, 'triage_c', ('Triage C: ') + e.relWhy); });
+        live.filter(function (e) { return e.rel === 'C'; }).forEach(function (e) { skip(e, 'triage_c', 'Triage C: ' + e.relWhy); });
         var cut = order.filter(function (e, k) { return k >= ctx.depthCfg.n && !mkc(e); });
         cut.forEach(function (e) { skip(e, 'depth_limit', ('Triage ' + e.rel + ' but outside the selected depth (' + ctx.depth + ': ' + ctx.depthCfg.n + ' rights) - NOT analysed') + (e.relWhy ? ': ' + e.relWhy : '')); });
         // code-verified Markush hits are analysed even beyond the depth limit
@@ -1381,12 +1402,12 @@
         var ids = {}; digests.forEach(function (d) { ids[d.patent_id] = 1; });
         var req = P.buildD({ lang: lang, product: productForModel(ctx.profile, true), searchReport: searchReport, digests: digests });
         return step(ctx, 'D', req, { check: function (v) { var bad = []; arr(v.einzelbewertungen).forEach(function (x) { if (!ids[x.patent_id]) bad.push({ path: '$.einzelbewertungen', message: 'patent_id ' + x.patent_id + ' is not in <digests>; use only patents from the digests' }); }); return bad; } }).then(function (res) {
-          if (res.failed) { ctx.warn(('Synthesis failed: ') + res.failed.message); return { failed: res.failed }; }
+          if (res.failed) { ctx.warn('Synthesis failed: ' + res.failed.message); return { failed: res.failed }; }
           var s = res.out, flags = [];
           s.einzelbewertungen = arr(s.einzelbewertungen).filter(function (x) { return ids[x.patent_id]; });
           s.zeitachse = arr(s.zeitachse).filter(function (x) { if (ids[x.patent_id]) return true; flags.push('unbekannte_nummer_in_zeitachse'); return false; });
           var w = wordingIssues(s);
-          if (w.length) { flags.push('formulierung_pruefen'); ctx.warn(('Synthesis text contains an impermissibly sweeping phrase ("') + w[0].phrase + ('"): check before use')); }
+          if (w.length) { flags.push('formulierung_pruefen'); ctx.warn('Synthesis text contains an impermissibly sweeping phrase ("' + w[0].phrase + '"): check before use'); }
           var by = {}; overall.markets.forEach(function (m) { by[m.market] = m; });
           arr(s.gesamtrisiko).forEach(function (gr) { var m = by[gr.markt]; if (m && m.risk && gr.risiko !== m.risk) { gr.app_risiko = m.risk; gr.app_hinweis = 'computed by the app: ' + m.risk; flags.push('gesamtrisiko_abweichend'); } });
           arr(s.einzelbewertungen).forEach(function (x) { var d = digests.filter(function (y) { return y.patent_id === x.patent_id; })[0]; if (d && x.risiko !== d.risiko_final) { x.app_risiko = d.risiko_final; } });
@@ -1401,7 +1422,7 @@
         done.forEach(function (e) { if (e.right.asof) dates[e.right.asof] = 1; });
         var op = {
           v: 1, id: ctx.id, kind: 'fto-opinion', created: (ctx.head && ctx.head.created) || nowDate().toISOString(), finished: nowDate().toISOString(), lang: lang, depth: ctx.depth, markets: ctx.markets, aiUsed: aiOk,
-          title: ('FTO pre-screen (not a legal opinion): ') + str(ctx.profile.bezeichnung),
+          title: 'FTO pre-screen (not a legal opinion): ' + str(ctx.profile.bezeichnung),
           snapshot: snap, statusSnapshot: statusDate || Object.keys(dates).sort()[0] || null, limits: P.limits(lang, statusDate || Object.keys(dates).sort()[0] || null),
           profile: ctx.profile, search: { record: record, candidates: cands.length, triage: triageCounts, charted: done.length, report: searchReport },
           patents: done.map(function (e) {
@@ -1424,7 +1445,7 @@
      (claim chart with the app-side checks; "standard" adds dependent claims and red team). Nothing is saved. */
   function chartOne(profile, pn, o) {
     o = o || {};
-    var data = eng('data'), ai = eng('ai'), lang = (o.lang || (profile && profile.output_language)) === 'de' ? 'de' : 'en';
+    var data = eng('data'), ai = eng('ai'), lang = 'en';
     var markets = marketsOf(o.markets || (profile && profile.handlungen && profile.handlungen.maerkte)); if (!markets.length) markets = ['DE', 'EP', 'US'];
     var emit = function (ev) { if (typeof o.onEvent === 'function') { try { o.onEvent(ev); } catch (x) { /* ignore */ } } };
     var depth = DEPTH[o.depth] ? o.depth : 'quick';
@@ -1481,7 +1502,7 @@
   function configure(o) { for (var k in o) cfg[k] = o[k]; if (o && (o.search || o.data) && eng('ai') && eng('ai').configure) eng('ai').configure({ search: o.search || eng('search'), data: o.data || eng('data') }); return api; }
 
   var api = {
-    configure: configure, normalizeProfile: normalizeProfile, candidates: candidates, run: run, resume: resume, chartOne: chartOne, render: render, list: list, load: load, remove: remove,
+    configure: configure, normalizeProfile: normalizeProfile, englishForm: englishForm, candidates: candidates, run: run, resume: resume, chartOne: chartOne, render: render, list: list, load: load, remove: remove,
     // deterministic parts, exported for the UI and the tests
     verifyQuote: verifyQuote, literalFromVerdicts: literalFromVerdicts, maxRisk: maxRisk, riskRank: riskRank, worseLiteral: worseLiteral, rightOf: rightOf, statusLabel: statusLabel, checkChart: checkChart, checkDependent: checkDependent,
     applyRedTeam: applyRedTeam, buildDigest: buildDigest, applyEvidence: applyEvidence, evidenceInputs: function (o) { return evidenceInputs(o || {}); }, overallRisk: overallRisk, textQueries: textQueries, wordingIssues: wordingIssues, hash: hash, DEPTH: DEPTH, RISK_RANK: RISK_RANK

@@ -36,9 +36,9 @@ Terminology used in the UI (German, fixed):
 ## 0. Ground rules (apply to every step)
 
 1. **Pre-screen, not opinion.** The output prioritises documents and issues for a patent attorney. It
-   never says "frei" / "no infringement" without qualification; the strongest negative statement
-   allowed is "im geprüften Korpus kein Anspruch identifiziert, dessen Merkmale nach den getroffenen
-   Annahmen sämtlich erfüllt sind".
+   never says "free to operate" / "no infringement" without qualification; the strongest negative
+   statement allowed is "within the screened corpus no claim was identified whose features are all
+   met under the stated assumptions".
 2. **All-elements rule.** A claim is literally infringed only if *every* feature is realised. One
    clearly missing feature defeats literal infringement of that claim — but only then is the
    equivalence question asked for that feature, and the claim is never dismissed on an "unclear".
@@ -371,7 +371,7 @@ step of the variant = Formstein-type check). Report as "Rechtsprechung im Fluss"
 to the patent (quoted), DE answers to questions 1–3 (ja / nein / offen, each with reasons),
 Formstein indication, US FWR + each limit (applies / does not apply / file history not in corpus),
 overall `aequivalenz_risiko` (hoch / mittel / gering / nicht beurteilbar). Without the file wrapper
-the estoppel points are always "nicht beurteilbar – Erteilungsakte nicht im Korpus".
+the estoppel points are always "cannot be assessed – the file wrapper is not in the corpus".
 
 Typical LNP equivalence questions: ester vs. carbonate vs. amide linker; chain length ±1–2 C;
 branching position; cholesterol vs. phytosterol; DSPC vs. DOPE; PEG2000-DMG vs. PEG-ceramide vs.
@@ -601,39 +601,21 @@ Markush route; pre-screening, not legal advice).
 - Where appropriate: licence enquiry, opposition (if within 9 months), third-party observations
   (Art. 115 EPC), design-around programme.
 
-## 16. Mandatory limits statement (verbatim block, German UI)
+## 16. Mandatory limits statement (verbatim block)
 
-> **Wichtiger Hinweis – Grenzen dieser FTO-Vorprüfung**
-> 1. Diese Auswertung ist eine automatisiert (KI-gestützt) erstellte Vorprüfung und **keine
->    Rechtsberatung** und kein Freedom-to-Operate-Gutachten. Sie ersetzt nicht die Prüfung durch
->    eine Patentanwältin oder einen Patentanwalt.
-> 2. Der durchsuchte Korpus ist **fachlich eingegrenzt** (LNP-/Lipid-Feld, EP/US/WO, definierte
->    CPC-Klassen, Schlagworte und Anmelder). Schutzrechte außerhalb dieser Eingrenzung – auch
->    Gebrauchsmuster, nationale Schutzrechte anderer Länder und ergänzende Schutzzertifikate – sind
->    nicht erfasst.
-> 3. **Markush-/generische Ansprüche** können Strukturen erfassen, die im Korpus nicht einzeln
->    indexiert sind. Eine Markush-Recherche (z. B. CAS STN MARPAT) wurde nicht durchgeführt. Die
->    Formelprüfung erfolgt nur für Ansprüche, deren Text im Korpus vorliegt; als Bild eingebettete
->    Formeln können fehlen.
-> 4. Der **Rechtsstand** (Erteilung, Einspruch, Beschränkung, Erlöschen, Laufzeit, PTA/PTE, ESZ,
->    UPC-Opt-out) stammt aus einem Datenstand vom {status_snapshot_date} und kann **veraltet oder
->    unvollständig** sein. Laufzeitangaben sind Schätzungen.
-> 5. Anspruchstexte können **maschinelle Übersetzungen** oder OCR-Texte sein; maßgeblich ist allein
->    die Fassung in der Verfahrenssprache bzw. die geltende erteilte/aufrechterhaltene Fassung.
-> 6. **Anhängige Anmeldungen**: Ansprüche können sich bis zur Erteilung ändern (enger oder – im
->    Rahmen der ursprünglichen Offenbarung – anders gefasst werden); Teilanmeldungen und
->    Continuations können hinzukommen. Noch nicht veröffentlichte Anmeldungen (bis 18 Monate nach
->    Prioritätstag) sind nicht erfasst.
-> 7. Die Bewertung beruht auf den **Angaben und Annahmen** zum Produkt/Verfahren in Abschnitt
->    „Geprüfter Gegenstand". Ändern sich diese, ändert sich das Ergebnis.
-> 8. Auslegung, Äquivalenz und Ausnahmen (Versuchsprivileg, Zulassungsprivileg/Bolar, Safe Harbor)
->    hängen vom Einzelfall und von der aktuellen Rechtsprechung ab; die Erteilungsakten wurden nicht
->    ausgewertet.
-> 9. KI-Modelle können Fehler machen (falsche Zuordnung von Substituenten, falsche Zählung von
->    Kettenlängen, übersehene Maßgaben). Zitate und Merkmalszuordnungen sind vor jeder Entscheidung
->    am Originaldokument zu prüfen.
+The app inserts this block verbatim at the top and the bottom of every rendered opinion (all UI copy and every
+report is English; block `LIMITS_EN` in `prompts.md`, which is the source the app is generated from):
 
-English version for `output_language = en` is in `prompts.md` (block `LIMITS_EN`).
+> Important notice – limits of this FTO pre-screen
+> 1. This is an automated (AI-assisted) pre-screen. It is not legal advice and not a freedom-to-operate opinion, and it does not replace review by a patent attorney.
+> 2. The screened corpus is restricted to the LNP/lipid field (EP/US/WO; defined CPC classes, keywords and applicants). Rights outside this restriction – including utility models, national rights of other countries and supplementary protection certificates – are not covered.
+> 3. Markush/generic claims may cover structures that are not individually indexed in the corpus. No Markush search (e.g. CAS STN MARPAT) was performed. The formula test is only applied to claims whose text is in the corpus; formulae embedded as images may be missing.
+> 4. Legal status (grant, opposition, limitation, lapse, term, PTA/PTE, SPC, UPC opt-out) reflects a data snapshot of {status_snapshot_date} and may be stale or incomplete. Expiry dates are estimates.
+> 5. Claim texts may be machine translations or OCR text; only the text in the language of proceedings, as granted or maintained, is authoritative.
+> 6. Pending applications: claims may change before grant; divisionals and continuations may be filed. Applications not yet published (up to 18 months from priority) are not covered.
+> 7. The assessment rests on the product/process data and assumptions listed under "Subject of the screen". If they change, the result changes.
+> 8. Claim construction, equivalence and exemptions (experimental use, Bolar, safe harbor) depend on the individual case and current case law; prosecution files were not reviewed.
+> 9. AI models make mistakes (wrong substituent mapping, wrong chain-length counts, overlooked provisos). Verify quotes and feature mappings against the original document before any decision.
 
 ## 17. Verification status of this document
 

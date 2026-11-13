@@ -1298,7 +1298,8 @@
     '    "*" (a placeholder: the software then reports that nothing can be checked), explain in core.note, and still give',
     '    vars with their quotes and alts (attach may then list any map numbers).',
     'R9. Output one JSON object only: {"v": "mk-1", "core": {"smiles", "note"}, "vars": [...], "provisos": [...], "unsupported": [...]}',
-    '    following the schema below.'
+    '    following the schema below. Free-text fields (core.note, unsupported[].text) are written in English, also when the',
+    '    claim is in German; quotes stay verbatim in the language of the claim.'
   ].join('\n');
   function translatePrompt(o) {
     var schema = JSON.stringify(SCHEMA);

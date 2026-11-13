@@ -25,7 +25,7 @@ function extractPrompts(md) {
   const under = (prefix) => { const i = heads.findIndex((h) => h.name.startsWith(prefix)); if (i < 0) throw new Error('heading ' + prefix); const a = heads[i].at, b = i + 1 < heads.length ? heads[i + 1].at : md.length; return blocks.filter((x) => x.at > a && x.at < b); };
   const firstText = (prefix, starts) => { const b = under(prefix).find((x) => x.kind === 'text' && (!starts || x.body.startsWith(starts))); if (!b) throw new Error('text block ' + prefix); return b.body; };
   const TEXT = { COMMON: firstText('COMMON block'), A: firstText('Step A', 'STEP A'), T: firstText('Step T', 'STEP T'), B: firstText('Step B', 'STEP B'), C: firstText('Step C', 'STEP C'),
-    E: firstText('Step E', 'STEP E'), D: firstText('Step D', 'STEP D'), REPAIR: firstText('REPAIR block'), LIMITS_DE: firstText('LIMITS_DE'), LIMITS_EN: firstText('LIMITS_EN') };
+    E: firstText('Step E', 'STEP E'), D: firstText('Step D', 'STEP D'), REPAIR: firstText('REPAIR block'), LIMITS_EN: firstText('LIMITS_EN') };
   const SCHEMA = {}; const names = { ProductFeatures: 'pf', TriageResult: 'tr', ClaimChart: 'cc', DependentAnalysis: 'da', RedTeamReport: 'rt', ChartDigest: 'cd', Opinion: 'op' };
   for (const b of blocks) if (b.kind === 'json') { const j = JSON.parse(b.body); if (names[j.title]) SCHEMA[names[j.title]] = j; }
   for (const k of Object.values(names)) if (!SCHEMA[k]) throw new Error('schema ' + k);
